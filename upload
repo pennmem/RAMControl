@@ -1,0 +1,19 @@
+#!/bin/bash
+shopt -s expand_aliases
+source ~/.bashrc
+
+source `dirname "$0"`/source/ISDEV.sh
+
+RAM_DIR=`dirname "$0"`
+
+echo "****************************************">> $RAM_DIR/logs/upload.log
+date >> $RAM_DIR/logs/upload.log
+python $RAM_DIR/source/upload_core.py
+
+# 2>&1 | tee -a $RAM_DIR/logs/upload_experiment.log
+
+echo "Uploading logs..."
+RAMrsync "$RAM_DIR/logs/" "$RHINO_USER@ramtransfer.sas.upenn.edu:/logs/"
+
+echo "Upload complete. Hit any key to exit"
+read

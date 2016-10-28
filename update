@@ -1,0 +1,32 @@
+#!/bin/bash
+shopt -s expand_aliases
+source ~/.bashrc
+source `dirname "$0"`/source/ISDEV.sh
+
+RAM_DIR=`dirname "$0"`
+
+clear
+echo "DO NOT run this function unless you have been instructed to do so by the DCC"
+echo "WARNING: THIS WILL REVERT ANY LOCAL CHANGES!"
+echo "Press Y to update all experiments, press N to quit"
+COMMAND=""
+
+while [[ "$COMMAND" != "y" ]] && [[ "$COMMAND" != "n" ]]; do
+    read -sn 1 COMMAND
+done
+
+if [[ "$COMMAND" == "n" ]]; then
+    echo "exiting"
+    exit
+fi
+
+
+echo "****************************************">>$RAM_DIR/logs/update.log
+date >> $RAM_DIR/logs/update.log
+bash $RAM_DIR/source/update_core.sh 2>&1 | tee -a $RAM_DIR/logs/update.log
+
+#echo "Uploading logs..."
+#RAMrsync /Users/exp/RAM/logs $RHINO_USER@ramtransfer.sas.upenn.edu:/logs
+
+echo "Upload complete. Hit any key to exit"
+read

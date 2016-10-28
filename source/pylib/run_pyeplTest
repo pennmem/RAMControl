@@ -1,0 +1,26 @@
+#!/bin/bash
+EXP_DIR="$HOME/experiments"
+CONFIG="testConfig.py"
+PYTHON_CMD="python2.6"
+EXPERIMENT="pyeplTest"
+
+RAM_DIR="$HOME/RAM_2.0"
+
+export PYTHONPATH="$PYTHONPATH:$RAM_DIR/source/pylib:$EXP_DIR/RAM_FR/branches/sys2"
+
+ARCHIVE_DIR="$RAM_DIR/data/pyeplTest/"
+NOFS=1
+
+
+while [[ $SUBJ_NUM == "" ]]; do
+    echo "ENTER SUBJECT CODE (subject codes containing \"test\" will not be recorded): "
+    read SUBJ_NUM
+done
+
+
+OPTIONS="-s $SUBJ_NUM --config=$CONFIG --no-fs --archive=$ARCHIVE_DIR"
+# RUNNING THE ACTUAL EXPERIMENT
+
+$PYTHON_CMD $EXPERIMENT.py $OPTIONS
+
+
