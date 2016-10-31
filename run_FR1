@@ -1,9 +1,9 @@
 #!/bin/bash
-CURRPWD=~/src/RAM_2.0  #`dirname "$0"`
+CURRPWD=$PWD
 if [[ -e "$CURRPWD/source/ISDEV.sh" ]]; then
     source "$CURRPWD/source/ISDEV.sh"
 fi
-EXP_DIR="$HOME/src/RAM_2.0/experiments"
+EXP_DIR="$HOME/experiments"
 EXPERIMENT="FR"
 EXPERIMENT_NUM="1"
 EXPERIMENT_DIR="RAM_$EXPERIMENT"
