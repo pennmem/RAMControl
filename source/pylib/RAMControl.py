@@ -53,22 +53,19 @@ class RAMControl:
     # Force getInstance() to be a class method
     getInstance = classmethod(getInstance)
 
-    def getSystemTimeInMicros(cls):
+    @staticmethod
+    def getSystemTimeInMicros():
         """
         Convenience method to return the system time.
         """
         return time() * 1000000
 
-    getSystemTimeInMicros = classmethod(getSystemTimeInMicros)
-
-    def getSystemTimeInMillis(cls):
+    @staticmethod
+    def getSystemTimeInMillis():
         """
         Convenience method to return the system time.
         """
-        # return int(round(RAMControl.getSystemTimeInMicros() / 1000.0))
         return int(round(time() * 1000.0))
-
-    getSystemTimeInMillis = classmethod(getSystemTimeInMillis)
 
     def initialize(self, config=None, host=None, port=0):
         """
@@ -283,7 +280,7 @@ class RAMControl:
               "time": <laptop timestamp in ms>,
               "type": "name of event type",
               "data": <optional, data associated with event>,
-              "aux_data": <optional, auxiliary data associated with event>
+              "aux": <optional, auxiliary data associated with event>
             }
 
         """
