@@ -15,7 +15,7 @@ from pyepl.hardware import addPollCallback, removePollCallback
 from pyepl.locals import *
 
 
-class RAMControl:
+class RAMControl(object):
     JSON_SPLITTER = re.compile(
         '(?<=})\s*{')  # REGEXP to split consecutive JSON message
     # NOTE: Removes leading brace of all but the first message
@@ -23,17 +23,16 @@ class RAMControl:
     QUEUE_SIZE = 20  # Blocks if the queue is full
 
     # Use getInstance() to instantiate this class
-    singletonInstance = None
+    singleton_instance = None
 
     def __init__(self):
-        """ Constructor  - Do not call instantiate RAMControl directly, but use getInstance instead """
+        """Do not instantiate RAMControl directly, but use getInstance instead."""
         self.network = None  # Network class instance
         self.isHeartbeat = False  # If 'true', indicates first time heartbeat polling function is called
         self.firstBeat = 0  # Time of first heartbeat
         self.nextBeat = 0  # Time in the future of next heartbeat
         self.lastBeat = 0  # Time in the past that the last heartbeat occurred
-        self.queue = Queue(
-            maxsize=RAMControl.QUEUE_SIZE)  # Use a queue for messages
+        self.queue = Queue(maxsize=RAMControl.QUEUE_SIZE)  # Use a queue for messages
         self.experimentCallback = None  # Callback into the experiment
         self.abortCallback = None  # Callback into experiment if Control PC dies
         self.isSynced = False  # Indicates that clock syncronization to Control PC has not occurred
@@ -42,39 +41,30 @@ class RAMControl:
         self.clock = None  # Experiment clock
         self.sdRef = None  # Bonjour handle
 
-    def getInstance(cls):
-        """
-        Returns a reference to the singleton instance to this class
-        """
-        if (RAMControl.singletonInstance == None):
-            RAMControl.singletonInstance = RAMControl()
-        return RAMControl.singletonInstance
-
-    # Force getInstance() to be a class method
-    getInstance = classmethod(getInstance)
+    @classmethod
+    def get_instance(cls):
+        """Returns a reference to the singleton instance to this class"""
+        if RAMControl.singleton_instance is None:
+            RAMControl.singleton_instance = RAMControl()
+        return RAMControl.singleton_instance
 
     @staticmethod
-    def getSystemTimeInMicros():
-        """
-        Convenience method to return the system time.
-        """
+    def get_system_time_in_micros():
+        """Convenience method to return the system time."""
         return time() * 1000000
 
     @staticmethod
-    def getSystemTimeInMillis():
-        """
-        Convenience method to return the system time.
-        """
+    def get_system_time_in_millis():
+        """Convenience method to return the system time."""
         return int(round(time() * 1000.0))
 
     def initialize(self, config=None, host=None, port=0):
-        """
-        Setup a server connection
-        """
+        """Setup a server connection"""
         # Create a network object
         self.network = Network()
 
-        # Use config information from the experiment.  (These should all be in the RAMControl section)
+        # Use config information from the experiment.
+        # (These should all be in the RAMControl section)
         self.config = config
 
         # Create a connection and set it to listen for a client to connect.  The 'alternate' host and port below
@@ -96,7 +86,7 @@ class RAMControl:
 
         # Advertise a connection to me via Bonjour
         if not config['is_hardwire']:
-            self.startBonjour(self.network.toHost, self.network.port)
+            self.start_bonjour(self.network.toHost, self.network.port)
 
         # Setup a thread to wait for the connection.
         rtc = self.network.waitForConnection()
@@ -105,7 +95,7 @@ class RAMControl:
 
         return 0
 
-    def connect(self, connectedCallback=None, seconds=1):
+    def connect(self, callback=None, seconds=1):
         """
         Allow for both poll and callback.  The first parameter of the callback is True if the connection
         was successful, and False otherwise.  If 'seconds' is zero and no callback exists, poll once and return.
@@ -115,21 +105,20 @@ class RAMControl:
         """
         while True:
             if self.network.isConnected():
-                self.network.registerMessageCallback(self.receiveMessage)
-                if connectedCallback != None:
-                    connectedCallback(True)
-                sleep(
-                    1)  # Give ControlPC some time to know that we have connected
+                self.network.registerMessageCallback(self.receive_message)
+                if callback is not None:
+                    callback(True)
+                sleep(1)  # Give ControlPC some time to know that we have connected
                 return 0
             else:
-                if seconds == 0 and connectedCallback == None:
+                if seconds == 0 and callback is None:
                     return -1
                 else:
                     sleep(seconds)
-                    if connectedCallback != None:
-                        connectedCallback(False)
+                    if callback is not None:
+                        callback(False)
 
-    def waitForRamControlStarted(self, waitingCallback=None, seconds=1):
+    def wait_for_ram_control_started(self, waitingCallback=None, seconds=1):
         """
         Similar to 'connect'. Waits for a message to be recieved. The first parameter of the callback is True
         if the message has been received, and False otherwise. If 'seconds' is zero and no callback exists, poll once
@@ -140,11 +129,11 @@ class RAMControl:
         while True:
             if self.network.isConnected():
                 if self.ramControlStarted:
-                    if waitingCallback != None:
+                    if waitingCallback is not None:
                         waitingCallback(True)
                     return 0
                 else:
-                    if waitingCallback != None:
+                    if waitingCallback is not None:
                         waitingCallback(False)
                     elif seconds == 0:
                         return -1
@@ -152,16 +141,14 @@ class RAMControl:
             else:
                 return -2
 
-    def receiveMessage(self, message):
+    def receive_message(self, message):
         """
         A callback that receives messages from the Control PC. Since this method is inside the poll callback, put
         the message in a queue for further processing by the experiment.
         """
-        self.queue.put(message,
-                       False)  # False indicates to throw an exception if the queue is full
-        # print message # TODO: Remove this
+        self.queue.put(message, False)  # False indicates to throw an exception if the queue is full
 
-    def getMessage(self):
+    def get_message(self):
         """
         Returns a message if available, or None if not
         """
@@ -170,7 +157,7 @@ class RAMControl:
         return self.queue.get_nowait()
 
     @staticmethod
-    def splitMessages(msg):
+    def split_messages(msg):
         """
         If a message consists of multiple json strings, split it into a list of each of the strings
         """
@@ -178,17 +165,18 @@ class RAMControl:
                 for (i, msgPart) in
                 enumerate(RAMControl.JSON_SPLITTER.split(msg))]
 
-    def processMessage(self, msg):
+    def process_message(self, msg):
         """
         Process a message from the Control PC
         Currently there are only a couple of messages sent by the Control PC.
         """
-        if msg == None:
+        if msg is None:
             return
 
-        # The network buffer can contain multiple messages, so crack each one apart, and process each separately
+        # The network buffer can contain multiple messages, so crack each one
+        # apart, and process each separately
         print 'msg=', msg
-        split_msgs = self.splitMessages(msg)
+        split_msgs = self.split_messages(msg)
         print 'split_msgs=', split_msgs
         # for message in self.splitMessages(msg):
         for message in split_msgs:
@@ -200,24 +188,26 @@ class RAMControl:
             if 'type' not in json_message:
                 print 'JSON received without "TYPE"'
                 continue
+
             for case in switch(json_message['type']):
                 print 'case=', case
                 if case('ID'):
                     break
                 if case('SYNC'):
                     # Sync received from Control PC.
-                    # Echo SYNC back to Control PC with high precision time so that clocks can be aligned.
+                    # Echo SYNC back to Control PC with high precision time so
+                    # that clocks can be aligned.
                     if 'num' in json_message.keys():
                         # orig
                         # self.sendEvent(RAMControl.getSystemTimeInMillis(), 'SYNC', RAMControl.getSystemTimeInMicros())
-                        self.sendEvent(RAMControl.getSystemTimeInMillis(),
+                        self.send_event(RAMControl.get_system_time_in_millis(),
                                        'SYNC',
-                                       RAMControl.getSystemTimeInMicros(),
-                                       aux_data=json_message['num'])
+                                        RAMControl.get_system_time_in_micros(),
+                                        aux_data=json_message['num'])
                     else:
-                        self.sendEvent(RAMControl.getSystemTimeInMillis(),
+                        self.send_event(RAMControl.get_system_time_in_millis(),
                                        'SYNC',
-                                       RAMControl.getSystemTimeInMicros())
+                                        RAMControl.get_system_time_in_micros())
                     break
                 if case('SYNCED'):
                     # Control PC is done clock alignment
@@ -241,11 +231,11 @@ class RAMControl:
                     print 'Invalid ID returned from Control PC'
                     break
 
-    def pollForMessage(self):
+    def poll_for_message(self):
         """ Poll and process each message """
-        self.processMessage(self.getMessage())
+        self.process_message(self.get_message())
 
-    def sendMessage(self, message):
+    def send_message(self, message):
         """
         This blocks until the message is sent.  Returns the total number of characters sent to control PC
         """
@@ -259,19 +249,19 @@ class RAMControl:
 
         # return self.network.send(message)
 
-    def sendEvent(self, system_time, event_type, event_data=None,
-                  aux_data=None):
+    def send_event(self, system_time, event_type, event_data=None,
+                   aux_data=None):
         """Format the message
 
         TODO: Change to JSONRPC and add checksum
 
         """
-        message = self.buildMessage(system_time, event_type, event_data,
-                                    aux_data)
-        return self.sendMessage(message)
+        message = self.build_message(system_time, event_type, event_data,
+                                     aux_data)
+        return self.send_message(message)
 
     @staticmethod
-    def buildMessage(system_time, event_type, event_data=None, aux_data=None):
+    def build_message(system_time, event_type, event_data=None, aux_data=None):
         """Build and return a message to be sent to control PC.
 
         Messages are JSON encoded and are of the following form::
@@ -293,7 +283,7 @@ class RAMControl:
 
         return json.dumps(message)
 
-    def readyControlPC(self, clock, callbacks, config, subject, sessionNum):
+    def ready_control_pc(self, clock, callbacks, config, subject, sessionNum):
         """
         Setup the connection to the Control PC and do various housekeeping tasks.
         - Send name of this experiment
@@ -311,29 +301,30 @@ class RAMControl:
         self.clock = clock
         self.abortCallback = callbacks.abort_callback
         if self.connect(callbacks.connect_callback) == 0:
-            self.sendEvent(RAMControl.getSystemTimeInMillis(), 'EXPNAME',
-                           config['EXPERIMENT_NAME'])
-            self.sendEvent(RAMControl.getSystemTimeInMillis(), 'VERSION',
-                           config['VERSION_NUM'])
-            self.sendEvent(RAMControl.getSystemTimeInMillis(), 'SESSION',
-                           {'session_number': sessionNum,
+            self.send_event(RAMControl.get_system_time_in_millis(), 'EXPNAME',
+                            config['EXPERIMENT_NAME'])
+            self.send_event(RAMControl.get_system_time_in_millis(), 'VERSION',
+                            config['VERSION_NUM'])
+            self.send_event(RAMControl.get_system_time_in_millis(), 'SESSION',
+                            {'session_number': sessionNum,
                             'session_type': config['STIM_TYPE']})
-            self.sendEvent(RAMControl.getSystemTimeInMillis(), 'SUBJECTID',
-                           subject)
-            self.startNetworkPoll()  # Ready to receive message from the control PC
-            self.startMessagePoll()  # Ready to process message from the control PC
-            if self.alignClocks(callbacks.sync_callback):  # Align clocks
+            self.send_event(RAMControl.get_system_time_in_millis(), 'SUBJECTID',
+                            subject)
+            self.start_network_poll()  # Ready to receive message from the control PC
+            self.start_message_poll()  # Ready to process message from the control PC
+            if self.align_clocks(callbacks.sync_callback):  # Align clocks
                 return -1
-            self.startHeartbeatPoll(callbacks.abort_callback,
-                                    config['heartbeat'])
-            ramControlStarted = self.waitForRamControlStarted(
+            self.start_heartbeat_poll(callbacks.abort_callback,
+                                      config['heartbeat'])
+            ramControlStarted = self.wait_for_ram_control_started(
                 callbacks.wait_for_start_callback)
             if ramControlStarted < 0:
                 return -3
             return 0
         return -2
 
-    def decodeMessage(self, message):
+    @staticmethod
+    def decode_message(message):
         """
         Decode a message and return tuple of its parts.
         """
@@ -342,9 +333,9 @@ class RAMControl:
         n = len(token)
         if (n < 4 or n > 6) or (message[0] != RAMControl.MSG_START or message[
             -1] != RAMControl.MSG_END):
-            return (-1, 0, '', '')
+            return -1, 0, '', ''
         if not token[1].isdigit():
-            return (-2, 0, '', '')
+            return -2, 0, '', ''
         t0 = int(token[1])
         id = token[2]
         data = ''
@@ -353,7 +344,7 @@ class RAMControl:
             data = token[3]
             if n == 6:
                 aux = token[4]
-        return (t0, id, data, aux)
+        return t0, id, data, aux
 
     def disconnect(self):
         """
@@ -364,7 +355,7 @@ class RAMControl:
             sleep(0.5)  # Wait for threads to exit before closing connection
             self.network.close()
 
-    def sendHeartbeatPolled(self, interval_millis):
+    def send_heartbeat_polled(self, interval_millis):
         """Send continuous heartbeat events every ``interval_millis``. The
         computation assures that the average interval between heartbeats will be
         interval_millis rather than interval_millis + some amount of
@@ -372,71 +363,71 @@ class RAMControl:
 
         """
         if self.isHeartbeat:
-            t1 = RAMControl.getSystemTimeInMillis()
+            t1 = RAMControl.get_system_time_in_millis()
             if (t1 - self.firstBeat) > self.nextBeat:
                 self.nextBeat = self.nextBeat + interval_millis
                 self.lastBeat = t1
-                self.sendEvent(self.lastBeat, 'HEARTBEAT', interval_millis)
+                self.send_event(self.lastBeat, 'HEARTBEAT', interval_millis)
         else:  # First time
             self.isHeartbeat = True
-            self.firstBeat = self.lastBeat = RAMControl.getSystemTimeInMillis()
+            self.firstBeat = self.lastBeat = RAMControl.get_system_time_in_millis()
             self.nextBeat = interval_millis
-            self.sendEvent(self.lastBeat, 'HEARTBEAT', interval_millis)
+            self.send_event(self.lastBeat, 'HEARTBEAT', interval_millis)
 
-    def startHeartbeatPoll(self, abortCallback, intervalMillis):
+    def start_heartbeat_poll(self, abortCallback, intervalMillis):
         """
         Start polled version of heartbeat by adding a poll callback function
         """
         self.isHeartbeat = False  # Needs to be reset before starting the heartbeat
         self.abortCallback = abortCallback
-        addPollCallback(self.sendHeartbeatPolled, intervalMillis)
+        addPollCallback(self.send_heartbeat_polled, intervalMillis)
 
-    def stopHeartbeatPoll(self):
+    def stop_heartbeat_poll(self):
         """
         Stop polled version of heartbeat by removing the poll callback function
         """
         if self.isHeartbeat:
-            removePollCallback(self.sendHeartbeatPolled)
+            removePollCallback(self.send_heartbeat_polled)
             self.isHeartbeat = False
             self.abortCallback = None
 
-    def networkPoll(self):
+    def network_poll(self):
         """
         Called by hardware loop.  Should be as short and efficient as possible!
         """
         rtc = self.network.poll()
         if rtc >= 0:
             return
-        self.stopNetworkPoll()
+        self.stop_network_poll()
         print 'Error from receive - stopping Poll'
         if self.abortCallback:
             self.abortCallback()
 
-    def startNetworkPoll(self):
+    def start_network_poll(self):
         """
         Install a network handler into the hardware polling loop
         """
-        addPollCallback(self.networkPoll)
+        addPollCallback(self.network_poll)
 
-    def stopNetworkPoll(self):
+    def stop_network_poll(self):
         """
         Remove a network handler from the hardware polling loop
         """
-        removePollCallback(self.networkPoll)
+        removePollCallback(self.network_poll)
 
-    def startMessagePoll(self):
+    def start_message_poll(self):
         """
         Install a message received handler into the hardware polling loop
         """
-        addPollCallback(self.pollForMessage)
+        addPollCallback(self.poll_for_message)
 
-    def stopMessagePoll(self):
+    def stop_message_poll(self):
         """
         Remove a message received handler from the hardware polling loop
         """
-        removePollCallback(self.pollForMessage)
+        removePollCallback(self.poll_for_message)
 
-    def alignClocks(self, experimentCallback, clock=None):
+    def align_clocks(self, callback, clock=None):
         """
         Task computer starts the process by sending "ALIGNCLOCK' request.
         Control PC will send a sequence of SYNC messages which are echoed back to it
@@ -445,11 +436,11 @@ class RAMControl:
         to the next step.
         """
         self.isSynced = False
-        self.sendEvent(RAMControl.getSystemTimeInMillis(), 'ALIGNCLOCK')
+        self.send_event(RAMControl.get_system_time_in_millis(), 'ALIGNCLOCK')
         print "Requesting ALIGNCLOCK"
         for i in range(120):  # 60 seconds (normally takes < 6 seconds)
-            if experimentCallback:
-                experimentCallback(self.isSynced, i)
+            if callback:
+                callback(self.isSynced, i)
             if self.isSynced:
                 print 'Sync Complete'
                 break
@@ -462,7 +453,7 @@ class RAMControl:
                     sleep(0.5)
         return 0 if self.isSynced else -1
 
-    def syncCallback(self, millis):
+    def sync_callback(self, millis):
         """
         THIS METHOD IS ONLY USED FOR DETERMINING LATENCY.  IT IS NOT CALLED IN THE PRODUCTION SYSTEM
         This method gets called immediately after a sync pulse has been sent.  Logic below simultaneously
@@ -470,11 +461,11 @@ class RAMControl:
         until a message is received from the Control PC which asynchronously sets 'isSynced', which is sent
         back via a callback to the experiment.
         """
-        self.sendEvent(RAMControl.getSystemTimeInMillis(), 'SYNC')
+        self.send_event(RAMControl.get_system_time_in_millis(), 'SYNC')
         if self.experimentCallback:
             self.experimentCallback(self.isSynced)
 
-    def sendSyncMessageToControlPC(self):
+    def send_sync_message_to_control_pc(self):
         """
         THIS METHOD IS ONLY USED FOR DETERMINING LATENCY.  IT IS NOT CALLED IN THE PRODUCTION SYSTEM
         Do not do anything below that will take more than the inter-sync message interval config.syncInterval,
@@ -485,9 +476,9 @@ class RAMControl:
         if self.experimentCallback:
             self.experimentCallback(
                 False)  # False indicates that sync operation is not yet complete
-        self.sendEvent(RAMControl.getSystemTimeInMillis(), 'SYNC')
+        self.send_event(RAMControl.get_system_time_in_millis(), 'SYNC')
 
-    def measureSync(self, pulses, interval, eeg, clock):
+    def measure_sync(self, pulses, interval, eeg, clock):
         """
         THIS METHOD IS ONLY USED FOR DETERMINING LATENCY.  IT IS NOT CALLED IN THE PRODUCTION SYSTEM
         Code used to measure latency between control PC receipt of syncbox pulses and 'SYNC' events sent
@@ -495,22 +486,22 @@ class RAMControl:
         """
         missed = 0
         for _ in range(pulses):
-            t = RAMControl.getSystemTimeInMillis()
+            t = RAMControl.get_system_time_in_millis()
             eeg.timedPulse(10, pulsePrefix='SYNC_',
-                           callback=self.sendSyncMessageToControlPC)
-            delta = interval - (RAMControl.getSystemTimeInMillis() - t)
+                           callback=self.send_sync_message_to_control_pc)
+            delta = interval - (RAMControl.get_system_time_in_millis() - t)
             if delta > 0:
                 sleep(
                     delta / 1000.0)  # TODO: Replace by self.clock.delay so pollEvent is called
             else:
-                missed = missed + 1
+                missed += 1
         if self.experimentCallback:
             self.experimentCallback(
                 True)  # True indicates that sync operation is complete
         return missed
 
-    def timeSync(self, eeg, clock, syncCount, syncInterval,
-                 experimentCallback=None):
+    def time_sync(self, eeg, clock, syncCount, syncInterval,
+                  experimentCallback=None):
         """
         THIS METHOD IS ONLY USED FOR DETERMINING LATENCY.  IT IS NOT CALLED IN THE PRODUCTION SYSTEM
         Create a sequence of sync pulses
@@ -520,16 +511,17 @@ class RAMControl:
         self.experimentCallback = experimentCallback
         sleep(2)  # Give Control PC time to get ready
         if self.config['syncMeasure']:
-            self.measureSync(syncCount, syncInterval, eeg, clock)
+            self.measure_sync(syncCount, syncInterval, eeg, clock)
         for _ in range(
                         600 * 15):  # Already connected.  Allow some time to sync, then give up TODO: 15 mins
-            self.pollForMessage()
+            self.poll_for_message()
             sleep(0.1)
             if self.isSynced:
                 break
         return self.isSynced
 
-    def bonjourCallback(self, sdRef, flags, errorCode, name, regtype, domain):
+    @staticmethod
+    def bonjour_callback(sdRef, flags, errorCode, name, regtype, domain):
         """
         Bonjour reports it's status via this callback
         """
@@ -539,7 +531,7 @@ class RAMControl:
             print '  regtype =', regtype
             print '  domain  =', domain
 
-    def startBonjour(self, host, port):
+    def start_bonjour(self, host, port):
         """
         Start the Bonjour service indicating that this is a 'RAMTaskComputer' accepting TCP/IP connections on the
         specified port.
@@ -552,7 +544,7 @@ class RAMControl:
                                                   port=port,
                                                   txtRecord=pybonjour.TXTRecord(
                                                       {'macaddress': host}),
-                                                  callBack=self.bonjourCallback)
+                                                  callBack=self.bonjour_callback)
         try:
             ready = select.select([self.sdRef], [], [])
             if self.sdRef in ready[0]:
@@ -560,7 +552,7 @@ class RAMControl:
         except:
             print "Cannot register Bonjour service"
 
-    def stopBonjour(self):
+    def stop_bonjour(self):
         """
         Stop advertising that the RAMTaskComputer service is available
         """
@@ -591,7 +583,7 @@ class switch(object):
             return False
 
 
-class RAMCallbacks:
+class RAMCallbacks(object):
     PRINT_STATUSES = True
 
     def __init__(self, config, clock, video):
@@ -607,8 +599,8 @@ class RAMCallbacks:
         if is_connected:
             if self.PRINT_STATUSES:
                 print 'Connected to Control PC'
-            RAMControl.getInstance().sendEvent(
-                RAMControl.getSystemTimeInMillis(), 'DEFINE',
+            RAMControl.get_instance().send_event(
+                RAMControl.get_system_time_in_millis(), 'DEFINE',
                 self.config.sys2['state_list'])
         else:
             flashStimulus(
@@ -643,8 +635,8 @@ class RAMCallbacks:
         self.video.updateScreen(self.clock)
         self.clock.delay(5000)
         self.clock.wait()
-        control = RAMControl.getInstance()
-        control.stopHeartbeatPoll()
+        control = RAMControl.get_instance()
+        control.stop_heartbeat_poll()
         control.disconnect()
         sys.exit(0)
 

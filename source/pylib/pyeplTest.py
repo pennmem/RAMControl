@@ -96,13 +96,13 @@ def connect_to_control_pc(exp, video, config, callbacks):
     if not config['control_pc']:
         return
     clock = PresentationClock()
-    control = RAMControl.getInstance()
+    control = RAMControl.get_instance()
     video.clear('black')
-    if control.readyControlPC(clock,
-                              callbacks,
-                              config,
-                              exp.getOptions().get('subject'),
-                              0):
+    if control.ready_control_pc(clock,
+                                callbacks,
+                                config,
+                                exp.getOptions().get('subject'),
+                                0):
         waitForAnyKey(clock,
                       Text('Cannot sync to control PC'))
         exit(1)
