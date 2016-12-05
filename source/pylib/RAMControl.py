@@ -5,6 +5,7 @@ import re
 import select
 import json
 from time import time, sleep
+import logging
 try:
     from queue import Queue
 except ImportError:
@@ -13,6 +14,8 @@ except ImportError:
 from Network import Network
 from pyepl.hardware import addPollCallback, removePollCallback
 from pyepl.locals import *
+
+logger = logging.getLogger(__name__)
 
 
 class RAMControl(object):
@@ -175,61 +178,50 @@ class RAMControl(object):
 
         # The network buffer can contain multiple messages, so crack each one
         # apart, and process each separately
-        print 'msg=', msg
+        logger.info('msg=%s', msg)
         split_msgs = self.split_messages(msg)
-        print 'split_msgs=', split_msgs
-        # for message in self.splitMessages(msg):
+
         for message in split_msgs:
             json_message = json.loads(message)
             # json_message = str(json_message)
-            print 'json_message=', json_message
-            print 'JSON MSG TYPE = ', json_message['type']
+            logger.info('JSON MSG TYPE = %s', json_message['type'])
 
             if 'type' not in json_message:
-                print 'JSON received without "TYPE"'
+                logger.error('JSON received without "TYPE"')
                 continue
 
-            for case in switch(json_message['type']):
-                print 'case=', case
-                if case('ID'):
-                    break
-                if case('SYNC'):
-                    # Sync received from Control PC.
-                    # Echo SYNC back to Control PC with high precision time so
-                    # that clocks can be aligned.
-                    if 'num' in json_message.keys():
-                        # orig
-                        # self.sendEvent(RAMControl.getSystemTimeInMillis(), 'SYNC', RAMControl.getSystemTimeInMicros())
-                        self.send_event(RAMControl.get_system_time_in_millis(),
-                                       'SYNC',
-                                        RAMControl.get_system_time_in_micros(),
-                                        aux_data=json_message['num'])
-                    else:
-                        self.send_event(RAMControl.get_system_time_in_millis(),
-                                       'SYNC',
-                                        RAMControl.get_system_time_in_micros())
-                    break
-                if case('SYNCED'):
-                    # Control PC is done clock alignment
-                    self.isSynced = True
-                    break
-                if case('EXIT'):
-                    # Control PC is exiting.  If heartbeat is active, this is a premature abort.
-                    print "Control PC exit"
-                    self.disconnect()
-                    if self.isHeartbeat and self.abortCallback:
-                        self.disconnect()
-                        self.abortCallback()
-                if case('MESSAGE'):
-                    # Control PC has started receiving messages
-                    # print(json_message)
-                    if json_message['data'] == 'STARTED':
-                        self.ramControlStarted = True
-                    break
+            mtype = json_message["type"]
 
-                if case():
-                    print 'Invalid ID returned from Control PC'
-                    break
+            if mtype == "ID":
+                pass
+            elif mtype == "SYNC":
+                # Sync received from Control PC.
+                # Echo SYNC back to Control PC with high precision time so
+                # that clocks can be aligned.
+                if 'num' in json_message.keys():
+                    self.send_event(RAMControl.get_system_time_in_millis(),
+                                    'SYNC',
+                                    RAMControl.get_system_time_in_micros(),
+                                    aux_data=json_message['num'])
+                else:
+                    self.send_event(RAMControl.get_system_time_in_millis(),
+                                    'SYNC',
+                                    RAMControl.get_system_time_in_micros())
+            elif mtype == "SYNCED":
+                self.isSynced = True
+            elif mtype == "EXIT":
+                logger.info("Control PC exit")
+                self.disconnect()
+                if self.isHeartbeat and self.abortCallback:
+                    self.disconnect()
+                    self.abortCallback()
+            elif mtype == "MESSAGE":
+                # Control PC has started receiving messages
+                # print(json_message)
+                if json_message['data'] == 'STARTED':
+                    self.ramControlStarted = True
+            else:
+                logger.error("Invalid message type: %s", mtype)
 
     def poll_for_message(self):
         """ Poll and process each message """
@@ -557,30 +549,6 @@ class RAMControl(object):
         Stop advertising that the RAMTaskComputer service is available
         """
         self.sdRef.close()
-
-
-# This class provides the functionality we want. You only need to look at
-# this if you want to know how this works. It only needs to be defined
-# once, no need to muck around with its internals.
-class switch(object):
-    def __init__(self, value):
-        self.value = value
-        self.fall = False
-
-    def __iter__(self):
-        """Return the match method once, then stop"""
-        yield self.match
-        raise StopIteration
-
-    def match(self, *args):
-        """Indicate whether or not to enter a case suite"""
-        if self.fall or not args:
-            return True
-        elif self.value in args:  # changed for v1.5, see below
-            self.fall = True
-            return True
-        else:
-            return False
 
 
 class RAMCallbacks(object):
