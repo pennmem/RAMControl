@@ -1,13 +1,17 @@
 """
 Interfaces to the Control PC
 """
-from Network import Network
 import re
-from Queue import Queue
-from time import time, sleep
-from pyepl.hardware import addPollCallback, removePollCallback
 import select
 import json
+from time import time, sleep
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
+
+from Network import Network
+from pyepl.hardware import addPollCallback, removePollCallback
 from pyepl.locals import *
 
 
@@ -151,14 +155,6 @@ class RAMControl:
             else:
                 return -2
 
-    # def receiveMessage(self, message):
-    #     """
-    #     A callback that receives messages from the Control PC. Since this method is inside the poll callback, put
-    #     the message in a queue for further processing by the experiment.
-    #     """
-    #     self.queue.put(message, False) # False indicates to throw an exception if the queue is full
-    #     #print message # TODO: Remove this
-
     def receiveMessage(self, message):
         """
         A callback that receives messages from the Control PC. Since this method is inside the poll callback, put
@@ -252,20 +248,10 @@ class RAMControl:
         """ Poll and process each message """
         self.processMessage(self.getMessage())
 
-    # def sendMessage(self, message):
-    #     """
-    #     This blocks until the message is sent.  Returns the total number of characters sent to control PC
-    #     """
-    #     #print 'sending', message
-    #     return self.network.send(message)
-
     def sendMessage(self, message):
         """
         This blocks until the message is sent.  Returns the total number of characters sent to control PC
         """
-        # print 'sending', message
-        import time
-        # time.sleep(0.1)
         self.network.send(str(12).zfill(
             4))  # in the future this could be used to transmit command id
         self.network.send(str(len(message)).zfill(4))  # length of the message
@@ -582,46 +568,6 @@ class RAMControl:
         Stop advertising that the RAMTaskComputer service is available
         """
         self.sdRef.close()
-
-    def sendStimParameters(self, amplitude=None, pulseFrequency=None,
-                           nPulses=None, burstFrequency=None, nBursts=None,
-                           pulseDuration=None):
-        """
-        Wrapper function to send SETSTIMPARAM and MAKESTIMSEQUENCE messages to the control PC
-        (Only used for open-loop tasks)
-        """
-        if amplitude != None:
-            self.sendEvent(this.getSystemTimeInMillis(), 'SETSTIMPARAM',
-                           'AMPLITUDE', amplitude)
-
-        if pulseFrequency != None:
-            self.sendEvent(this.getSystemTimeInMillis(), 'SETSTIMPARAM',
-                           'PULSEFREQUENCY', pulseFrequency)
-
-        if nPulses != None:
-            self.sendEvent(this.getSystemTimeInMillis(), 'SETSTIMPARAM',
-                           'NPULSES', nPulses)
-
-        if burstFrequency != None:
-            self.sendEvent(this.getSystemTimeInMillis(), 'SETSTIMPARAM',
-                           'BURSTFREQUENCY', burstFrequency)
-
-        if nBursts != None:
-            self.sendEvent(this.getSystemTimeInMillis(), 'SETSTIMPARAM',
-                           'NBURSTS', nBursts)
-
-        if pulseDuration != None:
-            self.sendEvent(this.getSystemTimeInMillis(), 'SETSTIMPARAM',
-                           'PULSEDURATION', pulseDuration)
-
-        return self.sendEvent(this.getSystemTimeInMillis(), 'MAKESTIMSEQUENCE')
-
-    def triggerStimulation(self):
-        """
-        Wrapper function to send TRIGGERSTIM event to the control PC
-        (Only used for open-loop tasks)
-        """
-        return self.sendEvent(this.getSystemTimeInMillis(), 'TRIGGERSTIM')
 
 
 # This class provides the functionality we want. You only need to look at
