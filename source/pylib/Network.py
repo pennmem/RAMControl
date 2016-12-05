@@ -6,12 +6,14 @@ from time import sleep
 from threading import Thread
 import ctypes
 
+
 def exception_msg(msg, err):
     """ Extract message from an exception """
     if len(err.args) == 1:
         return msg + ' : ' + err[0]
     else:
         return msg + ': Error: ' + str(err[0]) + ': ' + err[1]
+
 
 class Network:
 
@@ -27,7 +29,7 @@ class Network:
         self.port = 0                       # Will eventually be replace by DEFAULT_PORT or some other valid port
         self.sk = None                      # Name the variable that saves the socket information something different
                                             # from the module 'socket'
-        self.connection = None;             # Returned from 'accept'.  Probably could be local
+        self.connection = None              # Returned from 'accept'.  Probably could be local
         self.address = None                 # Returned from 'accept'.  Probably could be local
         self.waitForConnectionThread = None # Connection thread handle
         self.waitForDataThread = None       # Indicates wait for data is active
@@ -50,75 +52,37 @@ class Network:
         """ Return True if thread is ready and waiting for data """
         return self._isWaitingForData
 
-    def getDefaultHost(self, host):
-        """ Convenience method to get the default host """
-        return host if host != None else Network.DEFAULT_HOST;
-
-    def getDefaultPort(self, port):
-        """ Convenience method to get the default host """
-        return port if port != 0 else Network.DEFAULT_PORT;
-
     def getAlternateInterfaces(self):
         """
         Return a list of interfaces that are supported on this computer.
         """
         return socket.getaddrinfo(socket.gethostname(), Network.DEFAULT_PORT, socket.AF_INET, socket.SOCK_STREAM)
 
-    def open(self, host = None, port = 0):
+    def open(self, host=None, port=0):
         """
         Open a connection to the indicated host at the specified port.
         Return Success(0), or Error(non-zero)
         """
-        self.toHost = self.getDefaultHost(host)
-        self.port = self.getDefaultPort(port)
+        self.toHost = host or self.DEFAULT_HOST
+        self.port = port or self.DEFAULT_PORT
 
-        # Create a stream socket
-        self.sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        # self.sk = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.sk = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.log('Socket created for %s:%d' % (self.toHost, self.port))
 
         # Bind socket to the specified host and port
         try:
-            self.sk.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            # self.sk.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             self.sk.bind((self.toHost, self.port))
         except socket.error as err:
-            self.log(exception_msg('Bind failed', err));
+            self.log(exception_msg('Bind failed', err))
             return -1
 
         self.log('Socket bind complete %s:%d' % (self.toHost, self.port))
         return 0
 
-    def old_listen(self):
-        """
-        Wait to accept a connection.  Since this is blocking, this method is normally called from a thread.
-        Returns success (0) or error (non-zero)
-        """
-        if self._isConnected or self._isListening:
-            return -1 # Should not be calling if already open or waiting for connection
-        self._isConnected = False;
-        self.sk.eisten(1); # Accept a single connection only
-        self.log("Socket is listening")
-        try:
-            self._isListening = True
-            self.connection, self.address = self.sk.accept()
-            self.sk.setblocking(0) # Set to non-blocking
-            self.connection.setblocking(0)
-        except socket.error as err:
-            self._isListening = False
-            self.log(exception_msg('Socket exception accepting connection', err))
-            return -2
-        except Exception as err:
-            self._isListening = False
-            self.log(exception_msg('General exception accepting connection', err))
-            return -3
-        self.log('Connected from ' + self.address[0] + ' to ' + self.toHost + ':' + str(self.address[1]))
-        self.fromHost = self.address[0]
-        self._isConnected = True
-        self._isListening = False
-        return 0
-
     class timeval(ctypes.Structure):
         _fields_ = [("tv_sec", ctypes.c_long), ("tv_usec", ctypes.c_long)]
-
 
     def listen(self):
         """
@@ -128,17 +92,17 @@ class Network:
         if self._isConnected or self._isListening:
             return -1 # Should not be calling if already open or waiting for connection
         self._isConnected = False
-        self.sk.setsockopt(socket.SOL_SOCKET, socket.TCP_NODELAY, 1)
-        self.sk.listen(1); # Accept a single connection only
+        # self.sk.setsockopt(socket.SOL_SOCKET, socket.TCP_NODELAY, 1)
+        # self.sk.listen(1)  # Accept a single connection only
         self.log("Socket is listening")
+
         try:
             self._isListening = True
-
-            self.sk.setblocking(True) # Set to blocking
+            self.sk.setblocking(True)
 
             self.connection, self.address = self.sk.accept()
             self.connection.setsockopt(socket.SOL_SOCKET, socket.SO_RCVTIMEO, self.timeval(0, 1000))
-            self.connection.setsockopt(socket.SOL_SOCKET, socket.TCP_NODELAY, 1)
+            # self.connection.setsockopt(socket.SOL_SOCKET, socket.TCP_NODELAY, 1)
             self.connection.setblocking(True)
         except socket.error as err:
             self._isListening = False
@@ -148,6 +112,7 @@ class Network:
             self._isListening = False
             self.log(exception_msg('General exception accepting connection', err))
             return -3
+
         self.log('Connected from ' + self.address[0] + ' to ' + self.toHost + ':' + str(self.address[1]))
         self.fromHost = self.address[0]
         self._isConnected = True
@@ -190,7 +155,6 @@ class Network:
             self.log("Connection made to : %s:%d" % (self.toHost, self.port))
         return rtc
 
-
     def poll(self):
         """
         Poll for data and call receiveDataCallback when this occurs.
@@ -198,7 +162,7 @@ class Network:
         Returns: No data (0), data received (1), error (negative)
         """
         try:
-            if self._isConnected: # Indicates this is a server-side receive
+            if self._isConnected:  # Indicates this is a server-side receive
                 data = self.connection.recv(Network.RECV_BUFFER)
             else:
                 data = self.sk.recv(Network.RECV_BUFFER)
@@ -208,7 +172,7 @@ class Network:
                     self.receiveDataCallback(data)
                 return 1
         except socket.error as err:
-            if err[0] != 35: # OK - No data for non-blocking recv()
+            if err[0] != 35:  # OK - No data for non-blocking recv()
                 self.log(exception_msg('Socket exception transferring data', err))
                 return -1
         except Exception as err:
@@ -221,13 +185,13 @@ class Network:
         Receive data and call the indicated callback when this occurs
         This is a thread function that should be terminated by setting 'isWaitingForData' to False
         """
-        self.isWaitingForData = True;  # This can be set externally to gracefully terminate the thread
+        self.isWaitingForData = True  # This can be set externally to gracefully terminate the thread
         while self.isWaitingForData:
             rtc = self.poll()
             if 0 == rtc:
                 sleep(.001) # This should be OK, since we are on a thread and very little (or no) data is received by this computer
             elif rtc < 0:
-                break; # on error break out of loop
+                break # on error break out of loop
             # Otherwise, we received and processed a message. Stay in loop
 
     def old_send(self, message):
@@ -246,7 +210,7 @@ class Network:
                     sent = self.sk.send(message)
                 self.log('Sent ' + str(sent) + ' bytes')
             except socket.error as err:
-                sent = 0;
+                sent = 0
                 if err[0] != 32: # Broken pipe
                     self.log(exception_msg('Socket exception sending data', err))
             except Exception as err:
@@ -348,7 +312,7 @@ class Network:
         """
         if self.waitForDataThread != None and self.waitForDataThread.isAlive():
             self.isWaitingForData = False
-            self.waitForDataThread.join(10); # If thread doesn't quit in a reasonable time, bail out
+            self.waitForDataThread.join(10)  # If thread doesn't quit in a reasonable time, bail out
 
     def registerMessageCallback(self, callback):
         """
@@ -367,4 +331,4 @@ class Network:
 
     def log(self, msg):
         """ Common point for messages.  Comment out below code to display them or ignore them """
-        # print msg;
+        # print msg

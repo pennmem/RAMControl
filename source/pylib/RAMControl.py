@@ -7,7 +7,6 @@ from Queue import Queue
 from time import time, sleep
 from pyepl.hardware import addPollCallback, removePollCallback
 import select
-#import pybonjour
 import json
 from pyepl.locals import *
 
@@ -53,7 +52,7 @@ class RAMControl:
         """
         Convenience method to return the system time.
         """
-        return time() * 1000000;
+        return time() * 1000000
 
     getSystemTimeInMicros = classmethod(getSystemTimeInMicros)
 
@@ -221,7 +220,7 @@ class RAMControl:
                     break
                 if case('SYNCED'):
                     # Control PC is done clock alignment
-                    self.isSynced = True;
+                    self.isSynced = True
                     break
                 if case('EXIT'):
                     # Control PC is exiting.  If heartbeat is active, this is a premature abort.
@@ -343,13 +342,13 @@ class RAMControl:
             if ramControlStarted < 0:
                 return -3
             return 0
-        return -2;
+        return -2
 
     def decodeMessage(self, message):
         """
         Decode a message and return tuple of its parts.
         """
-        separators = '\\' + RAMControl.MSG_START + '|\\' + RAMControl.MSG_SEPARATOR + '|\\' + RAMControl.MSG_END;
+        separators = '\\' + RAMControl.MSG_START + '|\\' + RAMControl.MSG_SEPARATOR + '|\\' + RAMControl.MSG_END
         token = re.split(separators, message)
         n = len(token)
         if (n < 4 or n > 6) or (message[0] != RAMControl.MSG_START or message[-1] != RAMControl.MSG_END):
@@ -392,7 +391,7 @@ class RAMControl:
         else: # First time
             self.isHeartbeat = True
             self.firstBeat = self.lastBeat = RAMControl.getSystemTimeInMillis()
-            self.nextBeat = intervalMillis;
+            self.nextBeat = intervalMillis
             self.sendEvent(self.lastBeat, 'HEARTBEAT', str(intervalMillis))
             # ##print "Glub:" + str(self.lastBeat)
 
@@ -411,7 +410,7 @@ class RAMControl:
         """
         if self.isHeartbeat:
             removePollCallback(self.sendHeartbeatPolled)
-            self.isHeartbeat = False;
+            self.isHeartbeat = False
             self.abortCallback = None
 
     def networkPoll(self):
@@ -510,7 +509,7 @@ class RAMControl:
         for _ in range(pulses):
             t = RAMControl.getSystemTimeInMillis()
             eeg.timedPulse(10, pulsePrefix = 'SYNC_', callback = self.sendSyncMessageToControlPC)
-            delta = interval - (RAMControl.getSystemTimeInMillis() - t);
+            delta = interval - (RAMControl.getSystemTimeInMillis() - t)
             if delta > 0:
                 sleep(delta / 1000.0)  # TODO: Replace by self.clock.delay so pollEvent is called
             else:
@@ -531,7 +530,7 @@ class RAMControl:
         if self.config['syncMeasure']:
             self.measureSync(syncCount, syncInterval, eeg, clock)
         for _ in range(600 * 15):  # Already connected.  Allow some time to sync, then give up TODO: 15 mins
-            self.pollForMessage();
+            self.pollForMessage()
             sleep(0.1)
             if self.isSynced:
                 break
@@ -571,7 +570,7 @@ class RAMControl:
         """
         Stop advertising that the RAMTaskComputer service is available
         """
-        self.sdRef.close();
+        self.sdRef.close()
 
     def sendStimParameters(self, amplitude=None, pulseFrequency=None, nPulses=None, burstFrequency=None, nBursts=None, pulseDuration=None):
         """
