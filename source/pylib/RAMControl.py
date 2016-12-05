@@ -2,7 +2,6 @@
 Interfaces to the Control PC
 """
 import re
-import select
 import json
 from time import time, sleep
 import logging
@@ -36,9 +35,9 @@ class RAMControl(object):
         self.nextBeat = 0  # Time in the future of next heartbeat
         self.lastBeat = 0  # Time in the past that the last heartbeat occurred
         self.queue = Queue(maxsize=RAMControl.QUEUE_SIZE)  # Use a queue for messages
-        self.experimentCallback = None  # Callback into the experiment
+        self.experiment_callback = None  # Callback into the experiment
         self.abortCallback = None  # Callback into experiment if Control PC dies
-        self.isSynced = False  # Indicates that clock syncronization to Control PC has not occurred
+        self.is_synced = False  # Indicates that clock syncronization to Control PC has not occurred
         self.ramControlStarted = False  # Indicates that "Start" has not yet been hit on Control PC
         self.config = None  # Use the experiment's config file for RAMControl configuration
         self.clock = None  # Experiment clock
@@ -53,7 +52,7 @@ class RAMControl(object):
     @staticmethod
     def get_system_time_in_micros():
         """Convenience method to return the system time."""
-        return time() * 1000000
+        return time() * 1000000.0
 
     @staticmethod
     def get_system_time_in_millis():
@@ -69,11 +68,12 @@ class RAMControl(object):
         # (These should all be in the RAMControl section)
         self.config = config
 
-        # Create a connection and set it to listen for a client to connect.  The 'alternate' host and port below
-        # are active during testing when the connection is from and to a single host.
+        # Create a connection and set it to listen for a client to connect.
+        # The 'alternate' host and port below are active during testing when the
+        # connection is from and to a single host.
         rtc = self.network.open(host, port)
         if rtc != 0:
-            isAlternate = False
+            is_alternate = False
             if not config['is_hardwire']:
                 alternates = self.network.getAlternateInterfaces()
                 for interface in alternates:
@@ -81,9 +81,9 @@ class RAMControl(object):
                     alternatePort = interface[4][1]
                     rtc = self.network.open(alternateHost, alternatePort)
                     if rtc == 0:
-                        isAlternate = True
+                        is_alternate = True
                         break
-            if not isAlternate:
+            if not is_alternate:
                 return -1
 
         # Setup a thread to wait for the connection.
@@ -203,7 +203,7 @@ class RAMControl(object):
                                     'SYNC',
                                     RAMControl.get_system_time_in_micros())
             elif mtype == "SYNCED":
-                self.isSynced = True
+                self.is_synced = True
             elif mtype == "EXIT":
                 logger.info("Control PC exit")
                 self.disconnect()
@@ -271,18 +271,24 @@ class RAMControl(object):
         return json.dumps(message)
 
     def ready_control_pc(self, clock, callbacks, config, subject, sessionNum):
-        """
-        Setup the connection to the Control PC and do various housekeeping tasks.
+        """Setup the connection to the Control PC and do various housekeeping
+        tasks:
+
         - Send name of this experiment
         - Send subject id
         - Send version number
         - Send session information
-        - Ready two polling tasks, to read messages from the network, and to process events based on those messages
-        - Do a sequence of SYNC and SYNCED messages so that the Control PC knows the offset in time between the
-          system clock on this computer, and the system clock on the Control PC.
-        - Start generating heartbeat messages so that the Control PC knows if we die or are interrupted.
+        - Ready two polling tasks, to read messages from the network, and to
+          process events based on those messages
+        - Do a sequence of SYNC and SYNCED messages so that the Control PC knows
+          the offset in time between the system clock on this computer, and the
+          system clock on the Control PC.
+        - Start generating heartbeat messages so that the Control PC knows if we
+          die or are interrupted.
         - Wait to return until "START" is pressed on the control PC
+
         Return 0 (Success), <0 (Various Errors)
+
         """
         self.initialize(config)
         self.clock = clock
@@ -303,9 +309,9 @@ class RAMControl(object):
                 return -1
             self.start_heartbeat_poll(callbacks.abort_callback,
                                       config['heartbeat'])
-            ramControlStarted = self.wait_for_ram_control_started(
+            ram_control_started = self.wait_for_ram_control_started(
                 callbacks.wait_for_start_callback)
-            if ramControlStarted < 0:
+            if ram_control_started < 0:
                 return -3
             return 0
         return -2
@@ -422,13 +428,13 @@ class RAMControl(object):
         it has completed the clock alignment and it is safe for task computer to proceed
         to the next step.
         """
-        self.isSynced = False
+        self.is_synced = False
         self.send_event(RAMControl.get_system_time_in_millis(), 'ALIGNCLOCK')
         print "Requesting ALIGNCLOCK"
         for i in range(120):  # 60 seconds (normally takes < 6 seconds)
             if callback:
-                callback(self.isSynced, i)
-            if self.isSynced:
+                callback(self.is_synced, i)
+            if self.is_synced:
                 print 'Sync Complete'
                 break
             else:
@@ -438,74 +444,7 @@ class RAMControl(object):
                     clock.wait()
                 else:
                     sleep(0.5)
-        return 0 if self.isSynced else -1
-
-    def sync_callback(self, millis):
-        """
-        THIS METHOD IS ONLY USED FOR DETERMINING LATENCY.  IT IS NOT CALLED IN THE PRODUCTION SYSTEM
-        This method gets called immediately after a sync pulse has been sent.  Logic below simultaneously
-        sends a SYNC message to the Control PC, thus enabling the Control PC to align clocks.  This continues
-        until a message is received from the Control PC which asynchronously sets 'isSynced', which is sent
-        back via a callback to the experiment.
-        """
-        self.send_event(RAMControl.get_system_time_in_millis(), 'SYNC')
-        if self.experimentCallback:
-            self.experimentCallback(self.isSynced)
-
-    def send_sync_message_to_control_pc(self):
-        """
-        THIS METHOD IS ONLY USED FOR DETERMINING LATENCY.  IT IS NOT CALLED IN THE PRODUCTION SYSTEM
-        Do not do anything below that will take more than the inter-sync message interval config.syncInterval,
-        including displaying messages on the screen unless the config.syncInterval is at least one second.
-        For example, flashStimulus() will use about 800 ms, so do not call this function in the exerperimentCallback()
-        unless config.syncInterval >= 1000.
-        """
-        if self.experimentCallback:
-            self.experimentCallback(
-                False)  # False indicates that sync operation is not yet complete
-        self.send_event(RAMControl.get_system_time_in_millis(), 'SYNC')
-
-    def measure_sync(self, pulses, interval, eeg, clock):
-        """
-        THIS METHOD IS ONLY USED FOR DETERMINING LATENCY.  IT IS NOT CALLED IN THE PRODUCTION SYSTEM
-        Code used to measure latency between control PC receipt of syncbox pulses and 'SYNC' events sent
-        via the internet.  This method is not called in a production setting.
-        """
-        missed = 0
-        for _ in range(pulses):
-            t = RAMControl.get_system_time_in_millis()
-            eeg.timedPulse(10, pulsePrefix='SYNC_',
-                           callback=self.send_sync_message_to_control_pc)
-            delta = interval - (RAMControl.get_system_time_in_millis() - t)
-            if delta > 0:
-                sleep(
-                    delta / 1000.0)  # TODO: Replace by self.clock.delay so pollEvent is called
-            else:
-                missed += 1
-        if self.experimentCallback:
-            self.experimentCallback(
-                True)  # True indicates that sync operation is complete
-        return missed
-
-    def time_sync(self, eeg, clock, syncCount, syncInterval,
-                  experimentCallback=None):
-        """
-        THIS METHOD IS ONLY USED FOR DETERMINING LATENCY.  IT IS NOT CALLED IN THE PRODUCTION SYSTEM
-        Create a sequence of sync pulses
-        """
-        self.isSynced = False
-        self.clock = clock
-        self.experimentCallback = experimentCallback
-        sleep(2)  # Give Control PC time to get ready
-        if self.config['syncMeasure']:
-            self.measure_sync(syncCount, syncInterval, eeg, clock)
-        for _ in range(
-                        600 * 15):  # Already connected.  Allow some time to sync, then give up TODO: 15 mins
-            self.poll_for_message()
-            sleep(0.1)
-            if self.isSynced:
-                break
-        return self.isSynced
+        return 0 if self.is_synced else -1
 
 
 class RAMCallbacks(object):
