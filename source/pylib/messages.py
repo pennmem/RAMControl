@@ -37,6 +37,12 @@ class RAMMessage(object):
         return time.time() * 1000
 
 
+class ConnectedMessage(RAMMessage):
+    """Message indicating that a new socket connection has been established."""
+    def __init__(self):
+        super(ConnectedMessage, self).__init__("CONNECTED")
+
+
 class HeartbeatMessage(RAMMessage):
     """Heartbeat message to check on both ends if the network connection is
     still alive.
@@ -91,22 +97,25 @@ class DefineMessage(RAMMessage):
     def __init__(self, states, timestamp=None):
         super(DefineMessage, self).__init__("DEFINE", timestamp=timestamp, data=states)
 
+
 class ExitMessage(RAMMessage):
     """Sends an EXIT message."""
     def __init__(self, timestamp=None):
         super(ExitMessage, self).__init__("EXIT", timestamp=timestamp)
 
-class StateMessage(RAMMessage):
 
+class StateMessage(RAMMessage):
     def __init__(self, state, value, timestamp=None):
         super(StateMessage, self).__init__("STATE", data=dict(name=state, value=value))
 
-class TrialMessage(RAMMessage):
 
+class TrialMessage(RAMMessage):
     def __init__(self, trial, timestamp=None):
         super(TrialMessage, self).__init__("TRIAL", data=dict(trial=trial))
 
+
 _message_types = dict(
+    CONNECTED=ConnectedMessage,
     HEARTBEAT=HeartbeatMessage,
     EXPNAME=ExperimentNameMessage,
     VERSION_NUM=VersionMessage,
@@ -119,6 +128,7 @@ _message_types = dict(
     STATE=StateMessage,
     TRIAL=TrialMessage
 )
+
 
 def get_message_type(type):
     if type in _message_types:
