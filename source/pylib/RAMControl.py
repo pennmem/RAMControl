@@ -1,7 +1,8 @@
 """
 Interfaces to the Control PC
 """
-from threading import Thread, Semaphore, Event
+
+from threading import Thread, Event
 from collections import defaultdict
 import logging
 
@@ -28,6 +29,7 @@ def default_connecting_callback():
 
 def default_success_callback():
     flashStimulus(Text("Connection established"), 800)
+
 
 def default_failure_callback():
     flashStimulus(Text("Connection failed"), 800)
@@ -194,7 +196,6 @@ class _RAMControl(object):
             if callback:
                 callback()
 
-
     def send(self, message):
         """
         This blocks until the message is sent.  Returns the total number of characters sent to control PC
@@ -203,8 +204,6 @@ class _RAMControl(object):
             logger.error("Cannot send non-RamMessage! Returning!")
             return
         self.socket.send(message)
-
-        # return self.network.send(message)
 
     @staticmethod
     def build_message(msg_type, timestamp=None, *args, **kwargs):
@@ -272,48 +271,36 @@ class _RAMControl(object):
         self._stop_heartbeat()
         self._stop_receive()
 
-    def initiate_connection(self,
-                            attempt_callback=default_attempt_callback,
-                            connecting_callback=default_connecting_callback,
-                            success_callback=default_success_callback,
-                            failure_callback=default_failure_callback,
-                            poll_interval=1):
+    def initiate_connection(self, poll_interval=1):
         connection_thread = Thread(target=self._connect_to_host)
         connection_thread.start()
+
         while not self.network_connected and not self._connection_failed:
-            attempt_callback()
+            logger.info("Attempting connection...")
             time.sleep(poll_interval)
+
         if self._connection_failed:
-            failure_callback()
+            logger.error("Connection failed.")
             return False
+
         while not self._heart_beating and not self._connection_failed:
-            connecting_callback()
+            logger.info("Connecting...")
             time.sleep(poll_interval)
+
         connection_thread.join()
+
         if not self._connection_failed:
-            success_callback()
+            logger.info("Connection succeeded.")
         else:
-            failure_callback()
+            logger.error("Connection failed.")
         return not self._connection_failed
 
 ram_control = _RAMControl()
 
-if __name__ == '__main__':
 
+if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
 
-    def attempt():
-        print "attempting..."
-
-    def connecting():
-        print "connecting..."
-
-    def success():
-        print "succeeding..."
-
-    def failure():
-        print "Failed"
-
-    ram_control.configure("",1,1,"","me",[])
-    ram_control.initiate_connection(attempt, connecting, success, failure)
+    ram_control.configure("", 1, 1, "", "me", [])
+    ram_control.initiate_connection()
     ram_control.join()
