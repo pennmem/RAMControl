@@ -61,7 +61,7 @@ class ExperimentNameMessage(RAMMessage):
 class VersionMessage(RAMMessage):
     """Communicates the software version number."""
     def __init__(self, version, timestamp=None):
-        super(VersionMessage, self).__init__("VERSION_NUM", timestamp=timestamp, data=version)
+        super(VersionMessage, self).__init__("VERSION", timestamp=timestamp, data=version)
 
 
 class SessionMessage(RAMMessage):
