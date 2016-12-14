@@ -112,6 +112,15 @@ class RAMControl(object):
         """Build and return a RAMMessage to be sent to control PC."""
         return get_message_type(msg_type)(*args, timestamp=timestamp, **kwargs)
 
+    def register_handler(self, name, func):
+        """Register a message handler.
+
+        :param str name: Message type to handle.
+        :param callable func: Function to call.
+
+        """
+        self.handlers[name] = func
+
     def configure(self, experiment, version, session_num, session_type, subject, states):
         """Set various experiment options so they can be transmitted to the host
         PC.
