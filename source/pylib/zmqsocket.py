@@ -1,13 +1,15 @@
 import logging
+import json
 
 import zmq
 from zmq.eventloop.future import Context, Poller
 from zmq.eventloop.ioloop import ZMQIOLoop
 from tornado import gen
+from tornado.queues import Queue
 from tornado.locks import Event, Condition
 
 from messages import RAMMessage, HeartbeatMessage
-from exc import AlreadyRegisteredError
+from exc import RamException
 
 logger = logging.getLogger(__name__)
 
@@ -18,10 +20,9 @@ class SocketServer(object):
 
     :param zmq.Context ctx: ZMQ context. If None, a new one will be created.
     :param ZMQIOLoop loop: ZMQ event loop. If None, a new one will be created.
-    :param str address: Address and port to bind to.
 
     """
-    def __init__(self, ctx=None, loop=None, address="tcp://*:8889"):
+    def __init__(self, ctx=None, loop=None):
         self.ctx = ctx or Context()
         self._loop = loop or ZMQIOLoop.current()
 
@@ -29,34 +30,40 @@ class SocketServer(object):
         self._running = False
         self._quit = Event()  # signal coroutines to quit
 
-        self._handlers = {
-            "SYNC": lambda msg: self.send(SyncMessage(msg["num"]))
-        }
-
-        self.address = address
+        self._handlers = []
 
         self.sock = self.ctx.socket(zmq.PAIR)
-        self.sock.bind(self.address)
+        self._bound = False
 
-    def register_handler(self, msg_type, func):
-        """Register a message handler.
-
-        :param str msg_type: The message type to handle.
-        :param callable func: Handler function which takes the message as its
-            only argument.
-
-        """
-        if msg_type in self._handlers:
-            raise AlreadyRegisteredError("A handler is already registered for message type '%s'" % msg_type)
-        else:
-            self._handlers[msg_type] = func
-
-    def default_handler(self, msg):
-        logger.error("Message handling uninitialized! Msg {} received!".format(msg))
+        # Outgoing message queue
+        self._out_queue = Queue()
 
     @property
     def connected(self):
         return self._running
+
+    def bind(self, address="tcp://*:8889"):
+        """Bind the socket to start listening for connections.
+
+        :param str address: ZMQ address string
+
+        """
+        self.sock.bind(address)
+        self._bound = True
+
+    def register_handler(self, func):
+        """Register a message handler.
+
+        :param callable func: Handler function which takes the message as its
+            only argument.
+
+        """
+        logger.debug("Adding handler: %s", func.__name__)
+        self._handlers.append(func)
+
+    def enqueue_message(self, msg):
+        """Submit a new outgoing message to the queue."""
+        self._out_queue.put_nowait(msg)
 
     @gen.coroutine
     def send(self, msg):
@@ -66,23 +73,11 @@ class SocketServer(object):
 
         """
         out = msg.jsonize()
-        logger.debug("Sending message: %s", out)
         try:
+            logger.debug("Sending message: %s", out)
             yield self.sock.send(out)
         except Exception as e:
             logger.error("Sending failed: {}", e)
-
-    @gen.coroutine
-    def dispatch(self, msg):
-        """Handle incoming message.
-
-        :param dict msg:
-
-        """
-        if msg["type"] not in self._handlers:
-            self.default_handler(msg)
-        else:
-            self._handlers[msg["type"]](msg)
 
     @gen.coroutine
     def _wait_for_connection(self):
@@ -93,9 +88,12 @@ class SocketServer(object):
         poller = Poller()
         poller.register(self.sock, zmq.POLLIN)
         done = False
+        wait_time = 1
+        elapsed = 0
 
         while not done:
-            events = yield poller.poll(timeout=1000)
+            events = yield poller.poll(timeout=wait_time*1000)
+            elapsed += wait_time
 
             if self.sock in dict(events):
                 msg = yield self.sock.recv_json()
@@ -109,7 +107,7 @@ class SocketServer(object):
                         done = True
                 except KeyError:
                     logger.error("Malformed message!")
-            logger.debug("Awaiting connection...")
+            logger.info("No connection yet (%d s since starting)...", elapsed)
 
     @gen.coroutine
     def _heartbeater(self):
@@ -117,7 +115,7 @@ class SocketServer(object):
         yield self._connected.wait()
 
         while not self._quit.is_set():
-            yield self.send(HeartbeatMessage())
+            yield self.send(HeartbeatMessage(interval=1))
             yield gen.sleep(1)
 
     @gen.coroutine
@@ -142,18 +140,27 @@ class SocketServer(object):
                         logger.error("Unable to decode JSON.\n%s", str(e))
                         continue
 
-                    yield self.dispatch(message)
+                    # TODO: better way to run handlers in the background or as coroutines?
+                    for handler in self._handlers:
+                        handler(message)
+                        yield gen.moment  # allow other coroutines to run before running next handler
+
+    @gen.coroutine
+    def _pop_and_send(self):
+        """Coroutine for sending messages from the queue."""
+        while not self._quit.is_set():
+            msg = yield self._out_queue.get()
+            yield self.send(msg)
 
     @gen.coroutine
     def _coroutine_runner(self):
         """Executes all long-running coroutines."""
-        yield [self._wait_for_connection(), self._heartbeater(), self._listen()]
-
-    def wait_for_connection(self):
-        logger.debug("Waiting to receive initialization json")
-        logger.debug(self.sock.recv_json())  # Blocking
-        logger.debug("Initialization json received")
-        self._connected = True
+        yield [
+            self._wait_for_connection(),
+            self._heartbeater(),
+            self._listen(),
+            self._pop_and_send()
+        ]
 
     def stop(self):
         """Stop the event loop."""
@@ -163,14 +170,16 @@ class SocketServer(object):
 
     def start(self):
         """Starts event loop. Blocks"""
-        self._loop.run_sync(self._coroutine_runner)
+        if not self._bound:
+            raise RamException("You must bind the socket first!")
+        self._loop.run_sync(self._coroutine_runner)  # blocks
+        self.sock.close()
 
 
 if __name__ == "__main__":
-    from messages import *
-
     logging.basicConfig(level=logging.DEBUG)
 
     server = SocketServer()
+    server.bind()
     logger.info("Awaiting connection...")
     server.start()
