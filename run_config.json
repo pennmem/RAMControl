@@ -1,0 +1,39 @@
+{
+  "experiment_dir": "../RAM3_tasks",
+  "resolution": "1440x900",
+  "archive_dir": "./data",
+  "config_file": "config.py",
+  "pythonpath": "./source/ram_pylib",
+  "experiments": {
+    "FR1": {
+      "RAM_exp": "RAM_FR",
+      "exp_py": "FR.py",
+      "sconfig_file": "FR1_config.py"
+    },
+    "FR3":{
+      "RAM_exp": "RAM_FR",
+      "exp_py": "FR.py",
+      "sconfig_file": "FR3_config.py"
+    },
+    "catFR1": {
+      "RAM_exp": "RAM_catFR",
+      "exp_py": "catFR.py",
+      "sconfig_file": "catFR1_config.py"
+    },
+    "catFR3": {
+      "RAM_exp": "RAM_catFR",
+      "exp_py": "catFR.py",
+      "sconfig_file": "catFR3_config.py"
+    },
+    "PAL1": {
+      "RAM_exp": "RAM_PAL",
+      "exp_py": "PAL.py",
+      "sconfig_file": "PAL1_config.py"
+    },
+    "PAL3": {
+      "RAM_exp": "RAM_PAL",
+      "exp_py": "PAL.py",
+      "sconfig_file": "PAL3_config.py"
+    }
+  }
+}

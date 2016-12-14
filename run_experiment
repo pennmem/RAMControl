@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Activate conda environment
+source activate RAM3
+
+# Have to cd to directory of shell script in case run from double-click
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+cd "$DIR"
+
+# Run, passing command line options
+python run.py "$@"
