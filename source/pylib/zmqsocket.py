@@ -48,6 +48,8 @@ class SocketServer(object):
         """
         if msg_type in self._handlers:
             raise AlreadyRegisteredError("A handler is already registered for message type '%s'" % msg_type)
+        else:
+            self._handlers[msg_type] = func
 
     def default_handler(self, msg):
         logger.error("Message handling uninitialized! Msg {} received!".format(msg))
