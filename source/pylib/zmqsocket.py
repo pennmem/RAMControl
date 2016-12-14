@@ -1,15 +1,18 @@
 import logging
-from threading import Thread
+
 import zmq
-import json
+from zmq.eventloop.future import Context, Poller
 from zmq.eventloop.ioloop import ZMQIOLoop
-from zmq.eventloop.zmqstream import ZMQStream
-from messages import RAMMessage
+from tornado import gen
+from tornado.locks import Event, Condition
+
+from messages import RAMMessage, HeartbeatMessage
+from exc import AlreadyRegisteredError
 
 logger = logging.getLogger(__name__)
 
 
-class SocketServer(Thread):
+class SocketServer(object):
     """ZMQ-based socket server for sending and receiving messages from the host
     PC.
 
@@ -19,53 +22,43 @@ class SocketServer(Thread):
 
     """
     def __init__(self, ctx=None, loop=None, address="tcp://*:8889"):
-        self.ctx = ctx or zmq.Context()
-        self._loop = loop or ZMQIOLoop()
-        self._recv_callback = self.default_callback
+        self.ctx = ctx or Context()
+        self._loop = loop or ZMQIOLoop.current()
+
+        self._connected = Condition()  # used to wait before sending heartbeats
+        self._running = False
+        self._quit = Event()  # signal coroutines to quit
+
+        self._handlers = {
+            "SYNC": lambda msg: self.send(SyncMessage(msg["num"]))
+        }
 
         self.address = address
-        self._connected = False
 
         self.sock = self.ctx.socket(zmq.PAIR)
-        # self.sock.setsockopt(zmq.LINGER, 0)  # discard messages that can't be sent
-        self.stream = ZMQStream(self.sock, self._loop)
-        self.stream.on_recv(self.on_recv)
         self.sock.bind(self.address)
 
-        super(SocketServer, self).__init__()
+    def register_handler(self, msg_type, func):
+        """Register a message handler.
 
-    def register_recv_callback(self, callback):
-        self._recv_callback = callback
+        :param str msg_type: The message type to handle.
+        :param callable func: Handler function which takes the message as its
+            only argument.
 
-    def default_callback(self, msg):
+        """
+        if msg_type in self._handlers:
+            raise AlreadyRegisteredError("A handler is already registered for message type '%s'" % msg_type)
+
+    def default_handler(self, msg):
         logger.error("Message handling uninitialized! Msg {} received!".format(msg))
 
     @property
     def connected(self):
-        return self._connected
+        return self._running
 
-    def on_recv(self, multipart):
-        """Callback to handle incoming messages."""
-        for string in multipart:
-            logger.info("Incoming message: %s", string)
-
-            try:
-                msg = json.loads(string.decode())
-                msg_type = msg["type"]
-            except ValueError:
-                logger.error("Unable to decode message. Is it JSON?")
-                continue
-            except KeyError:
-                logger.error("Malformed message: missing 'type' key.")
-                continue
-
-            if msg_type == "SYNC":
-                self.send(SyncMessage(msg["num"]))
-            self._recv_callback(msg)
-            logger.info("executing callback for %s message" % msg_type)
-
+    @gen.coroutine
     def send(self, msg):
-        """Transmit a message to the host PC.
+        """Transmit a message to the host PC. This method is a coroutine.
 
         :param RAMMessage msg: Message to send.
 
@@ -73,9 +66,86 @@ class SocketServer(Thread):
         out = msg.jsonize()
         logger.debug("Sending message: %s", out)
         try:
-            self.stream.send(out, flags=zmq.NOBLOCK)
+            yield self.sock.send(out)
         except Exception as e:
             logger.error("Sending failed: {}", e)
+
+    @gen.coroutine
+    def dispatch(self, msg):
+        """Handle incoming message.
+
+        :param dict msg:
+
+        """
+        if msg["type"] not in self._handlers:
+            self.default_handler(msg)
+        else:
+            self._handlers[msg["type"]](msg)
+
+    @gen.coroutine
+    def _wait_for_connection(self):
+        """Waits for the host PC to connect before allowing the normal message
+        handling to proceed.
+
+        """
+        poller = Poller()
+        poller.register(self.sock, zmq.POLLIN)
+        done = False
+
+        while not done:
+            events = yield poller.poll(timeout=1000)
+
+            if self.sock in dict(events):
+                msg = yield self.sock.recv_json()
+                logger.info("Incoming message: %s", msg)
+                try:
+                    if msg["type"] != "CONNECTED":
+                        logger.error("Invalid message type: %s", msg["type"])
+                    else:
+                        self._connected.notify_all()
+                        self._running = True
+                        done = True
+                except KeyError:
+                    logger.error("Malformed message!")
+            logger.debug("Awaiting connection...")
+
+    @gen.coroutine
+    def _heartbeater(self):
+        """Coroutine for sending heartbeats."""
+        yield self._connected.wait()
+
+        while not self._quit.is_set():
+            yield self.send(HeartbeatMessage())
+            yield gen.sleep(1)
+
+    @gen.coroutine
+    def _listen(self):
+        """Listen for messages on the socket and handle appropriately."""
+        yield self._connected.wait()
+
+        poller = Poller()
+        poller.register(self.sock, zmq.POLLIN)
+
+        while not self._quit.is_set():
+            events = yield poller.poll(timeout=1000)
+
+            if self.sock in dict(events):
+                incoming = yield self.sock.recv_multipart()
+                for msg in incoming:
+                    logger.info("Incoming message: %s", msg)
+
+                    try:
+                        message = json.loads(msg.decode())
+                    except Exception as e:
+                        logger.error("Unable to decode JSON.\n%s", str(e))
+                        continue
+
+                    yield self.dispatch(message)
+
+    @gen.coroutine
+    def _coroutine_runner(self):
+        """Executes all long-running coroutines."""
+        yield [self._wait_for_connection(), self._heartbeater(), self._listen()]
 
     def wait_for_connection(self):
         logger.debug("Waiting to receive initialization json")
@@ -86,12 +156,12 @@ class SocketServer(Thread):
     def stop(self):
         """Stop the event loop."""
         logger.info("Shutting down ZMQ event loop...")
-        self._loop.stop()
-        self._connected = False
+        self._running = False
+        self._quit.set()
 
-    def run(self):
+    def start(self):
         """Starts event loop. Blocks"""
-        self._loop.start()
+        self._loop.run_sync(self._coroutine_runner)
 
 
 if __name__ == "__main__":
@@ -101,9 +171,4 @@ if __name__ == "__main__":
 
     server = SocketServer()
     logger.info("Awaiting connection...")
-    logger.debug(server.sock.recv_json())
-
-    logger.info("Sending ALIGNCLOCK...")
-    server.send(AlignClockMessage())
     server.start()
-    server.join()
