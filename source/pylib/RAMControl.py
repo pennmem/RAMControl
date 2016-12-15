@@ -74,7 +74,8 @@ class RAMControl(object):
             "ID": self.id_handler,
             "SYNC": self.sync_handler,
             "SYNCED": self.synced_handler,
-            "EXIT": self.exit_handler
+            "EXIT": self.exit_handler,
+            "HEARTBEAT": self.heartbeat_handler
         }
 
         self.socket = SocketServer()
@@ -201,7 +202,6 @@ class RAMControl(object):
         :param dict msg:
 
         """
-        print("dispatch!")
         try:
             mtype = msg["type"]
         except KeyError:
@@ -226,7 +226,9 @@ class RAMControl(object):
 
     def sync_handler(self, msg):
         """Send SYNC pulses back to the host PC."""
-        logger.error("Sync {} received".format(msg['num']))
+        num = msg["num"]
+        logger.error("Sync {} received".format(num))
+        self.send(SyncMessage(num=num))
 
     def synced_handler(self, msg):
         """Receive notification that SYNC process was successful."""
@@ -239,6 +241,10 @@ class RAMControl(object):
         self.send(ExitMessage())
         self.socket.stop()
         self._quit.set()
+
+    def heartbeat_handler(self, msg):
+        """Received echoed heartbeat message from host."""
+        logger.info("Heartbeat returned.")
 
 
 if __name__ == '__main__':

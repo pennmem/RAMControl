@@ -149,8 +149,13 @@ class SocketServer(object):
     def _pop_and_send(self):
         """Coroutine for sending messages from the queue."""
         while not self._quit.is_set():
-            msg = yield self._out_queue.get()
-            yield self.send(msg)
+            try:
+                msg = yield self._out_queue.get(timeout=1)
+                yield self.send(msg)
+            except gen.TimeoutError:
+                pass
+            except:
+                logger.error("Uncaught exception", exc_info=True)
 
     @gen.coroutine
     def _coroutine_runner(self):
