@@ -42,6 +42,9 @@ def default_failure_callback():
 class RAMControl(object):
     """Main controller for running RAM task laptop tasks.
 
+    :param str address: ZMQ address string to bind socket.
+    :param int connection_timeout: Network timeout limit in seconds.
+
     Process::
 
         control = RAMControl.instance()  # gets singleton
@@ -53,16 +56,21 @@ class RAMControl(object):
     MAX_QUEUE_SIZE = 32
     _instance = None
 
-    def __init__(self, address="tcp://192.168.137.200:8889"):
+    def __init__(self, address="tcp://192.168.137.200:8889",
+                 connection_timeout=5):
         if self._instance is not None:
             raise Exception("Multiple RAM instances requested!")
 
+        self.connection_timeout = connection_timeout
+
         self._initialized = False
         self._synced = Event()
+        self._started = False  # received START from control PC
         self._configured = False
         self._connected = False
         self._connection_failed = False
         self._quit = Event()
+        self._last_heartbeat_received = -1.  # last time heartbeat was received
 
         # Experiment-specific data to be filled in later
         self.experiment = ''
@@ -99,7 +107,7 @@ class RAMControl(object):
 
     @property
     def network_connected(self):
-        return self.socket.connected
+        return self._connected
 
     @staticmethod
     def get_system_time_in_micros():
@@ -116,6 +124,15 @@ class RAMControl(object):
         """Build and return a RAMMessage to be sent to control PC."""
         return get_message_type(msg_type)(*args, timestamp=timestamp, **kwargs)
 
+    def _check_connection(self):
+        """Checks that we're still connected."""
+        if self._last_heartbeat_received > 0:
+            t = time.time() - self._last_heartbeat_received
+            if t >= self.connection_timeout:
+                self._connected = False
+            else:
+                self._connected = True
+
     def register_handler(self, name, func):
         """Register a message handler.
 
@@ -127,7 +144,7 @@ class RAMControl(object):
 
     def configure(self, experiment, version, session_num, session_type, subject, states):
         """Set various experiment options so they can be transmitted to the host
-        PC.
+        PC and add poll callbacks.
 
         :param str experiment:
         :param version:
@@ -144,7 +161,9 @@ class RAMControl(object):
         self.subject = subject
         self.allowed_states = states
         self._configured = True
+
         addPollCallback(self.socket.update)
+        addPollCallback(self._check_connection)
 
     def send(self, message):
         """Send a message to the host PC."""
@@ -209,6 +228,21 @@ class RAMControl(object):
         logger.info("Connection succeeded.")
         return True
 
+    def wait_for_start_message(self, poll_callback=None, interval=1):
+        """Wait until ``START`` is received from the control PC.
+
+        :param callable poll_callback:
+        :param float interval: Polling interval in seconds.
+
+        """
+        if not self._connected:
+            raise RamException("No connection to the host PC!")
+
+        while not self._started:
+            time.sleep(interval)
+            if poll_callback is not None:
+                poll_callback()
+
     def dispatch(self, msg):
         """Dispatch an incoming message to the appropriate handler.
 
@@ -258,10 +292,16 @@ class RAMControl(object):
     def connected_handler(self, msg):
         """Indicate that we've made a connection."""
         self._connected = True
+        self.socket.enqueue_message(ConnectedMessage())
 
     def heartbeat_handler(self, msg):
         """Received echoed heartbeat message from host."""
         logger.info("Heartbeat returned.")
+        self._last_heartbeat_received = time.time()
+
+    def start_handler(self, msg):
+        """Received START command."""
+        self._started = True
 
 
 if __name__ == '__main__':
