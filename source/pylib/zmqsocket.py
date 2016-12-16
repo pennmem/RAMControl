@@ -1,15 +1,14 @@
 import logging
-import json
+import time
+
+try:
+    from queue import Queue
+except ImportError:
+    from Queue import Queue
 
 import zmq
-from zmq.eventloop.future import Context, Poller
-from zmq.eventloop.ioloop import ZMQIOLoop
-from tornado import gen
-from tornado.queues import Queue
-from tornado.locks import Event, Condition
 
 from messages import RAMMessage, HeartbeatMessage
-from exc import RamException
 
 logger = logging.getLogger(__name__)
 
@@ -18,29 +17,30 @@ class SocketServer(object):
     """ZMQ-based socket server for sending and receiving messages from the host
     PC.
 
-    :param zmq.Context ctx: ZMQ context. If None, a new one will be created.
-    :param ZMQIOLoop loop: ZMQ event loop. If None, a new one will be created.
+    Because of the weird way in which PyEPL handles events, we can't run this as
+    its own thread, but instead have to poll for events in the general PyEPL
+    machinery. In the future, we should clean up PyEPL entirely so that it does
+    not block other threads (amongst other reasons).
+
+    :param zmq.Context ctx:
 
     """
-    def __init__(self, ctx=None, loop=None):
-        self.ctx = ctx or Context()
-        self._loop = loop or ZMQIOLoop.current()
-
-        self._connected = Condition()  # used to wait before sending heartbeats
-        self._running = False
-        self._quit = Event()  # signal coroutines to quit
+    def __init__(self, ctx=None):
+        self.ctx = ctx or zmq.Context()
 
         self._handlers = []
 
         self.sock = self.ctx.socket(zmq.PAIR)
         self._bound = False
 
+        self.poller = zmq.Poller()
+        self.poller.register(self.sock, zmq.POLLIN)
+
         # Outgoing message queue
         self._out_queue = Queue()
 
-    @property
-    def connected(self):
-        return self._running
+        # time of last sent heartbeat message
+        self._last_heartbeat = 0.
 
     def bind(self, address="tcp://*:8889"):
         """Bind the socket to start listening for connections.
@@ -65,9 +65,10 @@ class SocketServer(object):
         """Submit a new outgoing message to the queue."""
         self._out_queue.put_nowait(msg)
 
-    @gen.coroutine
     def send(self, msg):
-        """Transmit a message to the host PC. This method is a coroutine.
+        """Immediately transmit a message to the host PC. It is advisable to not
+        call this method directly in most cases, but rather enqueue a message to
+        be sent via :meth:`enqueue_message`.
 
         :param RAMMessage msg: Message to send.
 
@@ -75,110 +76,49 @@ class SocketServer(object):
         out = msg.jsonize()
         try:
             logger.debug("Sending message: %s", out)
-            yield self.sock.send(out)
+            self.sock.send(out)
         except Exception as e:
             logger.error("Sending failed: {}", e)
 
-    @gen.coroutine
-    def _wait_for_connection(self):
-        """Waits for the host PC to connect before allowing the normal message
-        handling to proceed.
+    def send_heartbeat(self):
+        """Convenience method to send a heartbeat message to the host PC."""
+        if time.time() - self._last_heartbeat >= 1.0:
+            self.send(HeartbeatMessage())
+            self._last_heartbeat = time.time()
+
+    def _handle_incoming(self):
+        events = self.poller.poll(1)
+        if self.sock in dict(events):
+            try:
+                msg = self.sock.recv_json()
+            except:
+                logger.error("Unable to decode JSON.", exc_info=True)
+                return
+
+            logger.info("Incoming message: %s", msg)
+
+            for handler in self._handlers:
+                try:
+                    handler(msg)
+                except:
+                    logger.error("Error handling message", exc_info=True)
+                    continue
+
+    def _handle_outgoing(self):
+        try:
+            while not self._out_queue.empty():
+                msg = self._out_queue.get_nowait()
+                self.send(msg)
+        except:
+            logger.error("Error in outgoing message processing", exc_info=True)
+
+    def update(self):
+        """Call periodically to check for incoming messages and/or send messages
+        in the outgoing queue.
 
         """
-        poller = Poller()
-        poller.register(self.sock, zmq.POLLIN)
-        done = False
-        wait_time = 1
-        elapsed = 0
-
-        while not done:
-            events = yield poller.poll(timeout=wait_time*1000)
-            elapsed += wait_time
-
-            if self.sock in dict(events):
-                msg = yield self.sock.recv_json()
-                logger.info("Incoming message: %s", msg)
-                try:
-                    if msg["type"] != "CONNECTED":
-                        logger.error("Invalid message type: %s", msg["type"])
-                    else:
-                        self._connected.notify_all()
-                        self._running = True
-                        done = True
-                except KeyError:
-                    logger.error("Malformed message!")
-            logger.info("No connection yet (%d s since starting)...", elapsed)
-
-    @gen.coroutine
-    def _heartbeater(self):
-        """Coroutine for sending heartbeats."""
-        yield self._connected.wait()
-
-        while not self._quit.is_set():
-            yield self.send(HeartbeatMessage(interval=1))
-            yield gen.sleep(1)
-
-    @gen.coroutine
-    def _listen(self):
-        """Listen for messages on the socket and handle appropriately."""
-        yield self._connected.wait()
-
-        poller = Poller()
-        poller.register(self.sock, zmq.POLLIN)
-
-        while not self._quit.is_set():
-            events = yield poller.poll(timeout=1000)
-
-            if self.sock in dict(events):
-                incoming = yield self.sock.recv_multipart()
-                for msg in incoming:
-                    logger.info("Incoming message: %s", msg)
-
-                    try:
-                        message = json.loads(msg.decode())
-                    except Exception as e:
-                        logger.error("Unable to decode JSON.\n%s", str(e))
-                        continue
-
-                    # TODO: better way to run handlers in the background or as coroutines?
-                    for handler in self._handlers:
-                        handler(message)
-                        yield gen.moment  # allow other coroutines to run before running next handler
-
-    @gen.coroutine
-    def _pop_and_send(self):
-        """Coroutine for sending messages from the queue."""
-        while not self._quit.is_set():
-            try:
-                msg = yield self._out_queue.get(timeout=1)
-                yield self.send(msg)
-            except gen.TimeoutError:
-                pass
-            except:
-                logger.error("Uncaught exception", exc_info=True)
-
-    @gen.coroutine
-    def _coroutine_runner(self):
-        """Executes all long-running coroutines."""
-        yield [
-            self._wait_for_connection(),
-            self._heartbeater(),
-            self._listen(),
-            self._pop_and_send()
-        ]
-
-    def stop(self):
-        """Stop the event loop."""
-        logger.info("Shutting down ZMQ event loop...")
-        self._running = False
-        self._quit.set()
-
-    def start(self):
-        """Starts event loop. Blocks"""
-        if not self._bound:
-            raise RamException("You must bind the socket first!")
-        self._loop.run_sync(self._coroutine_runner)  # blocks
-        self.sock.close()
+        self._handle_incoming()
+        self._handle_outgoing()
 
 
 if __name__ == "__main__":
@@ -186,5 +126,3 @@ if __name__ == "__main__":
 
     server = SocketServer()
     server.bind()
-    logger.info("Awaiting connection...")
-    server.start()

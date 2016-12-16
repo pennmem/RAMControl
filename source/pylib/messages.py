@@ -48,7 +48,7 @@ class HeartbeatMessage(RAMMessage):
     still alive.
 
     """
-    def __init__(self, interval, timestamp=None):
+    def __init__(self, interval=1, timestamp=None):
         super(HeartbeatMessage, self).__init__("HEARTBEAT", timestamp=timestamp, data=interval)
 
 

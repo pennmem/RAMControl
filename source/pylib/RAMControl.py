@@ -1,6 +1,7 @@
 """Interfaces to the Control PC"""
 
 from threading import Thread, Event
+# from multiprocessing import Process as Thread, Event
 import logging
 
 try:
@@ -10,6 +11,7 @@ except ImportError:
 
 from pyepl.locals import *
 from pyepl.locals import Text
+from pyepl.hardware import addPollCallback, removePollCallback
 
 from zmqsocket import SocketServer
 from exc import RamException
@@ -58,6 +60,7 @@ class RAMControl(object):
         self._initialized = False
         self._synced = Event()
         self._configured = False
+        self._connected = False
         self._connection_failed = False
         self._quit = Event()
 
@@ -75,13 +78,13 @@ class RAMControl(object):
             "SYNC": self.sync_handler,
             "SYNCED": self.synced_handler,
             "EXIT": self.exit_handler,
-            "HEARTBEAT": self.heartbeat_handler
+            "HEARTBEAT": self.heartbeat_handler,
+            "CONNECTED": self.connected_handler
         }
 
         self.socket = SocketServer()
         self.socket.register_handler(self.dispatch)
         self.socket.bind(address)
-        self._socket_thread = Thread(target=self.socket.start)
 
     @classmethod
     def instance(cls, *args, **kwargs):
@@ -141,6 +144,7 @@ class RAMControl(object):
         self.subject = subject
         self.allowed_states = states
         self._configured = True
+        addPollCallback(self.socket.update)
 
     def send(self, message):
         """Send a message to the host PC."""
@@ -148,6 +152,16 @@ class RAMControl(object):
             logger.error("Cannot send non-RamMessage! Returning!")
         else:
             self.socket.enqueue_message(message)
+
+    def start_heartbeat(self):
+        """Begin sending heartbeat messages to the host PC."""
+        logger.info("Starting heartbeat...")
+        addPollCallback(self.socket.send_heartbeat)
+
+    def stop_heartbeat(self):
+        """Stop sending heartbeat messages."""
+        logger.info("Stopping heartbeat...")
+        removePollCallback(self.socket.send_heartbeat)
 
     def align_clocks(self, poll_interval=1, callback=None):
         """Request the clock alignment procedure."""
@@ -179,9 +193,7 @@ class RAMControl(object):
             logger.error("Cannot connect before configuring")
             raise RamException("Unconfigured RAMControl")
 
-        self._socket_thread.start()
-
-        while not self.socket.connected:
+        while not self._connected:
             time.sleep(poll_interval)
             if poll_callback is not None:
                 poll_callback()
@@ -192,6 +204,7 @@ class RAMControl(object):
         self.send(SessionMessage(self.session_num, self.session_type))
         self.send(SubjectIdMessage(self.subject))
         self.send(DefineMessage(self.allowed_states))
+        self.start_heartbeat()
 
         logger.info("Connection succeeded.")
         return True
@@ -241,6 +254,10 @@ class RAMControl(object):
         self.send(ExitMessage())
         self.socket.stop()
         self._quit.set()
+
+    def connected_handler(self, msg):
+        """Indicate that we've made a connection."""
+        self._connected = True
 
     def heartbeat_handler(self, msg):
         """Received echoed heartbeat message from host."""
