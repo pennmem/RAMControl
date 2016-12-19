@@ -85,6 +85,7 @@ class RAMControl(object):
             "ID": self.id_handler,
             "SYNC": self.sync_handler,
             "SYNCED": self.synced_handler,
+            "START": self.start_handler,
             "EXIT": self.exit_handler,
             "HEARTBEAT": self.heartbeat_handler,
             "CONNECTED": self.connected_handler
@@ -301,6 +302,7 @@ class RAMControl(object):
 
     def start_handler(self, msg):
         """Received START command."""
+        logger.info("Got START")
         self._started = True
 
 
