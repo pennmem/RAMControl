@@ -46,7 +46,7 @@ class TestEvent(unittest.TestCase):
 
     def sendMessage(self, control, message):
         print('SEND Task Computer: ' + message)
-        control.sendMessage(message)
+        control.send_message(message)
 
     def cleanupControlPC(self):
         if self.controlPC != None:
@@ -90,12 +90,12 @@ class TestEvent(unittest.TestCase):
         millis = int(round(time() * 1000))
         eventType = 'ID';
         eventData = 'UPxxxy'
-        control.sendEvent(millis, eventType, eventData)
+        control.send_event(millis, eventType, eventData)
         sleep(0.1) # Time for message to be received
         sleep(0.5) # Give it some time to get there before disconnecting
         control.disconnect()
         self.cleanupControlPC()
-        (t, tag, data, aux) = control.decodeMessage(self.lastMessageReceived)
+        (t, tag, data, aux) = control.decode_message(self.lastMessageReceived)
         self.assertEquals(t, millis)
         self.assertEquals(tag, eventType)
         self.assertEquals(data, eventData)
@@ -106,7 +106,7 @@ class TestEvent(unittest.TestCase):
         """
         Tests that JSON message creation is happening properly
         """
-        message = RAMControl.buildMessage(1234, 'DEFINE', ['A','B','C','D'])
+        message = RAMControl.build_message(1234, 'DEFINE', ['A', 'B', 'C', 'D'])
         print '***** ' + inspect.stack()[0][3] + ' *****'
         self.assertEqual(message, '{"data": ["A", "B", "C", "D"], "type": "DEFINE", "time": "00000000000000001234"}')
 
