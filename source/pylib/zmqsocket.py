@@ -1,5 +1,7 @@
+import os
 import logging
 import time
+import json
 
 try:
     from queue import Queue
@@ -41,6 +43,19 @@ class SocketServer(object):
 
         # time of last sent heartbeat message
         self._last_heartbeat = 0.
+
+        # File to log sent and received messages.
+        self._msg_log_filename = None
+        self._msg_log = None
+
+    @property
+    def log_path(self):
+        return self._msg_log_filename
+
+    @log_path.setter
+    def log_path(self, path):
+        self._msg_log_filename = os.path.join(path, "messages.log")
+        self._msg_log = open(self._msg_log_filename, "a")
 
     def bind(self, address="tcp://*:8889"):
         """Bind the socket to start listening for connections.
@@ -86,11 +101,28 @@ class SocketServer(object):
             self.send(HeartbeatMessage())
             self._last_heartbeat = time.time()
 
+    def log_message(self, message, incoming=True):
+        """Log a message to the log file."""
+        if self._msg_log is None:
+            logger.warning("Message log hasn't been opened yet")
+            return
+
+        if not incoming:
+            message = message.to_dict()
+
+        self._msg_log.write("{timestamp:f}\t{mtype:s}\t{in_or_out:s}\t{msg:s}\n".format(
+            timestamp=time.time(),
+            mtype=message["type"],
+            in_or_out=("in" if incoming else "out"),
+            msg=json.dumps(message)))
+        self._msg_log.flush()
+
     def _handle_incoming(self):
         events = self.poller.poll(1)
         if self.sock in dict(events):
             try:
                 msg = self.sock.recv_json()
+                self.log_message(msg, incoming=True)
             except:
                 logger.error("Unable to decode JSON.", exc_info=True)
                 return
@@ -109,6 +141,7 @@ class SocketServer(object):
             while not self._out_queue.empty():
                 msg = self._out_queue.get_nowait()
                 self.send(msg)
+                self.log_message(msg, incoming=False)
         except:
             logger.error("Error in outgoing message processing", exc_info=True)
 

@@ -24,12 +24,16 @@ class RAMMessage(object):
 
     def jsonize(self):
         """Serialize the message to JSON."""
-        return json.dumps({
+        return json.dumps(self.to_dict())
+
+    def to_dict(self):
+        """Convert to a dict."""
+        return {
             "time": self.timestamp,
             "type": self.event_type,
             "data": self.data,
             "aux": self.aux_data
-        })
+        }
 
     @staticmethod
     def now():
