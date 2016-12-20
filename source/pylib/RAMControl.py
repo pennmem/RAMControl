@@ -1,7 +1,7 @@
 """Interfaces to the Control PC"""
 
-from threading import Thread, Event
-# from multiprocessing import Process as Thread, Event
+from threading import Event
+import sys
 import logging
 
 try:
@@ -129,8 +129,10 @@ class RAMControl(object):
         """Checks that we're still connected."""
         if self._last_heartbeat_received > 0:
             t = time.time() - self._last_heartbeat_received
-            if t >= self.connection_timeout:
+            if t >= self.connection_timeout and self._connected:
                 self._connected = False
+                logger.info("Quitting due to disconnect")
+                sys.exit(0)
             else:
                 self._connected = True
 

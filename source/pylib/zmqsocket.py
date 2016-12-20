@@ -91,7 +91,7 @@ class SocketServer(object):
         out = msg.jsonize()
         try:
             logger.debug("Sending message: %s", out)
-            self.sock.send(out)
+            self.sock.send(out, zmq.NOBLOCK)
         except Exception as e:
             logger.error("Sending failed: {}", e)
 
