@@ -114,6 +114,20 @@ class TrialMessage(RAMMessage):
         super(TrialMessage, self).__init__("TRIAL", data=dict(trial=trial))
 
 
+class ReadyMessage(RAMMessage):
+    """Sent when waiting for the start button to be pressed on the control PC.
+
+    """
+    def __init__(self):
+        super(ReadyMessage, self).__init__("READY")
+
+
+class WordMessage(RAMMessage):
+    """Inform the host PC that a new word is being displayed."""
+    def __init__(self, word):
+        super(WordMessage, self).__init__("WORD", data=word)
+
+
 _message_types = dict(
     CONNECTED=ConnectedMessage,
     HEARTBEAT=HeartbeatMessage,
@@ -126,11 +140,14 @@ _message_types = dict(
     DEFINE=DefineMessage,
     EXIT=ExitMessage,
     STATE=StateMessage,
-    TRIAL=TrialMessage
+    TRIAL=TrialMessage,
+    READY=ReadyMessage,
+    WORD=WordMessage
 )
 
 
-def get_message_type(type):
-    if type in _message_types:
-        return _message_types[type]
-    raise Exception("No applicable message type {}", type) # TODO: ???
+def get_message_type(kind):
+    """Return the message class. Used to build messages."""
+    if kind in _message_types:
+        return _message_types[kind]
+    raise Exception("No applicable message type {}", kind) # TODO: ???

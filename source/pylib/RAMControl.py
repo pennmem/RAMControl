@@ -239,6 +239,7 @@ class RAMControl(object):
         if not self._connected:
             raise RamException("No connection to the host PC!")
 
+        self.send(ReadyMessage())
         while not self._started:
             time.sleep(interval)
             if poll_callback is not None:
