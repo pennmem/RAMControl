@@ -57,7 +57,7 @@ class RAMControl(object):
     _instance = None
 
     def __init__(self, address="tcp://192.168.137.200:8889",
-                 connection_timeout=5):
+                 connection_timeout=10):
         if self._instance is not None:
             raise Exception("Multiple RAM instances requested!")
 

@@ -91,9 +91,12 @@ class SocketServer(object):
         out = msg.jsonize()
         try:
             logger.debug("Sending message: %s", out)
-            self.sock.send(out, zmq.NOBLOCK)
+            try:
+                self.sock.send(out, zmq.NOBLOCK)
+            except:
+                pass
         except Exception as e:
-            logger.error("Sending failed: {}", e)
+            logger.error("Sending failed!", exc_info=True)
 
     def send_heartbeat(self):
         """Convenience method to send a heartbeat message to the host PC."""
