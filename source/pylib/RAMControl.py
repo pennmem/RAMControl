@@ -128,7 +128,6 @@ class RAMControl(object):
     def _check_connection(self):
         """Checks that we're still connected."""
         if self._last_heartbeat_received > 0:
-            print(self._last_heartbeat_received)
             t = time.time() - self._last_heartbeat_received
             if t >= self.connection_timeout and self._connected:
                 self._connected = False
@@ -220,6 +219,9 @@ class RAMControl(object):
             time.sleep(poll_interval)
             if poll_callback is not None:
                 poll_callback()
+
+        # start actually checking connection
+        self._last_heartbeat_received = time.time()
 
         # Send experiment info to host
         self.send(ExperimentNameMessage(self.experiment))
