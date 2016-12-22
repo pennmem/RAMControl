@@ -260,7 +260,7 @@ def getSess(dataPath, rootDir = 'data'):
     else:
         return pathParts[sessIndex]
 
-def getSubj(dataPath, rootDir = 'data'):
+def getSubj(dataPath, rootDir = 'data', isHost=False):
     """
     Returns the subject code from ta full data path
     """
@@ -268,7 +268,7 @@ def getSubj(dataPath, rootDir = 'data'):
     dataIndex = getDataIndex(pathParts, rootDir)
 
     # Experiment is one folder down from base path
-    subjIndex = dataIndex + 2
+    subjIndex = dataIndex + (2 if not isHost else 1)
 
     if subjIndex >= len(pathParts):
         return None
@@ -277,7 +277,7 @@ def getSubj(dataPath, rootDir = 'data'):
 
 
 
-def getExp(dataPath, rootDir = 'data'):
+def getExp(dataPath, rootDir = 'data', isHost=False):
     """
     Returns the experiment name from a full data path
     """
@@ -285,7 +285,7 @@ def getExp(dataPath, rootDir = 'data'):
     dataIndex = getDataIndex(pathParts, rootDir)
 
     # Experiment is one folder down from base path
-    expIndex = dataIndex + 1
+    expIndex = dataIndex + (1 if not isHost else 2)
 
     if expIndex >= len(pathParts):
         return None
@@ -430,7 +430,7 @@ def uploadFiles_option(showProgress = True):
     clear()
     return True
 
-def getSessionsWithEEG(rootDir = None):
+def getSessionsWithEEG(rootDir = None, isHost=False):
     """
     Gets the sessions within 'rootDir' that have EEG data
     """
@@ -440,7 +440,7 @@ def getSessionsWithEEG(rootDir = None):
     # Walk over the contents of the data directory
     for (root, subdirs, files) in os.walk(rootDir):
         dirName = os.path.basename(root)
-        if 'session_' in dirName and 'eeg' in subdirs:
+        if 'session_' in dirName and (isHost or 'host_pc' in subdirs):
             sessWithEEG.append(root)
 
     return sessWithEEG
@@ -458,7 +458,7 @@ def getSessionList(rootDir):
 
     return sessList
 
-def sessionPathToString(paths, rootDir):
+def sessionPathToString(paths, rootDir, isHost=False):
     """
     Changes the path to a session into a single string
     containing subject -- experiment: session_#
@@ -468,19 +468,19 @@ def sessionPathToString(paths, rootDir):
     if isinstance(paths, (list, tuple)):
         output = []
         for path in paths:
-            subj = getSubj(path, rootDir)
-            exp = getExp(path, rootDir)
+            subj = getSubj(path, rootDir, isHost)
+            exp = getExp(path, rootDir, isHost)
             sess = getSess(path, rootDir)
             output.append('%s -- %s: %s'%(subj, exp, sess))
         return output
     else:
         path = paths
-        subj = getSubj(path, rootDir)
-        exp = getExp(path, rootDir)
+        subj = getSubj(path, rootDir, isHost)
+        exp = getExp(path, rootDir, isHost)
         sess = getSess(path, rootDir)
         return '%s -- %s: %s'%(subj, exp, sess)
 
-def stringToSessionPath(sessStrs, rootDir):
+def stringToSessionPath(sessStrs, rootDir, isHost=False):
     """
     Takes a formatted session string and changes it back into
     the path that that came from, assuming 'rootDir' is the 
@@ -494,13 +494,19 @@ def stringToSessionPath(sessStrs, rootDir):
             subj = sessStr.split(' -- ')[0]
             exp = sessStr.split(' -- ')[1].split(':')[0]
             sess = sessStr.split(': ')[1]
-            output.append(os.path.join(rootDir, exp, subj, sess))
+            if isHost:
+                output.append(os.path.join(rootDir, subj, exp, sess))
+            else:
+                output.append(os.path.join(rootDir, exp, subj, sess))
         return output
     else:
         subj = sessStrs.split(' -- ')[0]
         exp = sessStrs.split(' -- ')[1].split(':')[0]
         sess = sessStrs.split(': ')[1]
-        output = os.path.join(rootDir, exp, subj, sess)
+        if isHost:
+            output.append(os.path.join(rootDir, subj, exp, sess))
+        else:
+            output.append(os.path.join(rootDir, exp, subj, sess))
         return output
 
 def getNonTransferredSessions():
@@ -519,8 +525,8 @@ def getNonTransferredSessions():
     inTransferred = sessionPathToString(inTransferred, config.transferredDir)
 
     # Get the sessions on control PC
-    inPC = getSessionsWithEEG(config.PCMountPoint)
-    inPC = sessionPathToString(inPC, config.PCMountPoint)
+    inPC = getSessionsWithEEG(config.PCMountPoint, True)
+    inPC = sessionPathToString(inPC, config.PCMountPoint, True)
 
     # Get what's on PC but not in data or transferred
     onlyInPC = [sess for sess in inPC if (sess not in inData and sess not in inTransferred)]
@@ -538,9 +544,9 @@ def chooseSessionFromPC(showAll = False):
     """
     
     if showAll:
-        sessions = getSessionsWithEEG(config.PCMountPoint)
+        sessions = getSessionsWithEEG(config.PCMountPoint, True)
         print config.PCMountPoint
-        sessions = sessionPathToString(sessions, config.PCMountPoint)
+        sessions = sessionPathToString(sessions, config.PCMountPoint, True)
         sessions.sort()
     else:
         sessions = getNonTransferredSessions()
@@ -653,7 +659,7 @@ def transferChosenSessions(sessToTransfer):
     from the control PC
     """
     # Get the places to transfer from
-    fromSessPaths = stringToSessionPath(sessToTransfer, config.PCMountPoint)
+    fromSessPaths = stringToSessionPath(sessToTransfer, config.PCMountPoint, True)
 
     # Get the places to transfer to
     toSessPaths = stringToSessionPath(sessToTransfer, config.localExperimentDir)
@@ -663,14 +669,16 @@ def transferChosenSessions(sessToTransfer):
         line()
         print('Transferring %s'%strSess)
         time.sleep(1)
+        toSessPath = os.path.join(toSessPath, 'host_pc')
         try:
             os.makedirs(os.path.dirname(toSessPath))
         except OSError as e:
             pass # Can safely igore - it means file already exists
-
-        # Gotta 'dirname' toSessPath, or else it creates a new directory inside
-        rsyncCmd = 'rsync -av --progress \'%(from)s\' \'%(to)s\''%\
-                {'from': fromSessPath, 'to': os.path.dirname(toSessPath)}
+    
+        fromSessPath = os.path.join(fromSessPath)
+        
+        rsyncCmd = 'rsync -av --progress \"%(from)s/\" \'%(to)s\''%\
+                {'from': fromSessPath, 'to': toSessPath}
         
         ##### DEBUGGING:
         #print(rsyncCmd)

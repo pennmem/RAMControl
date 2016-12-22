@@ -60,9 +60,9 @@ remoteExperimentPath  = '%s@%s:%s'%(remoteUser,remoteServer, remoteExperimentDir
 
 PCMountPoint          = os.path.join(homeDir, 'Control_PC')
 PCIPAddress           = '192.168.137.1'
-PCUsername            = 'User'
-PCPassword            = 'RAM'
-PCSharedDir           = 'data'
+PCUsername            = 'OdinUser'
+PCPassword            = 'MemoryExperiment'
+PCSharedDir           = 'Users/OdinUser/System3/SYS3_output/'
 
 # UI stuff
 expMenuOptions = {\
