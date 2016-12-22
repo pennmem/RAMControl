@@ -128,6 +128,7 @@ class RAMControl(object):
     def _check_connection(self):
         """Checks that we're still connected."""
         if self._last_heartbeat_received > 0:
+            print(self._last_heartbeat_received)
             t = time.time() - self._last_heartbeat_received
             if t >= self.connection_timeout and self._connected:
                 self._connected = False
@@ -171,7 +172,7 @@ class RAMControl(object):
     def send(self, message):
         """Send a message to the host PC."""
         if not isinstance(message, RAMMessage):
-            logger.error("Cannot send non-RamMessage! Returning!")
+            logger.error("Cannot send non-RamMessage: %r", message)
         else:
             self.socket.enqueue_message(message)
 
@@ -241,7 +242,7 @@ class RAMControl(object):
         if not self._connected:
             raise RamException("No connection to the host PC!")
 
-        self.send(ReadyMessage)
+        self.send(ReadyMessage())
         while not self._started:
             time.sleep(interval)
             if poll_callback is not None:
