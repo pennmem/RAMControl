@@ -109,8 +109,11 @@ class ExitMessage(RAMMessage):
 
 
 class StateMessage(RAMMessage):
-    def __init__(self, state, value, timestamp=None):
-        super(StateMessage, self).__init__("STATE", data=dict(name=state, value=value))
+    def __init__(self, state, value, timestamp=None, meta=None):
+        data = dict(name=state, value=value)
+        if meta is not None and state == "WORD":
+            data["word"] = meta
+        super(StateMessage, self).__init__("STATE", data=data)
 
 
 class TrialMessage(RAMMessage):
