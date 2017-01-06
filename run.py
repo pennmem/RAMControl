@@ -6,7 +6,7 @@ import argparse
 JSON_CONFIG = 'source/run_config.json'
 
 def run_experiment(exp_config):
-    exp_dir = os.path.join(exp_config['experiment_dir'], exp_config['RAM_exp'])
+    exp_dir = os.path.abspath(os.path.join(exp_config['experiment_dir'], exp_config['RAM_exp']))
 
     pyepl_config_file = os.path.join(exp_dir, exp_config['config_file'])
     pyepl_sconfig_file = os.path.join(exp_dir, exp_config['sconfig_file'])
@@ -32,6 +32,8 @@ def run_experiment(exp_config):
         env['PYTHONPATH'] = os.path.abspath(exp_config['pythonpath']) + ":" + env['PYTHONPATH']
     else:
         env['PYTHONPATH'] = os.path.abspath(exp_config['pythonpath'])
+    
+    os.chdir(exp_dir)
 
     p = subprocess.Popen(args, env=env)
     p.wait()

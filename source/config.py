@@ -24,14 +24,11 @@ localUser    = os.getenv('USER')            # Local user
 remoteUser   = os.getenv('RHINO_USER')      # Rhino username (NOTE: reading from ~/.bashrc, enviornment variable )
 remoteServer = 'ramtransfer.sas.upenn.edu'  # server to transfer files 
 remotePort = 443
+thisDir      = os.path.dirname(__file__)
 
 # Location of the main RAM directory
-if isDev:
-    RAMdir = os.path.join(homeDir, '.RAM_dev_2.0')
-else:
-    RAMdir = os.path.join(homeDir, 'RAM_2.0')
-
-logDir = os.path.join(RAMdir, 'logs')
+RAMdir = os.path.join(thisDir, '..')
+logDir = os.path.join(thisDir, '..', 'logs')
 
 # Where the ssh key is located
 sshKeyLoc = os.path.join(RAMdir, 'source', 'RAMTransfer-Keys', '%s.key'%remoteUser)
