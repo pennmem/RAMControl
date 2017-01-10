@@ -59,7 +59,7 @@ PCMountPoint          = os.path.join(homeDir, 'Control_PC')
 PCIPAddress           = '192.168.137.1'
 PCUsername            = 'OdinUser'
 PCPassword            = 'MemoryExperiment'
-PCSharedDir           = 'Users/OdinUser/System3/SYS3_output/'
+PCSharedDir           = 'Users/OdinUser/Desktop/'#System3/SYS3_output/'
 
 # UI stuff
 expMenuOptions = {\

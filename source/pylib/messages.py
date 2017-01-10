@@ -113,26 +113,26 @@ class StateMessage(RAMMessage):
         data = dict(name=state, value=value)
         if meta is not None and state == "WORD":
             data["word"] = meta
-        super(StateMessage, self).__init__("STATE", data=data)
+        super(StateMessage, self).__init__("STATE", data=data, timestamp=timestamp)
 
 
 class TrialMessage(RAMMessage):
     def __init__(self, trial, timestamp=None):
-        super(TrialMessage, self).__init__("TRIAL", data=dict(trial=trial))
+        super(TrialMessage, self).__init__("TRIAL", data=dict(trial=trial), timestamp=timestamp)
 
 
 class ReadyMessage(RAMMessage):
     """Sent when waiting for the start button to be pressed on the control PC.
 
     """
-    def __init__(self):
-        super(ReadyMessage, self).__init__("READY")
+    def __init__(self, timestamp=None):
+        super(ReadyMessage, self).__init__("READY", timestamp=timestamp)
 
 
 class WordMessage(RAMMessage):
     """Inform the host PC that a new word is being displayed."""
-    def __init__(self, word):
-        super(WordMessage, self).__init__("WORD", data=word)
+    def __init__(self, word, timestamp=None):
+        super(WordMessage, self).__init__("WORD", data=word, timestamp=timestamp)
 
 
 _message_types = dict(

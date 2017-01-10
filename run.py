@@ -11,7 +11,7 @@ def run_experiment(exp_config):
     pyepl_config_file = os.path.join(exp_dir, exp_config['config_file'])
     pyepl_sconfig_file = os.path.join(exp_dir, exp_config['sconfig_file'])
 
-    archive_dir = os.path.join(exp_config['archive_dir'], exp_config['experiment'])
+    archive_dir = os.path.abspath(os.path.join(exp_config['archive_dir'], exp_config['experiment']))
 
     options = [
         '--subject', exp_config['subject'],
