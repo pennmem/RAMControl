@@ -32,7 +32,7 @@ logDir = os.path.join(thisDir, '..', 'logs')
 
 # Where the ssh key is located
 sshKeyLoc = os.path.join(RAMdir, 'source', 'RAMTransfer-Keys', '%s.key'%remoteUser)
-RAMrsync = 'rsync -av -e "ssh -i %(keyloc)s -p %(port)d " '%\
+RAMrsync = 'rsync -avv -e "ssh -i %(keyloc)s -p %(port)d " '%\
         {'keyloc': sshKeyLoc, 'port': remotePort}
 
 SVNROOT='svn+ssh://RAM_exp@rhino.psych.upenn.edu/home/svn'

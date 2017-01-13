@@ -77,8 +77,8 @@ def keyToFn(key):
         'u' : uploadFiles_option,
         'e' : transferEEG_option,
         'c' : addClinical_option,
-        'v' : viewFilesToUpload_option,
-        's' : showStatus_option,
+        #'v' : viewFilesToUpload_option,
+        #'s' : showStatus_option,
         'i' : uploadImaging_option,
         'q' : quitProgram_option,
         }
@@ -305,7 +305,12 @@ def moveEEGToTransferred():
         if not os.path.exists(os.path.join(config.transferredDir, exp, subj, sess)):
             os.makedirs(os.path.join(config.transferredDir, exp, subj, sess))
         EEGFolder = os.path.join(EEGSessFolder, 'eeg')
-        os.rename(EEGFolder, os.path.join(config.transferredDir, exp, subj, sess, 'eeg', ''))
+        if os.path.exists(EEGFolder):
+            final_dir = 'eeg'
+        else:
+            EEGFolder = os.path.join(EEGSessFolder, 'host_pc')
+            final_dir = 'host_pc'
+        os.rename(EEGFolder, os.path.join(config.transferredDir, exp, subj, sess, final_dir, ''))
    
 def moveToTransferred(inProgDir, subject):
     """
