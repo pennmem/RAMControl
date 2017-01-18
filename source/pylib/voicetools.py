@@ -1,9 +1,13 @@
 """Tools for voice activity detection (VAD) for FR5 and related tasks."""
 
 from __future__ import division
+import struct
 import logging
 import numpy as np
 from scipy.signal import butter, lfilter
+
+from pyepl import timing
+import pyepl.sound
 
 logger = logging.getLogger(__name__)
 
@@ -66,6 +70,7 @@ class BandpassFilter(object):
     def filter(data, low=2000, high=8000, rate=44100, order=6):
         """Return bandpass filtered `data`.
 
+        :param np.ndarray data:
         :param float low:
         :param float high:
         :param flaot rate:
@@ -106,6 +111,7 @@ def smooth(data, win=16, tile=True):
 def bandpass_filter(data, low=2000, high=8000, rate=44100, order=6):
     """Bandpass filter the data.
 
+    :param np.ndarray data:
     :param float low:
     :param float high:
     :param flaot rate:
@@ -133,3 +139,58 @@ def apodize(data, ms=5, rate=44100):
     data[:hw_size] *= hamming_window[:hw_size]
     data[-hw_size:] *= hamming_window[-hw_size:]
     return data
+
+
+class AudioTrack(pyepl.sound.AudioTrack):
+    """Extended PyEPL :class:`AudioTrack` to add VAD support.
+
+    This adds the following parameters:
+
+     * ``speaking`` - a flag indicating a vocalization is happening
+     * ``rec_interval`` - amount of time in ms to record and listen for
+       vocalization
+
+    """
+    _vad_threshold = 10
+
+    def __init__(self, *args, **kwargs):
+        super(AudioTrack, self).__init__(*args, **kwargs)
+        self.speaking = False
+        self.rec_interval = 20
+
+    def __recCallback__(self):
+        """Modify the normal __recCallback__ to determine and update speech
+        onsets/offsets. This needs to occur fast enough (i.e., fast enough to
+        not disrupt the polling operations).
+
+        This is a horrific hack, but then again, so is PyEPL.
+
+        """
+        currentTime = timing.now()
+        if self.recording and currentTime >= self.last_rec + self.rec_interval:
+            newstuff = self.getBuffData()
+
+            # Update the last time
+            self.last_rec = currentTime
+
+            if len(newstuff) > 0:
+                # append the data to the clip
+                self.recClip.append(newstuff, self.eplsound.getRecChans())
+
+        # VAD code inserted here
+        ########################
+
+        xbuff = np.array(struct.unpack(str(len(newstuff) / 2) + 'h', newstuff),
+                         dtype=np.int16)
+        xbuff = xbuff[::2]
+
+        loudness = rms(bandpass_filter(xbuff))
+        conditions = all([loudness > self._vad_threshold])
+
+        # TODO: send state messages to host PC
+        if not self.speaking and conditions:  # vocalization start
+            self.speaking = True
+            self.logMessage("%s\t%s" % ("SP", "Start"), currentTime)
+        elif self.speaking and not conditions:  # vocalization end
+            self.speaking = False
+            self.logMessage("%s\t%s" % ("SP", "Stop"), currentTime)
