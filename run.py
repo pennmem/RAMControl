@@ -1,3 +1,6 @@
+"""Script to start RAM experiments."""
+
+import sys
 import json
 import subprocess
 import os
@@ -5,7 +8,16 @@ import argparse
 
 JSON_CONFIG = 'source/run_config.json'
 
+if sys.version_info.major == 2:
+    input = raw_input
+
+
 def run_experiment(exp_config):
+    """Run the experiment.
+
+    :param dict exp_config:
+
+    """
     exp_dir = os.path.abspath(os.path.join(exp_config['experiment_dir'], exp_config['RAM_exp']))
 
     pyepl_config_file = os.path.join(exp_dir, exp_config['config_file'])
@@ -16,7 +28,7 @@ def run_experiment(exp_config):
     options = [
         '--subject', exp_config['subject'],
         '--config', pyepl_config_file,
-        '--sconfig', pyepl_sconfig_file,
+        '--sconfig', pyepl_sconfig_file,  # secondary config (e.g., differences between FR1 and FR3)
         '--resolution', exp_config['resolution'],
         '--archive', archive_dir,
     ]
@@ -38,12 +50,14 @@ def run_experiment(exp_config):
     p = subprocess.Popen(args, env=env)
     p.wait()
 
+
 def build_exp_config(json_config, experiment, **kwargs):
     exp_config = json_config['experiments'][experiment]
     json_config.update(exp_config)
     json_config.update(kwargs)
     json_config['experiment'] = experiment
     return config
+
 
 def parse_args():
     parser = argparse.ArgumentParser()
@@ -52,24 +66,29 @@ def parse_args():
     parser.add_argument('--resolution', '-r', dest='resolution', default=None, help='Screen resolution')
     parser.add_argument('--archive', '-a', dest='archive', default=None, help='Data storage directory')
     parser.add_argument('--no-fs', dest='no_fs', default=False, action='store_true', help='Turn off fullscreen')
-    return {k:v for k,v in vars(parser.parse_args()).items() if v is not None}
+    parser.add_argument("--experiment-dir", "-e", help="Directory containing experiments")
+    return {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
 
 
 if __name__ == '__main__':
-    config = json.load(open(JSON_CONFIG,'r'))
+    config = json.load(open(JSON_CONFIG, 'r'))
     args = parse_args()
 
     while 'experiment' not in args:
-        experiment = raw_input("Enter experiment name: ")
+        experiment = input("Enter experiment name: ")
         if experiment not in config['experiments']:
             print("Experiment must be one of: " + ', '.join(sorted(config['experiments'].keys())))
         else:
             args['experiment'] = experiment
 
     while 'subject' not in args:
-        subject = raw_input("Enter subject code: ")
-        if len(subject.strip())!=0:
+        subject = input("Enter subject code: ")
+        if len(subject.strip()) != 0:
             args['subject'] = subject
+
+    # Override default experiment dir
+    if "experiment_dir" in args:
+        config["experiment_dir"] = args["experiment_dir"]
 
     exp_config = build_exp_config(config, **args)
 
