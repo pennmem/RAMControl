@@ -1,10 +1,12 @@
 from pyepl.locals import *
 from pyepl import exputils
 from pyepl import display
+from pyepl.textlog import LogTrack
 import os
 import codecs
 
 TEXT_EXTS = ["txt"]
+
 
 class CustomText(Text):
 
@@ -407,7 +409,8 @@ def customMathDistract(clk = None,
                        tfKeys = None,
                        ansMod = [0,1,-1,10,-10],
                        ansProb = [.5,.125,.125,.125,.125],
-                       visualFeedback = False):
+                       visualFeedback = False,
+                       callback=None):
     """
     Math distractor for specified period of time.  Logs to a math_distract.log
     if no log is passed in.
@@ -437,6 +440,8 @@ def customMathDistract(clk = None,
       ansMod - For True/False problems, the possible values to add to correct answer.
       ansProb - The probability of each modifer on ansMod (must add to 1).
       visualFeedback - Whether to provide visual feedback to indicate correctness.
+      callback - Callback function for sending math messages to the host PC.
+
     """
 
     # start the timing
@@ -659,10 +664,11 @@ def customMathDistract(clk = None,
         # - 1 if correct, 0 if incorrect
         # - always 0 apparently
         # - response time in ms
-        # - how long it took to update the screen in ms (not necesssary)
-        mathlog.logMessage('PROB\t%r\t%r\t%d\t%ld\t%d' %
-                           (probtxt,rstr,isCorrect,prob_rt[0],prob_rt[1]),
-                           probstart)
+        mathlog.logMessage('PROB\t%r\t%r\t%d\t%d\t%d' %
+                           (probtxt, rstr, isCorrect, prob_rt[0], prob_rt[1]),
+                           timestamp=probstart)
+        callback(probtxt.strip("'"), rstr.strip("'"), bool(isCorrect),
+                 max(prob_rt), timestamp)
 
         # clear the problem
         v.unshow(pt,rt)
@@ -672,7 +678,7 @@ def customMathDistract(clk = None,
         curProb+=1
 
     # log the end
-    mathlog.logMessage('STOP',timestamp)
+    mathlog.logMessage('STOP', timestamp)
 
     # tare the clock
     # PBS: Why set the time back to when the last button was pressed?

@@ -175,6 +175,22 @@ class RAMControl(object):
         else:
             self.socket.enqueue_message(message)
 
+    def send_math_message(self, problem, response, correct, response_time_ms,
+                          timestamp):
+        """Special callback to parse math events and send to the host PC.
+
+        This is a slight hack that could be streamlined in a revamped PyEPL!
+
+        :param str problem: Problem written as a string.
+        :param str response: Entered response as a string.
+        :param bool correct: Was the response the correct answer?
+        :param int response_time_ms: Time before response was entered in ms.
+        :param int timestamp: Event timestamp in ms.
+
+        """
+        self.send(MathMessage(problem, response, correct, response_time_ms,
+                              timestamp=timestamp))
+
     def start_heartbeat(self):
         """Begin sending heartbeat messages to the host PC."""
         logger.info("Starting heartbeat...")

@@ -135,6 +135,18 @@ class WordMessage(RAMMessage):
         super(WordMessage, self).__init__("WORD", data=word, timestamp=timestamp)
 
 
+class MathMessage(RAMMessage):
+    """Sends information about math events."""
+    def __init__(self, problem, response, correct, response_time_ms, timestamp=None):
+        payload = {
+            "problem": problem,
+            "response": response,
+            "correct": correct,
+            "response_time_ms": response_time_ms
+        }
+        super(MathMessage, self).__init__("MATH", timestamp=timestamp, data=payload)
+
+
 _message_types = dict(
     CONNECTED=ConnectedMessage,
     HEARTBEAT=HeartbeatMessage,
