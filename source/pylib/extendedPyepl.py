@@ -188,6 +188,7 @@ def flashStimulusWithOffscreenTimestamp(showable, duration = 1000, x = 0.5, y = 
     # return ontime
     return timestamp_on, timestamp_off
 
+
 class CustomAudioTrack(AudioTrack):
 
     def __init__(self, *args):
@@ -270,6 +271,7 @@ class CustomAudioClip(AudioClip):
             else:
                 # keep the clock advanced the duration of the sound
                 return timestamp
+
 
 class CustomBeep(CustomAudioClip, Beep):
 
@@ -384,29 +386,28 @@ def customMicTest(recDuration = 2000, ampFactor = 1.0, clk = None, excludeKeys=N
     return status
 
 
-
 def customMathDistract(clk = None,
-                 mathlog = None,
-                 problemTimeLimit = None,
-                 numVars = 2,
-                 maxNum = 9,
-                 minNum = 1,
-                 maxProbs = 50,
-                 plusAndMinus = False,
-                 minDuration = 20000,
-                 textSize = None,
-                 correctBeepDur = 500,
-                 correctBeepFreq = 400,
-                 correctBeepRF = 50,
-                 correctSndFile = None,
-                 incorrectBeepDur = 500,
-                 incorrectBeepFreq = 200,
-                 incorrectBeepRF = 50,
-                 incorrectSndFile = None,
-                 tfKeys = None,
-                 ansMod = [0,1,-1,10,-10],
-                 ansProb = [.5,.125,.125,.125,.125],
-		 visualFeedback = False):
+                       mathlog = None,
+                       problemTimeLimit = None,
+                       numVars = 2,
+                       maxNum = 9,
+                       minNum = 1,
+                       maxProbs = 50,
+                       plusAndMinus = False,
+                       minDuration = 20000,
+                       textSize = None,
+                       correctBeepDur = 500,
+                       correctBeepFreq = 400,
+                       correctBeepRF = 50,
+                       correctSndFile = None,
+                       incorrectBeepDur = 500,
+                       incorrectBeepFreq = 200,
+                       incorrectBeepRF = 50,
+                       incorrectSndFile = None,
+                       tfKeys = None,
+                       ansMod = [0,1,-1,10,-10],
+                       ansProb = [.5,.125,.125,.125,.125],
+                       visualFeedback = False):
     """
     Math distractor for specified period of time.  Logs to a math_distract.log
     if no log is passed in.
@@ -652,6 +653,13 @@ def customMathDistract(clk = None,
 
         # log it
         # probstart, PROB, prob_txt, ans_txt, Correct(1/0), RT
+        # Sends:
+        # - problem as text ("4 + 5 + 1 = ")
+        # - response as text ("1")
+        # - 1 if correct, 0 if incorrect
+        # - always 0 apparently
+        # - response time in ms
+        # - how long it took to update the screen in ms (not necesssary)
         mathlog.logMessage('PROB\t%r\t%r\t%d\t%ld\t%d' %
                            (probtxt,rstr,isCorrect,prob_rt[0],prob_rt[1]),
                            probstart)
