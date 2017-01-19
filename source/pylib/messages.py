@@ -1,7 +1,9 @@
 """Messages for communicating with the host PC."""
 
+import sys
 import json
 import time
+import inspect
 
 
 class RAMMessage(object):
@@ -147,23 +149,15 @@ class MathMessage(RAMMessage):
         super(MathMessage, self).__init__("MATH", timestamp=timestamp, data=payload)
 
 
-message_types = dict(
-    CONNECTED=ConnectedMessage,
-    HEARTBEAT=HeartbeatMessage,
-    EXPNAME=ExperimentNameMessage,
-    VERSION_NUM=VersionMessage,
-    SESSION=SessionMessage,
-    SUBJECTID=SubjectIdMessage,
-    ALIGNCLOCK=AlignClockMessage,
-    SYNC=SyncMessage,
-    DEFINE=DefineMessage,
-    EXIT=ExitMessage,
-    STATE=StateMessage,
-    TRIAL=TrialMessage,
-    READY=ReadyMessage,
-    WORD=WordMessage,
-    MATH=MathMessage
-)
+_mod = sys.modules[__name__]
+_names = dir(_mod)
+
+message_types = {
+    name.split("Message")[0].upper(): getattr(_mod, name)
+    for name in _names
+    if inspect.isclass(getattr(_mod, name))
+    and name is not "RAMMessage"
+}
 
 
 def get_message_type(kind):
@@ -171,3 +165,7 @@ def get_message_type(kind):
     if kind in message_types:
         return message_types[kind]
     raise Exception("No applicable message type {}", kind) # TODO: ???
+
+
+if __name__ == "__main__":
+    print(sorted(message_types.keys()))
