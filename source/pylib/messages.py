@@ -161,7 +161,8 @@ _message_types = dict(
     STATE=StateMessage,
     TRIAL=TrialMessage,
     READY=ReadyMessage,
-    WORD=WordMessage
+    WORD=WordMessage,
+    MATH=MathMessage
 )
 
 
