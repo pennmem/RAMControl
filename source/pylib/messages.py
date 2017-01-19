@@ -147,7 +147,7 @@ class MathMessage(RAMMessage):
         super(MathMessage, self).__init__("MATH", timestamp=timestamp, data=payload)
 
 
-_message_types = dict(
+message_types = dict(
     CONNECTED=ConnectedMessage,
     HEARTBEAT=HeartbeatMessage,
     EXPNAME=ExperimentNameMessage,
@@ -168,6 +168,6 @@ _message_types = dict(
 
 def get_message_type(kind):
     """Return the message class. Used to build messages."""
-    if kind in _message_types:
-        return _message_types[kind]
+    if kind in message_types:
+        return message_types[kind]
     raise Exception("No applicable message type {}", kind) # TODO: ???
