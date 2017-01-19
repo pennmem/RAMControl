@@ -136,7 +136,8 @@ if __name__ == "__main__":
 
     parser.add_argument("-f", "--file", type=str, dest="filename",
                         help="File to read for scripting messages to send")
-    parser.add_argument("-b", "--heartbeat", action="store_true", default=True,
+    parser.add_argument("-b", "--no-heartbeat", action="store_false",
+                        dest="heartbeat", default=True,
                         help="Send heartbeat messages to ensure the host PC stays alive.")
 
     # TODO: other run modes... should use mutually exclusive groups
@@ -144,6 +145,7 @@ if __name__ == "__main__":
     #                     help="Send a single message of this type")
 
     args = parser.parse_args()
+    print(args)
 
     if args.filename is not None:
         run_message_sequence(args.filename, args.heartbeat)
