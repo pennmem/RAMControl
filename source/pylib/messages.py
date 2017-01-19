@@ -45,8 +45,8 @@ class RAMMessage(object):
 
 class ConnectedMessage(RAMMessage):
     """Message indicating that a new socket connection has been established."""
-    def __init__(self):
-        super(ConnectedMessage, self).__init__("CONNECTED")
+    def __init__(self, timestamp=None):
+        super(ConnectedMessage, self).__init__("CONNECTED", timestamp=timestamp)
 
 
 class HeartbeatMessage(RAMMessage):
@@ -151,13 +151,14 @@ class MathMessage(RAMMessage):
 
 _mod = sys.modules[__name__]
 _names = dir(_mod)
-
 message_types = {
     name.split("Message")[0].upper(): getattr(_mod, name)
     for name in _names
     if inspect.isclass(getattr(_mod, name))
     and name is not "RAMMessage"
+    and name is not "ExperimentNameMessage"  # this is named differently than the message
 }
+message_types["EXPNAME"] = ExperimentNameMessage
 
 
 def get_message_type(kind):
