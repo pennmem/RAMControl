@@ -1,5 +1,5 @@
 {
-  "experiment_dir": "../RAM3_tasks",
+  "experiment_dir": "./experiments",
   "resolution": "1440x900",
   "archive_dir": "./data",
   "config_file": "config.py",

@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Activate conda environment
-source activate RAM3
+# source activate RAM3
 
 # Have to cd to directory of shell script in case run from double-click
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
