@@ -1,7 +1,6 @@
 data/
 *~
 .DS_Store
-experiments/
 logs/*.log
 .checkSVN
 .idea/
