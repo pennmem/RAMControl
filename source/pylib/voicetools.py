@@ -1,8 +1,14 @@
 """Tools for voice activity detection (VAD) for FR5 and related tasks."""
 
 from __future__ import division
+
 import struct
+from io import BytesIO
+import wave
+import audioop
+from collections import namedtuple
 import logging
+
 import numpy as np
 from scipy.signal import butter, lfilter
 
@@ -194,3 +200,62 @@ class AudioTrack(pyepl.sound.AudioTrack):
         elif self.speaking and not conditions:  # vocalization end
             self.speaking = False
             self.logMessage("%s\t%s" % ("SP", "Stop"), currentTime)
+
+
+AudioFrame = namedtuple("AudioFrame", "bytes, timestamp, duration")
+
+
+def frame_generator(audio, frame_duration, sample_rate):
+    """A generator to get audio frames of specific length in time.
+
+    :param BytesIO audio: Audio data.
+    :param int frame_duration: Frame duration in ms.
+    :param int sample_rate: Audio sample rate in Hz.
+
+    """
+    AudioFrame = namedtuple("AudioFrame", "bytes, timestamp, duration")
+
+    n = int(sample_rate * (frame_duration / 1000.0) * 2)
+    offset = 0
+    timestamp = 0.0
+    duration = (float(n) / sample_rate) / 2.0
+    while offset + n < len(audio):
+        yield AudioFrame(audio[offset:offset + n], timestamp, duration)
+        timestamp += duration
+        offset += n
+
+
+def downsample(buf, outrate=16000):
+    """Downsample audio. Required for voice detection.
+
+    :param buf: Audio data buffer (or path to WAV file).
+    :param int outrate: Output audio sample rate in Hz.
+    :returns: Output buffer.
+    :rtype: BytesIO
+
+    """
+    wav = wave.open(buf)
+    inpars = wav.getparams()
+    frames = wav.readframes(inpars.nframes)
+
+    # Convert to mono
+    if inpars.nchannels == 2:
+        frames = audioop.tomono(frames, inpars.sampwidth, 1, 1)
+
+    # Convert to 16-bit depth
+    if inpars.sampwidth > 2:
+        frames = audioop.lin2lin(frames, inpars.sampwidth, 2)
+
+    # Convert frame rate to 16000 Hz
+    frames, _ = audioop.ratecv(frames, 2, 1, inpars.framerate, outrate, None)
+
+    # Return a BytesIO version of the output
+    outbuf = BytesIO()
+    out = wave.open(outbuf, "w")
+    out.setnchannels(1)
+    out.setsampwidth(2)
+    out.setframerate(outrate)
+    out.writeframes(frames)
+    out.close()
+    outbuf.seek(0)
+    return outbuf
