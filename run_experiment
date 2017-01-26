@@ -11,6 +11,3 @@ export PYTHONPATH="$DIR/source/pylib:$PYTHONPATH"
 # Run, passing command line options
 python run.py "$@"
 
-echo "Complete."
-
-read
