@@ -1,7 +1,9 @@
 """Messages for communicating with the host PC."""
 
+import sys
 import json
 import time
+import inspect
 
 
 class RAMMessage(object):
@@ -43,8 +45,8 @@ class RAMMessage(object):
 
 class ConnectedMessage(RAMMessage):
     """Message indicating that a new socket connection has been established."""
-    def __init__(self):
-        super(ConnectedMessage, self).__init__("CONNECTED")
+    def __init__(self, timestamp=None):
+        super(ConnectedMessage, self).__init__("CONNECTED", timestamp=timestamp)
 
 
 class HeartbeatMessage(RAMMessage):
@@ -147,26 +149,24 @@ class MathMessage(RAMMessage):
         super(MathMessage, self).__init__("MATH", timestamp=timestamp, data=payload)
 
 
-_message_types = dict(
-    CONNECTED=ConnectedMessage,
-    HEARTBEAT=HeartbeatMessage,
-    EXPNAME=ExperimentNameMessage,
-    VERSION_NUM=VersionMessage,
-    SESSION=SessionMessage,
-    SUBJECTID=SubjectIdMessage,
-    ALIGNCLOCK=AlignClockMessage,
-    SYNC=SyncMessage,
-    DEFINE=DefineMessage,
-    EXIT=ExitMessage,
-    STATE=StateMessage,
-    TRIAL=TrialMessage,
-    READY=ReadyMessage,
-    WORD=WordMessage
-)
+_mod = sys.modules[__name__]
+_names = dir(_mod)
+message_types = {
+    name.split("Message")[0].upper(): getattr(_mod, name)
+    for name in _names
+    if inspect.isclass(getattr(_mod, name))
+    and name is not "RAMMessage"
+    and name is not "ExperimentNameMessage"  # this is named differently than the message
+}
+message_types["EXPNAME"] = ExperimentNameMessage
 
 
 def get_message_type(kind):
     """Return the message class. Used to build messages."""
-    if kind in _message_types:
-        return _message_types[kind]
+    if kind in message_types:
+        return message_types[kind]
     raise Exception("No applicable message type {}", kind) # TODO: ???
+
+
+if __name__ == "__main__":
+    print(sorted(message_types.keys()))
