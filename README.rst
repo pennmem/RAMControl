@@ -12,5 +12,8 @@ First run the PyEPL installer. If you don't know how to do this, talk
 to Isaac.
 
 Clone this repository to a sensible place, e.g.,
-``~/src/task_laptop/ram_tasks``. Next clone the ``RAM_FR`` repository and make
-sure that the ``run_FRx`` scripts correctly point to this directory.
+``~/src/task_laptop/ram_tasks``. Experiments are included in this repository via
+git submodules. To obtain::
+
+  $ git submodule init
+  $ git submodule update
