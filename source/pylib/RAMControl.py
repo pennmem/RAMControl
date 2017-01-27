@@ -9,6 +9,7 @@ try:
 except ImportError:
     from Queue import Queue, Empty
 
+from webrtcvad import Vad
 from pyepl.locals import *
 from pyepl.locals import Text
 from pyepl.hardware import addPollCallback, removePollCallback
@@ -71,6 +72,10 @@ class RAMControl(object):
         self._connection_failed = False
         self._quit = Event()
         self._last_heartbeat_received = -1.  # last time heartbeat was received
+
+        # Voice activity detection
+        self.vad = Vad()
+        self.vad.set_mode(3)  # Most aggressive. TODO: make configurable
 
         # Experiment-specific data to be filled in later
         self.experiment = ''

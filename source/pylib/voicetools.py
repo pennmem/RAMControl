@@ -3,6 +3,7 @@
 from __future__ import division
 
 from io import BytesIO
+import os.path as osp
 import wave
 import audioop
 from collections import namedtuple
@@ -88,7 +89,7 @@ AudioFrame = namedtuple("AudioFrame", "bytes, timestamp, duration")
 def frame_generator(audio, frame_duration, sample_rate):
     """A generator to get audio frames of specific length in time.
 
-    :param BytesIO audio: Audio data.
+    :param bytes audio: Audio data.
     :param int frame_duration: Frame duration in ms.
     :param int sample_rate: Audio sample rate in Hz.
 
@@ -114,20 +115,24 @@ def downsample(buf, outrate=16000):
     :rtype: BytesIO
 
     """
-    wav = wave.open(buf)
-    inpars = wav.getparams()
-    frames = wav.readframes(inpars.nframes)
+    #wav = wave.open(buf)
+    #inpars = wav.getparams()
+    #frames = wav.readframes(inpars.nframes)
+    frames = buf.read()
 
     # Convert to mono
-    if inpars.nchannels == 2:
-        frames = audioop.tomono(frames, inpars.sampwidth, 1, 1)
+    if True:  # inpars.nchannels == 2:
+        #frames = audioop.tomono(frames, inpars.sampwidth, 1, 1)
+        frames = audioop.tomono(frames, 2, 1, 1)
 
     # Convert to 16-bit depth
-    if inpars.sampwidth > 2:
-        frames = audioop.lin2lin(frames, inpars.sampwidth, 2)
+    if True:  # inpars.sampwidth > 2:
+        #frames = audioop.lin2lin(frames, inpars.sampwidth, 2)
+        frames = audioop.lin2lin(frames, 2, 2)
 
     # Convert frame rate to 16000 Hz
-    frames, _ = audioop.ratecv(frames, 2, 1, inpars.framerate, outrate, None)
+    # frames, _ = audioop.ratecv(frames, 2, 1, inpars.framerate, outrate, None)
+    frames, _ = audioop.ratecv(frames, 2, 1, 22050, outrate, None)
 
     # Return a BytesIO version of the output
     outbuf = BytesIO()
@@ -137,5 +142,14 @@ def downsample(buf, outrate=16000):
     out.setframerate(outrate)
     out.writeframes(frames)
     out.close()
+
+    # TODO: Debugging only... remove!
+    out = wave.open(osp.expanduser("~/tmp/out.wav"), "w")
+    out.setnchannels(1)
+    out.setsampwidth(2)
+    out.setframerate(outrate)
+    out.writeframes(frames)
+    out.close()
+
     outbuf.seek(0)
     return outbuf

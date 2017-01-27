@@ -1,9 +1,12 @@
+from io import BytesIO
 from pyepl.locals import *
 from pyepl import exputils
 from pyepl import display
 from pyepl.textlog import LogTrack
+# from pyepl.hardware import addPollCallback, removePollCallback
 import os
 import codecs
+import voicetools
 
 TEXT_EXTS = ["txt"]
 
@@ -192,12 +195,25 @@ def flashStimulusWithOffscreenTimestamp(showable, duration = 1000, x = 0.5, y = 
 
 
 class CustomAudioTrack(AudioTrack):
+    """Customized :class:`AudioTrack` which adds callbacks and optional voice
+    activity detection.
 
-    def __init__(self, *args):
+    """
+    def __init__(self, *args, **kwargs):
         AudioTrack.__init__(self, *args)
 
+        # Voice activity detection
+        self.vad = kwargs.get("vad", None)
+
+        # Voice detection requires intervals of 10, 20, or 30 ms
+        #self.rec_interval = 20
+        self.vad_interval = 20
+        self.vad_ticks = 0
+        self.speaking = False
+
     def record(self, duration, basename = None, t = None,
-               startCallback=None, stopCallback=None, **sfargs):
+               startCallback=None, stopCallback=None, voiceCallback=None,
+               **sfargs):
 
         """
         Perform a blocked recording for a specified duration (in milliseconds).
@@ -221,11 +237,52 @@ class CustomAudioTrack(AudioTrack):
 
         if startCallback:
             startCallback()
-        (r,starttime) = self.startRecording(basename, t = t, **sfargs)
+        r, starttime = self.startRecording(basename, t=t, **sfargs)
+
         if stopCallback:
             stopCallback()
-        (r,stoptime) = self.stopRecording(t = t + duration)
-        return (r,starttime)
+        r, stoptime = self.stopRecording(t=t + duration)  # tell it to stop after t + duration
+
+        return r, starttime
+
+    def __recCallback__(self):
+        """Overridden to add VAD support."""
+        currentTime = timing.now()
+        if self.recording and currentTime >= self.last_rec + self.rec_interval:
+            newstuff = self.getBuffData()
+
+            # Update the last time
+            self.last_rec = currentTime
+
+            if len(newstuff) > 0:
+                # append the data to the clip
+                self.recClip.append(newstuff, self.eplsound.getRecChans())
+
+                if self.vad is not None:
+                    self.check_for_vocalization(newstuff)
+
+    def check_for_vocalization(self, data):
+        """Check for voice activity."""
+        # if self.vad_ticks < self.vad_interval:
+        #     self.vad_ticks += 1
+        #     return
+        #
+        # self.vad_ticks = 0
+        print(type(data))
+        data = BytesIO(data)
+        frame = voicetools.downsample(data).read()
+        speech = self.vad.is_speech(frame, 16000)
+        cur_time = timing.now()
+
+        # TODO: send state messages to host PC
+        if not self.speaking and speech:  # vocalization start
+            self.speaking = True
+            self.logMessage("%s\t%s" % ("SP", "Start"), cur_time)
+            print("speak!")
+        elif self.speaking and not speech:  # vocalization end
+            self.speaking = False
+            self.logMessage("%s\t%s" % ("SP", "Stop"), cur_time)
+            print("stopped speaking")
 
 
 class CustomAudioClip(AudioClip):
