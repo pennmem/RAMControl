@@ -16,6 +16,7 @@ from pyepl.hardware import addPollCallback, removePollCallback
 from zmqsocket import SocketServer
 from exc import RamException
 from messages import *
+from log import setup_logging
 
 logger = logging.getLogger(__name__)
 
@@ -44,6 +45,7 @@ class RAMControl(object):
 
     :param str address: ZMQ address string to bind socket.
     :param int connection_timeout: Network timeout limit in seconds.
+    :param int log_level: Log level to use.
 
     Process::
 
@@ -57,7 +59,7 @@ class RAMControl(object):
     _instance = None
 
     def __init__(self, address="tcp://192.168.137.200:8889",
-                 connection_timeout=10):
+                 connection_timeout=10, log_level=logging.INFO):
         if self._instance is not None:
             raise Exception("Multiple RAM instances requested!")
 
@@ -90,6 +92,9 @@ class RAMControl(object):
             "HEARTBEAT": self.heartbeat_handler,
             "CONNECTED": self.connected_handler
         }
+
+        # Enable logging
+        setup_logging(name=logger.name, level=log_level)
 
         self.socket = SocketServer()
         self.socket.register_handler(self.dispatch)
@@ -297,7 +302,7 @@ class RAMControl(object):
     def sync_handler(self, msg):
         """Send SYNC pulses back to the host PC."""
         num = msg["num"]
-        logger.error("Sync {} received".format(num))
+        logger.info("Sync {} received".format(num))
         self.send(SyncMessage(num=num))
 
     def synced_handler(self, msg):
@@ -319,7 +324,7 @@ class RAMControl(object):
 
     def heartbeat_handler(self, msg):
         """Received echoed heartbeat message from host."""
-        logger.info("Heartbeat returned.")
+        logger.debug("Heartbeat returned.")
         self._last_heartbeat_received = time.time()
 
     def start_handler(self, msg):
