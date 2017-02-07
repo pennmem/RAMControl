@@ -19,3 +19,11 @@ encountering a video:
 ```
 $ ./vidextract.sh
 ```
+
+
+## Updating
+
+```
+$ git pull
+$ git submodule update
+```
