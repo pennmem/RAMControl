@@ -206,7 +206,7 @@ class CustomAudioTrack(AudioTrack):
         self.vad = kwargs.get("vad", None)
 
         # Voice detection requires intervals of 10, 20, or 30 ms
-        #self.rec_interval = 20
+        self.rec_interval = 20
         self.vad_interval = 20
         self.vad_ticks = 0
         self.speaking = False
@@ -262,16 +262,14 @@ class CustomAudioTrack(AudioTrack):
                     self.check_for_vocalization(newstuff)
 
     def check_for_vocalization(self, data):
-        """Check for voice activity."""
-        # if self.vad_ticks < self.vad_interval:
-        #     self.vad_ticks += 1
-        #     return
-        #
-        # self.vad_ticks = 0
-        print(type(data))
-        data = BytesIO(data)
-        frame = voicetools.downsample(data).read()
-        speech = self.vad.is_speech(frame, 16000)
+        """Check for voice activity.
+
+        This reads 320 bytes because webrtcvad requires 10, 20, or 30 ms frames
+        in 16 kHz framerate, mono, 16-bit audio data. 320 = 16000 Hz * 20 ms.
+
+        """
+        newdata = voicetools.downsample(BytesIO(data))
+        speech = self.vad.is_speech(newdata.read(320), 16000)
         cur_time = timing.now()
 
         # TODO: send state messages to host PC

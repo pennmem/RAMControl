@@ -109,7 +109,7 @@ def frame_generator(audio, frame_duration, sample_rate):
 def downsample(buf, outrate=16000):
     """Downsample audio. Required for voice detection.
 
-    :param buf: Audio data buffer (or path to WAV file).
+    :param BytesIO buf: Audio data buffer.
     :param int outrate: Output audio sample rate in Hz.
     :returns: Output buffer.
     :rtype: BytesIO
