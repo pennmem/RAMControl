@@ -206,9 +206,8 @@ class CustomAudioTrack(AudioTrack):
         self.vad = kwargs.get("vad", None)
 
         # Voice detection requires intervals of 10, 20, or 30 ms
-        self.rec_interval = 20
-        self.vad_interval = 20
-        self.vad_ticks = 0
+        if self.vad is not None:
+            self.rec_interval = 20
         self.speaking = False
 
     def record(self, duration, basename = None, t = None,
