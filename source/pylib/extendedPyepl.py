@@ -1,14 +1,20 @@
+import os.path as osp
 from io import BytesIO
+import wave
+import numpy as np
 from pyepl.locals import *
 from pyepl import exputils
 from pyepl import display
 from pyepl.textlog import LogTrack
 # from pyepl.hardware import addPollCallback, removePollCallback
+from redis import StrictRedis
 import os
 import codecs
 import voicetools
 
 TEXT_EXTS = ["txt"]
+
+redis = StrictRedis()
 
 
 class CustomText(Text):
@@ -208,6 +214,7 @@ class CustomAudioTrack(AudioTrack):
         # Voice detection requires intervals of 10, 20, or 30 ms
         if self.vad is not None:
             self.rec_interval = 20
+            pass
         self.speaking = False
 
     def record(self, duration, basename = None, t = None,
@@ -267,9 +274,24 @@ class CustomAudioTrack(AudioTrack):
         in 16 kHz framerate, mono, 16-bit audio data. 320 = 16000 Hz * 20 ms.
 
         """
-        newdata = voicetools.downsample(BytesIO(data))
-        speech = self.vad.is_speech(newdata.read(320), 16000)
+        downsampled = voicetools.downsample(BytesIO(data))
+        rms = voicetools.rms(downsampled)
+        print(rms)
+        redis.append("voicedata", data)
+
+        # newdata = np.fromstring(data, dtype=np.int16)
+        # np.save(osp.expanduser("~/tmp/out.npy"), newdata)
+        #wav = wave.open(newdata, "rb")
+        #nframes = wav.getframerate()/20
+        #print(nframes)
+        #wave_data = wav.readframes(nframes)
+        #print(len(wave_data))
+
+        # speech = self.vad.is_speech(newdata, 16000)
+        # speech = self.vad.is_speech(newdata.tobytes(), 16000)
+        #speech = self.vad.is_speech(wave_data, 16000)
         cur_time = timing.now()
+        return
 
         # TODO: send state messages to host PC
         if not self.speaking and speech:  # vocalization start
@@ -280,6 +302,7 @@ class CustomAudioTrack(AudioTrack):
             self.speaking = False
             self.logMessage("%s\t%s" % ("SP", "Stop"), cur_time)
             print("stopped speaking")
+        print(speech)
 
 
 class CustomAudioClip(AudioClip):

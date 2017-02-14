@@ -9,6 +9,7 @@ import audioop
 from collections import namedtuple
 import logging
 
+import numpy as np
 from scipy.signal import butter, lfilter
 
 logger = logging.getLogger(__name__)
@@ -133,18 +134,11 @@ def downsample(buf, outrate=16000):
     # Convert frame rate to 16000 Hz
     # frames, _ = audioop.ratecv(frames, 2, 1, inpars.framerate, outrate, None)
     frames, _ = audioop.ratecv(frames, 2, 1, 22050, outrate, None)
+    return np.fromstring(frames, dtype=np.int16)
 
     # Return a BytesIO version of the output
     outbuf = BytesIO()
-    out = wave.open(outbuf, "w")
-    out.setnchannels(1)
-    out.setsampwidth(2)
-    out.setframerate(outrate)
-    out.writeframes(frames)
-    out.close()
-
-    # TODO: Debugging only... remove!
-    out = wave.open(osp.expanduser("~/tmp/out.wav"), "w")
+    out = wave.open(outbuf, "wb")
     out.setnchannels(1)
     out.setsampwidth(2)
     out.setframerate(outrate)
@@ -153,3 +147,31 @@ def downsample(buf, outrate=16000):
 
     outbuf.seek(0)
     return outbuf
+
+
+def rms(data):
+    """Return the RMS value of the data.
+
+    Note: We have to cast the data as ``np.int32`` because ``np.int16`` isn't
+    big enough and we can get negative values after squaring!
+
+    :param np.ndarray data:
+
+    """
+    return np.sqrt(np.mean(np.square(data.astype(np.int32))))
+
+
+def apodize(data, window=5, rate=16000):
+    """Apply a Hamming window to reduce a sound's 'click' onset / offset.
+
+    :param np.ndarray data: Audio data.
+    :param int window: Window size in ms.
+    :param int rate: Audio frame rate in Hz.
+
+    """
+
+    hw_size = int(min(rate // (1000 / window), len(data) // 15))
+    hamming_window = np.hamming(2 * hw_size + 1)
+    data[:hw_size] *= hamming_window[:hw_size]
+    data[-hw_size:] *= hamming_window[-hw_size:]
+    return data
