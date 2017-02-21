@@ -113,7 +113,7 @@ def generate_scripted_session(logfile, expname, outfile=None):
     df.time = df.time.apply(lambda x: 0.01 if x <= 1e-3 else x)
 
     kwargs = df.data
-    kwargs.apply(lambda x: "" if x is None else x)  #json.dumps(x))
+    kwargs = kwargs.apply(lambda x: "" if x is None else json.dumps(x))
 
     csv = pd.DataFrame({
         "delay": df.time,
@@ -123,7 +123,7 @@ def generate_scripted_session(logfile, expname, outfile=None):
 
     lines = ["#delay,msgtype,kwargs",
              "0,CONNECTED,",
-             '0.1,EXPNAME,{{"experiment":{:s}}}'.format(expname)]
+             '0.1,EXPNAME,{{"experiment":"{:s}"}}'.format(expname)]
     lines += [
         "{:f},{:s},{:s}".format(row.delay, row.msgtype, row.kwargs)
         for _, row in csv.iterrows()
