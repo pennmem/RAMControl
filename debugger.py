@@ -49,7 +49,7 @@ def parse_csv_file(filename):
 
     """
     with open(filename, "r") as csvfile:
-        reader = csv.reader(csvfile.readlines())
+        reader = csv.reader(csvfile.readlines(), delimiter=";")
 
     messages = []
     t0 = time.time()
@@ -121,11 +121,11 @@ def generate_scripted_session(logfile, expname, outfile=None):
         "kwargs": kwargs
     })
 
-    lines = ["#delay,msgtype,kwargs",
-             "0,CONNECTED,",
-             '0.1,EXPNAME,{{"experiment":"{:s}"}}'.format(expname)]
+    lines = ["#delay;msgtype;kwargs",
+             "0;CONNECTED;",
+             '0.1;EXPNAME;{{"experiment":"{:s}"}}'.format(expname)]
     lines += [
-        "{:f},{:s},{:s}".format(row.delay, row.msgtype, row.kwargs)
+        "{:f};{:s};{:s}".format(row.delay, row.msgtype, row.kwargs)
         for _, row in csv.iterrows()
     ]
     output = "\n".join(lines)

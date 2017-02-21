@@ -1,4 +1,4 @@
-#delay,msgtype,kwargs
-0,CONNECTED,
-1,HEARTBEAT,{"interval":1}
-2,EXPNAME,{"experiment":"FR5"}
+#delay;msgtype;kwargs
+0;CONNECTED;
+1;HEARTBEAT;{"interval":1}
+2;EXPNAME;{"experiment":"FR5"}
