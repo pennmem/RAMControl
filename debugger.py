@@ -13,6 +13,7 @@ from argparse import ArgumentParser
 from collections import namedtuple
 from contextlib import contextmanager
 from threading import Event
+import logging
 
 import pandas as pd
 
@@ -20,6 +21,7 @@ import zmq
 from zmq.eventloop.ioloop import ZMQIOLoop
 from zmq.eventloop.future import Context
 from tornado import gen
+from tornado.options import options
 from tornado.log import enable_pretty_logging
 
 try:
@@ -31,6 +33,7 @@ except ImportError:
 sys.path.insert(0, "source/pylib")
 from messages import get_message_type
 
+logger = logging.getLogger("debugger")
 ScriptedMessage = namedtuple("Message", "delay, msg")
 
 
@@ -69,8 +72,11 @@ def parse_csv_file(filename):
                 state = kwargs.pop("name")
                 kwargs["state"] = state
             elif mtype == "SESSION":
-                session = kwargs.pop("session_number")
-                kwargs["session"] = session
+                try:
+                    session = kwargs.pop("session_number")
+                    kwargs["session"] = session
+                except KeyError:
+                    pass
         kwargs["timestamp"] = (t0 + delay)*1000.
         msg = get_message_type(mtype)(**kwargs)
         messages.append(ScriptedMessage(delay, msg))
@@ -78,7 +84,8 @@ def parse_csv_file(filename):
     return messages
 
 
-def generate_scripted_session(logfile, expname, outfile=None):
+def generate_scripted_session(logfile, expname, subject, session_num,
+                              outfile=None):
     """Generate a CSV-scripted session from a Ramulator output log.
 
     Currently, the following message types are ignored:
@@ -91,6 +98,8 @@ def generate_scripted_session(logfile, expname, outfile=None):
 
     :param str logfile: Log file to read.
     :param str expname: Experiment name to send.
+    :param str subject: Subject ID.
+    :param int session_num:
     :param str outfile: Output CSV file or None.
     :rtype:
 
@@ -130,7 +139,11 @@ def generate_scripted_session(logfile, expname, outfile=None):
 
     lines = ["#delay;msgtype;kwargs",
              "0;CONNECTED;",
-             '0.1;EXPNAME;{{"experiment":"{:s}"}}'.format(expname)]
+             '0.1;EXPNAME;{{"experiment":"{:s}"}}'.format(expname),
+             '0.1;SUBJECTID;{{"subject":"{:s}"}}'.format(subject),
+             '0.1;SESSION;{{"session":{:d},"session_type":"{:s}"}}'.format(
+                 session_num, "STIM")
+    ]
     lines += [
         "{:f};{:s};{:s}".format(row.delay, row.msgtype, row.kwargs)
         for _, row in csv.iterrows()
@@ -173,37 +186,52 @@ def run_message_sequence(filename, heartbeat):
         def recv():
             while True:
                 incoming = yield sock.recv()
-                print("Received %s" % incoming)
+                logger.debug("Received %s" % incoming)
 
         @gen.coroutine
         def wait_for_connection():
-            print("Waiting for connection ")
+            logger.info("Waiting for connection ")
             incoming = yield sock.recv()
-            print("Received %s" % incoming)
-            print("Connected!")
+            logger.debug("Received %s", incoming)
+            logger.info("Connected!")
             yield send_msg("CONNECTED")
+
+        @gen.coroutine
+        def wait_for_start():
+            ready = False
+            logger.info("Waiting for start message...")
+            while not ready:
+                incoming = yield sock.recv()
+                msg = json.loads(incoming)
+                logger.debug("%s", incoming)
+                if msg["type"] != "START":
+                    continue
+                ready = True
+                logger.info("Got start")
 
         @gen.coroutine
         def send_sequence(sequence):
             for entry in sequence:
-                print("Delaying for %f s..." % entry.delay)
-                print(entry.delay)
+                logger.info("Delaying for %.3f s...", entry.delay)
                 yield gen.sleep(entry.delay)
                 jsonized = entry.msg.jsonize()
-                print("Sending %s" % jsonized)
+                logger.info("Sending %s", jsonized)
                 sock.send(jsonized)
 
         @gen.coroutine
         def send_heartbeats():
             if heartbeat:
+                logger.info("Sending heartbeats...")
                 while not done.is_set():
-                    yield sock.send()
+                    yield send_msg("HEARTBEAT")
                     yield gen.sleep(1)
 
         @gen.coroutine
         def main():
             sequence = parse_csv_file(filename)
             yield wait_for_connection()
+            send_heartbeats()
+            # yield wait_for_start()
             recv_future = recv()
             yield send_sequence(sequence)
             yield send_msg("EXIT")
@@ -215,18 +243,24 @@ def run_message_sequence(filename, heartbeat):
 
 
 if __name__ == "__main__":
-    enable_pretty_logging()
-
     parser = ArgumentParser(description="Connect and send messages to the host PC.")
+    parser.add_argument("-d", "--debug", action="store_true",
+                        help="Enable extra verbose output")
+
     subparsers = parser.add_subparsers(dest="command")
 
     generate = subparsers.add_parser(
         "generate", help="Generate a CSV file from host PC output logs")
     generate.add_argument("-x", "--experiment", type=str, required=True,
                           help="Experiment type")
+    generate.add_argument("-s", "--subject", type=str, required=True,
+                          help="Subject name")
+    generate.add_argument("-n", "--session-number", type=int, default=0,
+                          help="Session number")
     generate.add_argument("-o", "--outfile", type=str, default="",
                           help="Output file")
-    generate.add_argument("filename", type=str, help="Log file to read")
+    generate.add_argument("-f", "--filename", type=str, required=True,
+                          help="Log file to read")
 
     run = subparsers.add_parser("run", help="Run a scripted session")
     run.add_argument("-f", "--file", type=str, dest="filename",
@@ -237,8 +271,13 @@ if __name__ == "__main__":
 
     args = parser.parse_args()
 
+    if args.debug:
+        options.logging = "debug"
+    enable_pretty_logging()
+
     if args.command == "generate":
-        funcargs = [args.filename, args.experiment]
+        funcargs = [args.filename, args.experiment, args.subject,
+                    args.session_number]
         write_to_stdout = len(args.outfile) == 0
         if not write_to_stdout:
             funcargs.append(args.outfile)
