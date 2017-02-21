@@ -20,6 +20,7 @@ import zmq
 from zmq.eventloop.ioloop import ZMQIOLoop
 from zmq.eventloop.future import Context
 from tornado import gen
+from tornado.log import enable_pretty_logging
 
 try:
     from tqdm import tqdm
@@ -60,10 +61,16 @@ def parse_csv_file(filename):
         else:
             delay, mtype, params = float(row[0]), row[1], row[2]
 
-        try:
-            kwargs = json.loads(params)
-        except:  # no kwargs needed
+        if params == "":
             kwargs = dict()
+        else:
+            kwargs = json.loads(params)
+            if mtype == "STATE":
+                state = kwargs.pop("name")
+                kwargs["state"] = state
+            elif mtype == "SESSION":
+                session = kwargs.pop("session_number")
+                kwargs["session"] = session
         kwargs["timestamp"] = (t0 + delay)*1000.
         msg = get_message_type(mtype)(**kwargs)
         messages.append(ScriptedMessage(delay, msg))
@@ -184,7 +191,7 @@ def run_message_sequence(filename, heartbeat):
                 yield gen.sleep(entry.delay)
                 jsonized = entry.msg.jsonize()
                 print("Sending %s" % jsonized)
-                sock.send(jsonized, zmq.NOBLOCK)
+                sock.send(jsonized)
 
         @gen.coroutine
         def send_heartbeats():
@@ -208,22 +215,41 @@ def run_message_sequence(filename, heartbeat):
 
 
 if __name__ == "__main__":
+    enable_pretty_logging()
+
     parser = ArgumentParser(description="Connect and send messages to the host PC.")
+    subparsers = parser.add_subparsers(dest="command")
 
-    parser.add_argument("-f", "--file", type=str, dest="filename",
-                        help="File to read for scripting messages to send")
-    parser.add_argument("-b", "--no-heartbeat", action="store_false",
-                        dest="heartbeat", default=True,
-                        help="Send heartbeat messages to ensure the host PC stays alive.")
+    generate = subparsers.add_parser(
+        "generate", help="Generate a CSV file from host PC output logs")
+    generate.add_argument("-x", "--experiment", type=str, required=True,
+                          help="Experiment type")
+    generate.add_argument("-o", "--outfile", type=str, default="",
+                          help="Output file")
+    generate.add_argument("filename", type=str, help="Log file to read")
 
-    # TODO: other run modes... should use mutually exclusive groups
-    # parser.add_argument("-m", "--message", type=str,
-    #                     help="Send a single message of this type")
+    run = subparsers.add_parser("run", help="Run a scripted session")
+    run.add_argument("-f", "--file", type=str, dest="filename",
+                     help="File to read for scripting messages to send")
+    run.add_argument("-b", "--no-heartbeat", action="store_false",
+                     dest="heartbeat", default=True,
+                     help="Send heartbeat messages to ensure the host PC stays alive.")
 
     args = parser.parse_args()
-    print(args)
 
-    if args.filename is not None:
-        run_message_sequence(args.filename, args.heartbeat)
-    else:
-        parser.print_help()
+    if args.command == "generate":
+        funcargs = [args.filename, args.experiment]
+        write_to_stdout = len(args.outfile) == 0
+        if not write_to_stdout:
+            funcargs.append(args.outfile)
+
+        out = generate_scripted_session(*funcargs)
+
+        if write_to_stdout:
+            sys.stdout.write(out)
+
+    elif args.command == "run":
+        if args.filename is not None:
+            run_message_sequence(args.filename, args.heartbeat)
+        else:
+            run.print_help()
