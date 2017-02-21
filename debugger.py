@@ -14,10 +14,18 @@ from collections import namedtuple
 from contextlib import contextmanager
 from threading import Event
 
+import pandas as pd
+
 import zmq
 from zmq.eventloop.ioloop import ZMQIOLoop
 from zmq.eventloop.future import Context
 from tornado import gen
+
+try:
+    from tqdm import tqdm
+except ImportError:
+    print("You should pip install tqdm")
+    tqdm = lambda x: x
 
 sys.path.insert(0, "source/pylib")
 from messages import get_message_type
@@ -61,6 +69,73 @@ def parse_csv_file(filename):
         messages.append(ScriptedMessage(delay, msg))
 
     return messages
+
+
+def generate_scripted_session(logfile, expname, outfile=None):
+    """Generate a CSV-scripted session from a Ramulator output log.
+
+    Currently, the following message types are ignored:
+
+    * ``HEARTBEAT``
+    * ``ALIGNCLOCK``
+    * ``SYNC``
+    * ``MATH``
+    * ``WORD``
+
+    :param str logfile: Log file to read.
+    :param str expname: Experiment name to send.
+    :param str outfile: Output CSV file or None.
+    :rtype:
+
+    """
+    ignore = ["HEARTBEAT", "SYNC", "MATH", "WORD", "ALIGNCLOCK"]
+    messages = []
+
+    print("Parsing " + logfile + "...")
+    with open(logfile) as f:
+        for line in f.readlines():
+            entry = line.split("Incoming message: ")
+            if len(entry) is not 2:
+                continue
+            messages.append(json.loads(entry[-1]))
+
+    # Remove ignored message types
+    df = pd.DataFrame(messages)
+    df = df[~df.type.isin(ignore)]
+    df.reset_index(inplace=True)
+
+    # Convert to time deltas in seconds
+    df.time /= 1000.
+    df.time = pd.Series([0] + [df.time.iloc[n] - df.time.iloc[n - 1]
+                               for n in range(1, len(df.time))])
+
+    # For some reason, we sometimes get negative times... Just make those 10 ms.
+    df.time = df.time.apply(lambda x: 0.01 if x <= 1e-3 else x)
+
+    kwargs = df.data
+    kwargs.apply(lambda x: "" if x is None else x)  #json.dumps(x))
+
+    csv = pd.DataFrame({
+        "delay": df.time,
+        "msgtype": df.type,
+        "kwargs": kwargs
+    })
+
+    lines = ["#delay,msgtype,kwargs",
+             "0,CONNECTED,",
+             '0.1,EXPNAME,{{"experiment":{:s}}}'.format(expname)]
+    lines += [
+        "{:f},{:s},{:s}".format(row.delay, row.msgtype, row.kwargs)
+        for _, row in csv.iterrows()
+    ]
+    output = "\n".join(lines)
+
+    if outfile is not None:
+        print("Writing to " + outfile + "...")
+        with open(outfile, "w") as f:
+            f.write(output)
+
+    return output
 
 
 @contextmanager
@@ -113,9 +188,10 @@ def run_message_sequence(filename, heartbeat):
 
         @gen.coroutine
         def send_heartbeats():
-            while not done.is_set():
-                yield sock.send()
-                yield gen.sleep(1)
+            if heartbeat:
+                while not done.is_set():
+                    yield sock.send()
+                    yield gen.sleep(1)
 
         @gen.coroutine
         def main():
