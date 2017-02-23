@@ -7,9 +7,12 @@ from pyepl.textlog import LogTrack
 import os
 import codecs
 import voicetools
-from webrtcvad import Vad
+from redis import StrictRedis
 
 TEXT_EXTS = ["txt"]
+
+redis = StrictRedis()
+redis.delete("clips")
 
 
 class CustomText(Text):
@@ -208,9 +211,7 @@ class CustomAudioTrack(AudioTrack):
         self.vad_mode = kwargs.get("vad_mode", 1)
 
         if self.vad:
-            # Check for vocalization events every 50ish ms
-            self.rec_interval = 500
-            self.voice_detector = Vad(self.vad_mode)
+            pass
         self.speaking = False
 
     def record(self, duration, basename = None, t = None,
@@ -247,22 +248,24 @@ class CustomAudioTrack(AudioTrack):
 
         return r, starttime
 
-    def __recCallback__(self):
-        """Overridden to add VAD support."""
-        currentTime = timing.now()
-        if self.recording and currentTime >= self.last_rec + self.rec_interval:
-            newstuff = self.getBuffData()
+    # TODO: Remove me and verify everything is as before
+    # def __recCallback__(self):
+    #     """Overridden to add VAD support."""
+    #     currentTime = timing.now()
+    #     if self.recording and currentTime >= self.last_rec + self.rec_interval:
+    #         newstuff = self.getBuffData()
+    #
+    #         # Update the last time
+    #         self.last_rec = currentTime
+    #
+    #         if len(newstuff) > 0:
+    #             # append the data to the clip
+    #             self.recClip.append(newstuff, self.eplsound.getRecChans())
+    #
+    #             if self.vad:
+    #                 self.check_for_vocalization(newstuff)
 
-            # Update the last time
-            self.last_rec = currentTime
-
-            if len(newstuff) > 0:
-                # append the data to the clip
-                self.recClip.append(newstuff, self.eplsound.getRecChans())
-
-                if self.vad:
-                    self.check_for_vocalization(newstuff)
-
+    # TODO: integrate with voice server
     def check_for_vocalization(self, data):
         """Check for voice activity using webrtcvad. This requires:
 
@@ -274,8 +277,9 @@ class CustomAudioTrack(AudioTrack):
 
         """
         rate = 16000
-        downsampled = voicetools.downsample(BytesIO(data), rate, window=0)
-        frames = voicetools.frame_generator(downsampled.read())
+        downsampled = voicetools.downsample(BytesIO(data), rate, window=0).read()
+        redis.rpush("clips", downsampled)
+        frames = voicetools.frame_generator(downsampled)
 
         # Require all frames (if more than one is readable) to register as
         # speech in order to avoid transients being marked as speech.
