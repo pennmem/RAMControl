@@ -1,20 +1,15 @@
-import os.path as osp
 from io import BytesIO
-import wave
-import numpy as np
 from pyepl.locals import *
 from pyepl import exputils
 from pyepl import display
 from pyepl.textlog import LogTrack
 # from pyepl.hardware import addPollCallback, removePollCallback
-from redis import StrictRedis
 import os
 import codecs
 import voicetools
+from webrtcvad import Vad
 
 TEXT_EXTS = ["txt"]
-
-redis = StrictRedis()
 
 
 class CustomText(Text):
@@ -209,12 +204,13 @@ class CustomAudioTrack(AudioTrack):
         AudioTrack.__init__(self, *args)
 
         # Voice activity detection
-        self.vad = kwargs.get("vad", None)
+        self.vad = kwargs.get("vad", True)
+        self.vad_mode = kwargs.get("vad_mode", 1)
 
-        # Voice detection requires intervals of 10, 20, or 30 ms
-        if self.vad is not None:
-            self.rec_interval = 20
-            pass
+        if self.vad:
+            # Check for vocalization events every 50ish ms
+            self.rec_interval = 500
+            self.voice_detector = Vad(self.vad_mode)
         self.speaking = False
 
     def record(self, duration, basename = None, t = None,
@@ -264,34 +260,30 @@ class CustomAudioTrack(AudioTrack):
                 # append the data to the clip
                 self.recClip.append(newstuff, self.eplsound.getRecChans())
 
-                if self.vad is not None:
+                if self.vad:
                     self.check_for_vocalization(newstuff)
 
     def check_for_vocalization(self, data):
-        """Check for voice activity.
+        """Check for voice activity using webrtcvad. This requires:
 
-        This reads 320 bytes because webrtcvad requires 10, 20, or 30 ms frames
-        in 16 kHz framerate, mono, 16-bit audio data. 320 = 16000 Hz * 20 ms.
+          * 16-bit, mono PCM data
+          * Audio frames of exactly 10, 20, or 30 ms
+          * Sampling rates of 8000, 16000, or 32000 Hz
+
+        TODO: Measure performance
 
         """
-        downsampled = voicetools.downsample(BytesIO(data))
-        rms = voicetools.rms(downsampled)
-        print(rms)
-        redis.append("voicedata", data)
+        rate = 16000
+        downsampled = voicetools.downsample(BytesIO(data), rate, window=0)
+        frames = voicetools.frame_generator(downsampled.read())
 
-        # newdata = np.fromstring(data, dtype=np.int16)
-        # np.save(osp.expanduser("~/tmp/out.npy"), newdata)
-        #wav = wave.open(newdata, "rb")
-        #nframes = wav.getframerate()/20
-        #print(nframes)
-        #wave_data = wav.readframes(nframes)
-        #print(len(wave_data))
+        # Require all frames (if more than one is readable) to register as
+        # speech in order to avoid transients being marked as speech.
+        speech_ = [self.voice_detector.is_speech(frame.data, rate) for frame in frames]
+        print(speech_)
+        speech = all(speech_)
 
-        # speech = self.vad.is_speech(newdata, 16000)
-        # speech = self.vad.is_speech(newdata.tobytes(), 16000)
-        #speech = self.vad.is_speech(wave_data, 16000)
         cur_time = timing.now()
-        return
 
         # TODO: send state messages to host PC
         if not self.speaking and speech:  # vocalization start
@@ -302,7 +294,6 @@ class CustomAudioTrack(AudioTrack):
             self.speaking = False
             self.logMessage("%s\t%s" % ("SP", "Stop"), cur_time)
             print("stopped speaking")
-        print(speech)
 
 
 class CustomAudioClip(AudioClip):
