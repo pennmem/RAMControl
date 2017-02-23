@@ -15,24 +15,6 @@ logger = logging.getLogger(__name__)
 AudioFrame = namedtuple("AudioFrame", "data, timestamp, duration")
 
 
-# def frame_generator(audio, frame_duration, sample_rate):
-#     """A generator to get audio frames of specific length in time.
-#
-#     :param bytes audio: Audio data.
-#     :param int frame_duration: Frame duration in ms.
-#     :param int sample_rate: Audio sample rate in Hz.
-#
-#     """
-#     n = int(sample_rate * (frame_duration / 1000.0) * 2)
-#     offset = 0
-#     timestamp = 0.0
-#     duration = (float(n) / sample_rate) / 2.0
-#     while offset + n < len(audio):
-#         yield AudioFrame(audio[offset:offset + n], timestamp, duration)
-#         timestamp += duration
-#         offset += n
-
-
 def apodize(data, window=5, rate=16000):
     """Apply a Hamming window to reduce a sound's 'click' onset / offset.
 
@@ -113,15 +95,3 @@ def downsample(buf, outrate=16000, window=5):
 
     outbuf.seek(0)
     return outbuf
-
-
-def rms(data):
-    """Return the RMS value of the data.
-
-    Note: We have to cast the data as another type because ``np.int16`` isn't
-    big enough and we can get negative values after squaring!
-
-    :param np.ndarray data:
-
-    """
-    return np.sqrt(np.mean(np.square(data.astype(np.int32))))
