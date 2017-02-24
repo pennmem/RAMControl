@@ -21,7 +21,7 @@ from webrtcvad import Vad
 import zmq
 
 SAMPLE_RATE = 16000
-CHUNK_SIZE = 1024
+FRAMES_PER_BUFFER = 1024
 
 
 class VoiceServer(Process):
@@ -87,21 +87,26 @@ class VoiceServer(Process):
             channels=1,
             rate=SAMPLE_RATE,
             input=True,
-            frames_per_buffer=CHUNK_SIZE,
-            input_device_index=1
+            frames_per_buffer=FRAMES_PER_BUFFER,
+            input_device_index=0 #1
         )
 
         t = Thread(target=self.check_for_speech, args=(ctx,))
         t.daemon = True
         t.start()
 
+        last_t = time.time()
         try:
             while not self.done.is_set():
                 try:
-                    data = stream.read(CHUNK_SIZE)
+                    data = stream.read(FRAMES_PER_BUFFER)
                 except Exception as e:
                     print(e)
                 self.queue.put(data)
+                now = time.time()
+                if now - last_t >= 1:
+                    print(now)
+                    last_t = now
         except KeyboardInterrupt:
             print("Quitting from C-c...")
             self.quit()
