@@ -14,11 +14,16 @@ from __future__ import print_function
 import time
 from multiprocessing import Process, Queue, Event
 from threading import Thread
+import logging
 
 from pyaudio import PyAudio, paInt16
 from webrtcvad import Vad
 
 import zmq
+
+# TODO: implement real logging
+# see https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
+logger = logging.getLogger(__name__)
 
 SAMPLE_RATE = 16000
 FRAMES_PER_BUFFER = 1024
@@ -31,13 +36,18 @@ class VoiceServer(Process):
         to.
     :param int vad_level: webrtcvad VAD aggressiveness (0, 1, 2, or 3; higher is
         more aggressive at filtering out non-speech).
+    :param int consecutive_frames: The number of frames in a row that register
+        as speech to consider it actually speech (to try to minimize
+        transients).
 
     """
-    def __init__(self, sock_addr="tcp://127.0.0.1:8886", vad_level=3):
+    def __init__(self, sock_addr="tcp://127.0.0.1:8886", vad_level=3,
+                 consecutive_frames=3):
         super(VoiceServer, self).__init__()
 
         self.addr = sock_addr
         self.vad_aggressiveness = vad_level
+        self.consecutive_frames = consecutive_frames
 
         self.queue = Queue()
         self.done = Event()
@@ -53,6 +63,7 @@ class VoiceServer(Process):
         socket.connect(self.addr)
 
         vad = Vad(self.vad_aggressiveness)
+        speaking = False  # to keep track of if vocalization ongoing
 
         n = int(SAMPLE_RATE * (frame_duration_ms / 1000.) * 2)
         # duration = n / SAMPLE_RATE / 2.0
@@ -61,16 +72,33 @@ class VoiceServer(Process):
             chunk = self.queue.get()
 
             offset = 0
+            framecount = []
             while offset + n < len(chunk):
+                now = time.time()  # caveat: this is not the same as PyEPL's clock...
                 frame = chunk[offset:offset + n]
                 if vad.is_speech(frame, SAMPLE_RATE):
-                    now = time.time()  # caveat: this is not the same as PyEPL's clock...
+                    framecount.append({"timestamp": now})
 
-                    # TODO: require that n consecutive frames register as speech to avoid transients
-                    socket.send_json({
-                        "timestamp": now
-                    })
-                    print("Speaking at ", now)
+                    # Speech started
+                    if len(framecount) >= self.consecutive_frames and not speaking:
+                        speaking = True
+                        socket.send_json({
+                            "state": "VOCALIZATION",
+                            "value": True,
+                            "timestamp": framecount[0]["timestamp"]
+                        })
+                        logger.debug("Started speaking at %f", now)
+                else:
+                    # Speech ended
+                    if speaking:
+                        speaking = False
+                        socket.send_json({
+                            "state": "VOCALIZATION",
+                            "value": False,
+                            "timestamp": now
+                        })
+                        logger.debug("Stopped speaking at %f", now)
+                    framecount = []
 
                 offset += n
 
@@ -88,25 +116,20 @@ class VoiceServer(Process):
             rate=SAMPLE_RATE,
             input=True,
             frames_per_buffer=FRAMES_PER_BUFFER,
-            input_device_index=0 #1
+            input_device_index=None  # None uses the system default input device
         )
 
-        t = Thread(target=self.check_for_speech, args=(ctx,))
-        t.daemon = True
-        t.start()
+        vad_thread = Thread(target=self.check_for_speech, args=(ctx,))
+        vad_thread.daemon = True
+        vad_thread.start()
 
-        last_t = time.time()
         try:
             while not self.done.is_set():
                 try:
                     data = stream.read(FRAMES_PER_BUFFER)
+                    self.queue.put(data)
                 except Exception as e:
                     print(e)
-                self.queue.put(data)
-                now = time.time()
-                if now - last_t >= 1:
-                    print(now)
-                    last_t = now
         except KeyboardInterrupt:
             print("Quitting from C-c...")
             self.quit()
@@ -116,6 +139,7 @@ class VoiceServer(Process):
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.DEBUG)
     p = VoiceServer()
     p.start()
     p.join()
