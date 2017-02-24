@@ -1,4 +1,5 @@
 data/
+!tests/data
 *~
 .DS_Store
 logs/*.log

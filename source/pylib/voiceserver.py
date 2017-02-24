@@ -44,7 +44,7 @@ class VoiceServer(Process):
         Note that this will actually play the WAV file.
 
     """
-    def __init__(self, sock_addr="tcp://127.0.0.1:8886", vad_level=3,
+    def __init__(self, sock_addr="tcp://127.0.0.1:9898", vad_level=3,
                  consecutive_frames=3, filename=None):
         super(VoiceServer, self).__init__()
 
@@ -65,6 +65,7 @@ class VoiceServer(Process):
         """
         socket = ctx.socket(zmq.PUB)
         socket.connect(self.addr)
+        logger.debug("Connecting to address %s", self.addr)
 
         vad = Vad(self.vad_aggressiveness)
         speaking = False  # to keep track of if vocalization ongoing
@@ -83,7 +84,6 @@ class VoiceServer(Process):
                 if vad.is_speech(frame, SAMPLE_RATE):
                     framecount.append({"timestamp": now})
 
-                    # Speech started
                     if len(framecount) >= self.consecutive_frames and not speaking:
                         speaking = True
                         socket.send_json({
@@ -91,9 +91,9 @@ class VoiceServer(Process):
                             "value": True,
                             "timestamp": framecount[0]["timestamp"]
                         })
+                        #socket.send("test")
                         logger.debug("Started speaking at %f", now)
                 else:
-                    # Speech ended
                     if speaking:
                         speaking = False
                         socket.send_json({
@@ -108,8 +108,11 @@ class VoiceServer(Process):
 
     def quit(self):
         """Terminate the process."""
-        self.done.set()
-        logger.info("Shutting down voice server...")
+        if not self.done.is_set():
+            logger.info("Shutting down voice server...")
+            self.done.set()
+        else:
+            logger.error("Voice server already shut down!")
 
     def run(self):
         ctx = zmq.Context()
@@ -166,8 +169,11 @@ class VoiceServer(Process):
 
 
 if __name__ == "__main__":
+    import os.path as osp
+    from util import data_path
+
     logging.basicConfig(level=logging.DEBUG)
-    p = VoiceServer(filename="/Users/depalati/tmp/wavs/2.wav")
+    p = VoiceServer(filename=osp.join(data_path(), "one-two-three.wav"))
     p.start()
     try:
         p.join()
