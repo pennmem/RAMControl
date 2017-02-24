@@ -1,12 +1,15 @@
 import os.path as osp
 import time
+from multiprocessing import Process
 import pytest
 import zmq
+
 #import logging
 #logging.basicConfig(level=logging.DEBUG)
 
 from voiceserver import VoiceServer
 from util import data_path
+import exc
 
 
 @pytest.fixture
@@ -19,6 +22,21 @@ def voice_server():
 
 
 class TestVoiceServer:
+    def test_make_listener_socket(self, voice_server):
+        ctx = zmq.Context()
+
+        socket = voice_server.make_listener_socket(ctx)
+        assert isinstance(socket, zmq.Socket)
+        socket.close()
+
+        def wrong_process():
+            ctx2 = zmq.Context()
+            with pytest.raises(exc.WrongProcessError):
+                voice_server.make_listener_socket(ctx2)
+        p = Process(target=wrong_process)
+        p.start()
+        p.join()
+
     def test_quit(self, voice_server):
         voice_server.start()
         assert voice_server.is_alive()
