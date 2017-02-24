@@ -9,12 +9,13 @@ PyAudio relies on portaudio. To install on mac::
 
 """
 
-from __future__ import print_function
+from __future__ import print_function, division
 
 import time
 from multiprocessing import Process, Queue, Event
 from threading import Thread
 import logging
+import wave
 
 from pyaudio import PyAudio, paInt16
 from webrtcvad import Vad
@@ -39,15 +40,18 @@ class VoiceServer(Process):
     :param int consecutive_frames: The number of frames in a row that register
         as speech to consider it actually speech (to try to minimize
         transients).
+    :param str filename: WAV file to read for testing (doesn't use microphone).
+        Note that this will actually play the WAV file.
 
     """
     def __init__(self, sock_addr="tcp://127.0.0.1:8886", vad_level=3,
-                 consecutive_frames=3):
+                 consecutive_frames=3, filename=None):
         super(VoiceServer, self).__init__()
 
         self.addr = sock_addr
         self.vad_aggressiveness = vad_level
         self.consecutive_frames = consecutive_frames
+        self.filename = filename
 
         self.queue = Queue()
         self.done = Event()
@@ -105,19 +109,34 @@ class VoiceServer(Process):
     def quit(self):
         """Terminate the process."""
         self.done.set()
+        logger.info("Shutting down voice server...")
 
     def run(self):
         ctx = zmq.Context()
 
         audio = PyAudio()
-        stream = audio.open(
-            format=paInt16,
-            channels=1,
-            rate=SAMPLE_RATE,
-            input=True,
-            frames_per_buffer=FRAMES_PER_BUFFER,
-            input_device_index=None  # None uses the system default input device
-        )
+        wav = None
+
+        # We're live
+        if self.filename is None:
+            stream = audio.open(
+                format=paInt16,
+                channels=1,
+                rate=SAMPLE_RATE,
+                input=True,
+                frames_per_buffer=FRAMES_PER_BUFFER,
+                input_device_index=None  # None uses the system default input device
+            )
+
+        # We're testing
+        else:
+            wav = wave.open(self.filename)
+            stream = audio.open(
+                format=audio.get_format_from_width(wav.getsampwidth()),
+                channels=wav.getnchannels(),
+                rate=wav.getframerate(),
+                output=True
+            )
 
         vad_thread = Thread(target=self.check_for_speech, args=(ctx,))
         vad_thread.daemon = True
@@ -126,20 +145,31 @@ class VoiceServer(Process):
         try:
             while not self.done.is_set():
                 try:
-                    data = stream.read(FRAMES_PER_BUFFER)
+                    if wav is None:
+                        data = stream.read(FRAMES_PER_BUFFER)
+                    else:
+                        data = wav.readframes(FRAMES_PER_BUFFER)
+                        if len(data) is 0:
+                            self.quit()
+                            continue
+                        stream.write(data)
                     self.queue.put(data)
                 except Exception as e:
                     print(e)
         except KeyboardInterrupt:
-            print("Quitting from C-c...")
+            logger.info("Keyboard interrupt detected")
             self.quit()
         finally:
-            stream.close()
-            p.terminate()
+            if stream is not None:
+                stream.close()
+            audio.terminate()
 
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.DEBUG)
-    p = VoiceServer()
+    p = VoiceServer(filename="/Users/depalati/tmp/wavs/2.wav")
     p.start()
-    p.join()
+    try:
+        p.join()
+    except KeyboardInterrupt:
+        pass
