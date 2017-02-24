@@ -120,7 +120,7 @@ class SocketServer(object):
             msg=json.dumps(message)))
         self._msg_log.flush()
 
-    def _handle_incoming(self):
+    def handle_incoming(self):
         events = self.poller.poll(1)
         if self.sock in dict(events):
             try:
@@ -139,7 +139,7 @@ class SocketServer(object):
                     logger.error("Error handling message", exc_info=True)
                     continue
 
-    def _handle_outgoing(self):
+    def handle_outgoing(self):
         try:
             while not self._out_queue.empty():
                 msg = self._out_queue.get_nowait()
@@ -153,8 +153,8 @@ class SocketServer(object):
         in the outgoing queue.
 
         """
-        self._handle_incoming()
-        self._handle_outgoing()
+        self.handle_incoming()
+        self.handle_outgoing()
 
 
 if __name__ == "__main__":

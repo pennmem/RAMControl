@@ -1,5 +1,7 @@
 """Interfaces to the Control PC"""
 
+from __future__ import print_function
+
 from threading import Event
 import sys
 import logging
@@ -9,7 +11,8 @@ try:
 except ImportError:
     from Queue import Queue, Empty
 
-from webrtcvad import Vad
+import zmq
+
 from pyepl.locals import *
 from pyepl.locals import Text
 from pyepl.hardware import addPollCallback, removePollCallback
@@ -17,7 +20,9 @@ from pyepl.hardware import addPollCallback, removePollCallback
 from zmqsocket import SocketServer
 from exc import RamException
 from messages import *
+from voiceserver import VoiceServer
 
+# logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 
@@ -70,12 +75,7 @@ class RAMControl(object):
         self._configured = False
         self._connected = False
         self._connection_failed = False
-        self._quit = Event()
         self._last_heartbeat_received = -1.  # last time heartbeat was received
-
-        # Voice activity detection
-        self.vad = Vad()
-        self.vad.set_mode(3)  # Most aggressive. TODO: make configurable
 
         # Experiment-specific data to be filled in later
         self.experiment = ''
@@ -96,9 +96,18 @@ class RAMControl(object):
             "CONNECTED": self.connected_handler
         }
 
-        self.socket = SocketServer()
+        self.ctx = zmq.Context()
+
+        self.socket = SocketServer(ctx=self.ctx)
         self.socket.register_handler(self.dispatch)
         self.socket.bind(address)
+
+        self.voice_server = VoiceServer()
+        self.voice_socket = self.voice_server.make_listener_socket(self.ctx)
+        self.voice_server.start()
+
+        self.zpoller = zmq.Poller()
+        self.zpoller.register(self.voice_socket, zmq.POLLIN)
 
     @classmethod
     def instance(cls, *args, **kwargs):
@@ -130,16 +139,39 @@ class RAMControl(object):
         """Build and return a RAMMessage to be sent to control PC."""
         return get_message_type(msg_type)(*args, timestamp=timestamp, **kwargs)
 
-    def _check_connection(self):
+    def shutdown(self):
+        """Cleanly disconnect and close sockets and servers."""
+        print("Shutting down.")
+        self.send(ExitMessage())
+        self.voice_server.quit()
+        self.voice_socket.close()
+        self.voice_server.join(timeout=1)
+
+    def check_connection(self):
         """Checks that we're still connected."""
         if self._last_heartbeat_received > 0:
             t = time.time() - self._last_heartbeat_received
             if t >= self.connection_timeout and self._connected:
                 self._connected = False
                 logger.info("Quitting due to disconnect")
+                self.shutdown()
                 sys.exit(0)
             else:
                 self._connected = True
+
+    def check_voice_server(self):
+        """Check for messages from the voice server."""
+        if self.voice_socket in dict(self.zpoller.poll(1)):  # blocks for 1 ms
+            try:
+                msg = self.voice_socket.recv_json()
+                assert msg["state"] == "VOCALIZATION"
+                self.socket.enqueue_message(
+                    self.build_message("STATE", msg["timestamp"], msg["state"], msg["value"]))
+            except AssertionError:
+                logger.error("Received a malformed message from the voice server")
+            except:
+                logger.error("Unknown exception when reading from the voice server",
+                             exc_info=True)
 
     def register_handler(self, name, func):
         """Register a message handler.
@@ -171,7 +203,8 @@ class RAMControl(object):
         self._configured = True
 
         addPollCallback(self.socket.update)
-        addPollCallback(self._check_connection)
+        addPollCallback(self.check_connection)
+        addPollCallback(self.check_voice_server)
 
     def send(self, message):
         """Send a message to the host PC."""
@@ -313,9 +346,7 @@ class RAMControl(object):
     def exit_handler(self, msg):
         """Received exit from the host PC."""
         logger.info("RAMControl exiting")
-        self.send(ExitMessage())
-        self.socket.stop()
-        self._quit.set()
+        self.shutdown()
 
     def connected_handler(self, msg):
         """Indicate that we've made a connection."""

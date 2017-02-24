@@ -12,7 +12,7 @@ PyAudio relies on portaudio. To install on mac::
 from __future__ import print_function, division
 
 import time
-from multiprocessing import Process, Queue, Event
+from multiprocessing import Process, Queue, Event, current_process
 from threading import Thread
 import logging
 import wave
@@ -21,6 +21,8 @@ from pyaudio import PyAudio, paInt16
 from webrtcvad import Vad
 
 import zmq
+
+from exc import WrongProcessError
 
 # TODO: implement real logging
 # see https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
@@ -56,6 +58,24 @@ class VoiceServer(Process):
         self.queue = Queue()
         self.done = Event()
 
+    def make_listener_socket(self, ctx):
+        """Return a bound socket for the :class:`VoiceServer` instance to
+        connect to.
+
+        :param zmq.Context ctx:
+        :returns: socket
+        :rtype: zmq.Socket
+        :raises WrongProcessError: when calling from a subprocess.
+
+        """
+        if current_process().name != "MainProcess":
+            raise WrongProcessError("Only call make_listener_socket from the main process!")
+        protocol, _, port = self.addr.split(":")
+        socket = ctx.socket(zmq.SUB)
+        socket.setsockopt(zmq.SUBSCRIBE, b"")
+        socket.bind("{}://*:{}".format(protocol, port))
+        return socket
+
     def check_for_speech(self, ctx, frame_duration_ms=20):
         """Checks for speech.
 
@@ -79,7 +99,7 @@ class VoiceServer(Process):
             offset = 0
             framecount = []
             while offset + n < len(chunk):
-                now = time.time()  # caveat: this is not the same as PyEPL's clock...
+                now = time.time() * 1000.0  # caveat: this is not the same as PyEPL's clock...
                 frame = chunk[offset:offset + n]
                 if vad.is_speech(frame, SAMPLE_RATE):
                     framecount.append({"timestamp": now})
@@ -91,7 +111,6 @@ class VoiceServer(Process):
                             "value": True,
                             "timestamp": framecount[0]["timestamp"]
                         })
-                        #socket.send("test")
                         logger.debug("Started speaking at %f", now)
                 else:
                     if speaking:
@@ -158,6 +177,7 @@ class VoiceServer(Process):
                         stream.write(data)
                     self.queue.put(data)
                 except Exception as e:
+                    # TODO: real error handling
                     print(e)
         except KeyboardInterrupt:
             logger.info("Keyboard interrupt detected")
