@@ -17,11 +17,11 @@ from pyepl.locals import *
 from pyepl.locals import Text
 from pyepl.hardware import addPollCallback, removePollCallback
 
-from zmqsocket import SocketServer
-from exc import RamException
-from messages import *
-from log import setup_logging
-from voiceserver import VoiceServer
+from .zmqsocket import SocketServer
+from .exc import RamException
+from .messages import *
+from .log import setup_logging
+from .voiceserver import VoiceServer
 
 # logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)

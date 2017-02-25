@@ -22,7 +22,7 @@ from webrtcvad import Vad
 
 import zmq
 
-from exc import WrongProcessError
+from .exc import WrongProcessError
 
 # TODO: implement real logging
 # see https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
