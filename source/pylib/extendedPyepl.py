@@ -2,10 +2,15 @@ from pyepl.locals import *
 from pyepl import exputils
 from pyepl import display
 from pyepl.textlog import LogTrack
+# from pyepl.hardware import addPollCallback, removePollCallback
 import os
 import codecs
+# from redis import StrictRedis  # for debugging
 
 TEXT_EXTS = ["txt"]
+
+# redis = StrictRedis()
+# redis.delete("clips")
 
 
 class CustomText(Text):
@@ -192,7 +197,7 @@ def flashStimulusWithOffscreenTimestamp(showable, duration = 1000, x = 0.5, y = 
 
 
 class CustomAudioTrack(AudioTrack):
-
+    """Customized :class:`AudioTrack` which adds callbacks."""
     def __init__(self, *args):
         AudioTrack.__init__(self, *args)
 
@@ -221,11 +226,13 @@ class CustomAudioTrack(AudioTrack):
 
         if startCallback:
             startCallback()
-        (r,starttime) = self.startRecording(basename, t = t, **sfargs)
+        r, starttime = self.startRecording(basename, t=t, **sfargs)
+
         if stopCallback:
             stopCallback()
-        (r,stoptime) = self.stopRecording(t = t + duration)
-        return (r,starttime)
+        r, stoptime = self.stopRecording(t=t + duration)  # tell it to stop after t + duration
+
+        return r, starttime
 
 
 class CustomAudioClip(AudioClip):
