@@ -1,13 +1,15 @@
 """Script to start RAM experiments."""
 
-import sys
 import json
 import subprocess
 import os
 import argparse
+import six
 
-if sys.version_info.major == 2:
-    input = raw_input
+
+def absjoin(*paths):
+    """Join some paths and make it an absolute path."""
+    return os.path.abspath(os.path.join(*paths))
 
 
 def run_experiment(exp_config):
@@ -37,15 +39,11 @@ def run_experiment(exp_config):
 
     args = ['python', exp_file] + options
 
+    # FIXME: rework experiments to not need path manipulation
     env = os.environ.copy()
-    if 'PYTHONPATH' in env:
-        env['PYTHONPATH'] = os.path.abspath(exp_config['pythonpath']) + ":" + env['PYTHONPATH']
-    else:
-        env['PYTHONPATH'] = os.path.abspath(exp_config['pythonpath'])
+    env["PYTHONPATH"] = absjoin(".", "ramcontrol")
 
-    os.chdir(exp_dir)
-
-    p = subprocess.Popen(args, env=env)
+    p = subprocess.Popen(args, env=env, cwd=exp_dir)
     p.wait()
 
 
@@ -73,14 +71,14 @@ if __name__ == '__main__':
     args = parse_args()
 
     while 'experiment' not in args:
-        experiment = input("Enter experiment name: ")
+        experiment = six.moves.input("Enter experiment name: ")
         if experiment not in config['experiments']:
             print("Experiment must be one of: " + ', '.join(sorted(config['experiments'].keys())))
         else:
             args['experiment'] = experiment
 
     while 'subject' not in args:
-        subject = input("Enter subject code: ")
+        subject = six.moves.input("Enter subject code: ")
         if len(subject.strip()) != 0:
             args['subject'] = subject
 
