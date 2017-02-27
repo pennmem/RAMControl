@@ -18,12 +18,12 @@ def run_experiment(exp_config):
     :param dict exp_config:
 
     """
-    exp_dir = os.path.abspath(os.path.join(exp_config['experiment_dir'], exp_config['RAM_exp']))
+    exp_dir = absjoin(exp_config['experiment_dir'], exp_config['RAM_exp'])
 
-    pyepl_config_file = os.path.join(exp_dir, exp_config['config_file'])
-    pyepl_sconfig_file = os.path.join(exp_dir, exp_config['sconfig_file'])
+    pyepl_config_file = absjoin(exp_dir, exp_config['config_file'])
+    pyepl_sconfig_file = absjoin(exp_dir, exp_config['sconfig_file'])
 
-    archive_dir = os.path.abspath(os.path.join(exp_config['archive_dir'], exp_config['experiment']))
+    archive_dir = absjoin(exp_config['archive_dir'], exp_config['experiment'])
 
     options = [
         '--subject', exp_config['subject'],
@@ -35,13 +35,13 @@ def run_experiment(exp_config):
     if exp_config['no_fs']:
         options.append('--no-fs')
 
-    exp_file = os.path.join(exp_dir, exp_config['exp_py'])
+    exp_file = absjoin(exp_dir, exp_config['exp_py'])
 
     args = ['python', exp_file] + options
 
     # FIXME: rework experiments to not need path manipulation
     env = os.environ.copy()
-    env["PYTHONPATH"] = absjoin(".", "ramcontrol")
+    env["PYTHONPATH"] = absjoin(".")
 
     p = subprocess.Popen(args, env=env, cwd=exp_dir)
     p.wait()
