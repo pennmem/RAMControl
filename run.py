@@ -1,15 +1,15 @@
 """Script to start RAM experiments."""
 
-import sys
 import json
 import subprocess
 import os
 import argparse
+import six
 
-JSON_CONFIG = 'source/run_config.json'
 
-if sys.version_info.major == 2:
-    input = raw_input
+def absjoin(*paths):
+    """Join some paths and make it an absolute path."""
+    return os.path.abspath(os.path.join(*paths))
 
 
 def run_experiment(exp_config):
@@ -18,12 +18,12 @@ def run_experiment(exp_config):
     :param dict exp_config:
 
     """
-    exp_dir = os.path.abspath(os.path.join(exp_config['experiment_dir'], exp_config['RAM_exp']))
+    exp_dir = absjoin(exp_config['experiment_dir'], exp_config['RAM_exp'])
 
-    pyepl_config_file = os.path.join(exp_dir, exp_config['config_file'])
-    pyepl_sconfig_file = os.path.join(exp_dir, exp_config['sconfig_file'])
+    pyepl_config_file = absjoin(exp_dir, exp_config['config_file'])
+    pyepl_sconfig_file = absjoin(exp_dir, exp_config['sconfig_file'])
 
-    archive_dir = os.path.abspath(os.path.join(exp_config['archive_dir'], exp_config['experiment']))
+    archive_dir = absjoin(exp_config['archive_dir'], exp_config['experiment'])
 
     options = [
         '--subject', exp_config['subject'],
@@ -35,19 +35,15 @@ def run_experiment(exp_config):
     if exp_config['no_fs']:
         options.append('--no-fs')
 
-    exp_file = os.path.join(exp_dir, exp_config['exp_py'])
+    exp_file = absjoin(exp_dir, exp_config['exp_py'])
 
     args = ['python', exp_file] + options
 
+    # FIXME: rework experiments to not need path manipulation
     env = os.environ.copy()
-    if 'PYTHONPATH' in env:
-        env['PYTHONPATH'] = os.path.abspath(exp_config['pythonpath']) + ":" + env['PYTHONPATH']
-    else:
-        env['PYTHONPATH'] = os.path.abspath(exp_config['pythonpath'])
-    
-    os.chdir(exp_dir)
+    env["PYTHONPATH"] = absjoin(".")
 
-    p = subprocess.Popen(args, env=env)
+    p = subprocess.Popen(args, env=env, cwd=exp_dir)
     p.wait()
 
 
@@ -71,18 +67,18 @@ def parse_args():
 
 
 if __name__ == '__main__':
-    config = json.load(open(JSON_CONFIG, 'r'))
+    config = json.load(open("run_config.json", 'r'))
     args = parse_args()
 
     while 'experiment' not in args:
-        experiment = input("Enter experiment name: ")
+        experiment = six.moves.input("Enter experiment name: ")
         if experiment not in config['experiments']:
             print("Experiment must be one of: " + ', '.join(sorted(config['experiments'].keys())))
         else:
             args['experiment'] = experiment
 
     while 'subject' not in args:
-        subject = input("Enter subject code: ")
+        subject = six.moves.input("Enter subject code: ")
         if len(subject.strip()) != 0:
             args['subject'] = subject
 
@@ -93,4 +89,3 @@ if __name__ == '__main__':
     exp_config = build_exp_config(config, **args)
 
     run_experiment(exp_config)
-

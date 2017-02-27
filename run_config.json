@@ -3,7 +3,6 @@
   "resolution": "1440x900",
   "archive_dir": "./data",
   "config_file": "config.py",
-  "pythonpath": "./source/ram_pylib",
   "experiments": {
     "FR1": {
       "RAM_exp": "RAM_FR",
