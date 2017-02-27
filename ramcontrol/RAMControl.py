@@ -2,6 +2,7 @@
 
 from __future__ import print_function
 
+import os
 from threading import Event
 import sys
 import logging
@@ -100,6 +101,16 @@ class RAMControl(object):
 
         # Enable logging
         setup_logging(name=logger.name, level=log_level)
+
+        try:
+            ram_env = json.loads(os.environ["RAM_CONFIG"])
+
+            # Change address if we aren't connecting to the host PC (otherwise
+            # there can be ZMQ errors if the network cable is unplugged).
+            if ram_env["no_host"]:
+                address = "tcp://*:8889"
+        except KeyError:
+            logger.error("No RAM_CONFIG environment variable defined. Proceed with caution.")
 
         self.ctx = zmq.Context()
 
