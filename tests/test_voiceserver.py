@@ -7,9 +7,9 @@ import zmq
 #import logging
 #logging.basicConfig(level=logging.DEBUG)
 
-from voiceserver import VoiceServer
-from util import data_path
-import exc
+from ramcontrol.voiceserver import VoiceServer
+from ramcontrol.util import data_path
+from ramcontrol import exc
 
 
 @pytest.fixture

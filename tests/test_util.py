@@ -1,5 +1,5 @@
 import os.path as osp
-import util
+from ramcontrol import util
 
 here = osp.realpath(osp.dirname(__file__))
 
