@@ -20,9 +20,9 @@ def test_shuffle_together():
     pass
 
 
-def test_read_lures():
+def test_read_list():
     filename = osp.join(data_path(), "lures_EN.txt")
-    lures = wordlist.read_lures(filename)
+    lures = wordlist.read_list(filename)
     assert isinstance(lures, list)
     assert len(lures) is 65
     for lure in lures:
