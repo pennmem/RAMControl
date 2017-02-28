@@ -110,7 +110,9 @@ class RAMControl(object):
             if ram_env["no_host"]:
                 address = "tcp://*:8889"
         except KeyError:
-            logger.error("No RAM_CONFIG environment variable defined. Proceed with caution.")
+            logger.error("No RAM_CONFIG environment variable defined. Proceed with caution."
+                         " voiceserver assumed to *not* be required!")
+            ram_env = {"voiceserver": False}
 
         self.ctx = zmq.Context()
 
@@ -118,9 +120,13 @@ class RAMControl(object):
         self.socket.register_handler(self.dispatch)
         self.socket.bind(address)
 
-        self.voice_server = VoiceServer()
-        self.voice_socket = self.voice_server.make_listener_socket(self.ctx)
-        self.voice_server.start()
+        if ram_env["voiceserver"]:
+            self.voice_server = VoiceServer()
+            self.voice_socket = self.voice_server.make_listener_socket(self.ctx)
+            self.voice_server.start()
+        else:
+            self.voice_server = None
+            self.voice_socket = None
 
         self.zpoller = zmq.Poller()
         self.zpoller.register(self.voice_socket, zmq.POLLIN)
@@ -159,9 +165,10 @@ class RAMControl(object):
         """Cleanly disconnect and close sockets and servers."""
         print("Shutting down.")
         self.send(ExitMessage())
-        self.voice_server.quit()
-        self.voice_socket.close()
-        self.voice_server.join(timeout=1)
+        if self.voice_server is not None:
+            self.voice_server.quit()
+            self.voice_socket.close()
+            self.voice_server.join(timeout=1)
 
     def check_connection(self):
         """Checks that we're still connected."""
@@ -220,7 +227,8 @@ class RAMControl(object):
 
         addPollCallback(self.socket.update)
         addPollCallback(self.check_connection)
-        addPollCallback(self.check_voice_server)
+        if self.voice_server is not None:
+            addPollCallback(self.check_voice_server)
 
     def send(self, message):
         """Send a message to the host PC."""

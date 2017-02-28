@@ -31,7 +31,14 @@ class WordList(list):
 
 
 class WordPool(object):
-    """Handles operations for entire word pools."""
+    """Handles operations for entire word pools.
+
+    :param str path: Path to word pool.
+
+    """
+    def __init__(self, path):
+        self.path = path
+
     def save(self, dest):
         """Copy the word pool with and without accents to a new location.
 

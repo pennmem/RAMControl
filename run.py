@@ -43,9 +43,11 @@ def run_experiment(exp_config):
     env = os.environ.copy()
     env["PYTHONPATH"] = absjoin(".")
 
-    # Flag that we shouldn't try to connect to the host PC (for development
-    # purposes)
-    env["RAM_CONFIG"] = json.dumps(dict(no_host=exp_config.pop("no_host")))
+    # Additional config options to signal via env vars
+    env["RAM_CONFIG"] = json.dumps({
+        "no_host": exp_config.pop("no_host"),
+        "voiceserver": exp_config["experiment"] is "FR5"  # TODO: make switchable
+    })
 
     p = subprocess.Popen(args, env=env, cwd=exp_dir)
     p.wait()
