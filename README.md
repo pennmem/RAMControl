@@ -35,13 +35,13 @@ generate scripted messages from the host PC's `output.log`
 (see `tests/FR1_output.log`). Example:
 
 ```
-$ python debugger.py generate -s test -x FR1 -n 1 -o fr1_script.csv -f tests/FR1_output.log
+$ python -m ramcontrol.debugger.py generate -s test -x FR1 -n 1 -o fr1_script.csv -f tests/FR1_output.log
 ```
 
 To run the generated script:
 
 ```
-$ python debugger.py run -f fr1_script.csv
+$ python -m ramcontrol.debugger.py run -f fr1_script.csv
 ```
 
 Caveat emptor: Make sure you have loaded the experimental configuration on the

@@ -1,11 +1,9 @@
 from tempfile import NamedTemporaryFile
-import os
 import os.path as osp
 import pytest
 
 from ramcontrol.util import data_path
-
-import debugger
+from ramcontrol import debugger
 
 
 @pytest.fixture
