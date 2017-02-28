@@ -11,7 +11,9 @@ PyAudio relies on portaudio. To install on mac::
 
 from __future__ import print_function, division
 
+import os.path as osp
 import time
+from argparse import ArgumentParser
 from multiprocessing import Process, Queue, Event, current_process
 from threading import Thread
 import logging
@@ -23,6 +25,8 @@ from webrtcvad import Vad
 import zmq
 
 from .exc import WrongProcessError
+from .log import setup_logging
+from .util import data_path
 
 # TODO: implement real logging
 # see https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
@@ -44,16 +48,18 @@ class VoiceServer(Process):
         transients).
     :param str filename: WAV file to read for testing (doesn't use microphone).
         Note that this will actually play the WAV file.
+    :param int loglevel: Logging level to use. If None, don't set this.
 
     """
     def __init__(self, sock_addr="tcp://127.0.0.1:9898", vad_level=3,
-                 consecutive_frames=3, filename=None):
+                 consecutive_frames=3, filename=None, loglevel=None):
         super(VoiceServer, self).__init__()
 
         self.addr = sock_addr
         self.vad_aggressiveness = vad_level
         self.consecutive_frames = consecutive_frames
         self.filename = filename
+        self.loglevel = loglevel
 
         self.queue = Queue()
         self.done = Event()
@@ -134,6 +140,8 @@ class VoiceServer(Process):
             logger.error("Voice server already shut down!")
 
     def run(self):
+        setup_logging(level=self.loglevel or logging.INFO)
+
         ctx = zmq.Context()
 
         audio = PyAudio()
@@ -164,38 +172,54 @@ class VoiceServer(Process):
         vad_thread.daemon = True
         vad_thread.start()
 
-        try:
-            while not self.done.is_set():
-                try:
-                    if wav is None:
-                        data = stream.read(FRAMES_PER_BUFFER)
-                    else:
-                        data = wav.readframes(FRAMES_PER_BUFFER)
-                        if len(data) is 0:
-                            self.quit()
-                            continue
-                        stream.write(data)
-                    self.queue.put(data)
-                except Exception as e:
-                    # TODO: real error handling
-                    print(e)
-        except KeyboardInterrupt:
-            logger.info("Keyboard interrupt detected")
-            self.quit()
-        finally:
-            if stream is not None:
-                stream.close()
-            audio.terminate()
+        while not self.done.is_set():
+            try:
+                if wav is None:
+                    data = stream.read(FRAMES_PER_BUFFER)
+                else:
+                    data = wav.readframes(FRAMES_PER_BUFFER)
+                    if len(data) is 0:
+                        self.quit()
+                        continue
+                    stream.write(data)
+                self.queue.put(data)
+            except IOError:
+                # TODO: real error handling
+                logger.error("Exception in voiceserver", exc_info=True)
+            except KeyboardInterrupt:
+                logger.info("Keyboard interrupt detected")
+                self.quit()
+            except:
+                logger.error("Unknown error", exc_info=True)
+
+        if stream is not None:
+            stream.close()
+        audio.terminate()
 
 
-if __name__ == "__main__":
-    import os.path as osp
-    from util import data_path
+def main():
+    """Run a standalone VoiceServer."""
+    levels = {
+        "info": logging.INFO,
+        "debug": logging.DEBUG,
+        "warning": logging.WARNING
+    }
 
-    logging.basicConfig(level=logging.DEBUG)
-    p = VoiceServer(filename=osp.join(data_path(), "one-two-three.wav"))
+    parser = ArgumentParser(description=__doc__)
+    parser.add_argument("-f", "--filename", default=None, type=str,
+                        help="Path to wav file as input")
+    parser.add_argument("-l", "--loglevel", choices=levels,
+                        help="Log level")
+
+    args = parser.parse_args()
+
+    p = VoiceServer(filename=args.filename, loglevel=levels[args.loglevel])
     p.start()
     try:
         p.join()
     except KeyboardInterrupt:
         pass
+
+
+if __name__ == "__main__":
+    main()
