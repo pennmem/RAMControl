@@ -46,3 +46,19 @@ $ python debugger.py run -f fr1_script.csv
 
 Caveat emptor: Make sure you have loaded the experimental configuration on the
 host PC first!
+
+## Testing
+
+Unit testing is in the process of being added. To run existing tests, you'll
+need to run
+
+```
+$ pip install -r requirements.txt
+$ pip install -e .
+```
+
+Then tests are run with
+
+```
+$ pytest
+```

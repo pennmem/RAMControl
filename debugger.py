@@ -30,8 +30,7 @@ except ImportError:
     print("You should pip install tqdm")
     tqdm = lambda x: x
 
-sys.path.insert(0, "source/pylib")
-from messages import get_message_type
+from ramcontrol.messages import get_message_type
 
 logger = logging.getLogger("debugger")
 ScriptedMessage = namedtuple("Message", "delay, msg")

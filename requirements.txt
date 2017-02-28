@@ -1,4 +1,8 @@
-six==1.10.0
-pyzmq==16.0.2
+pandas==0.19.2
 pytest==3.0.6
+pytest-cov==2.4.0
+pyzmq==16.0.2
+six==1.10.0
+tornado==4.4.2
+webrtcvad=2.0.10
 
