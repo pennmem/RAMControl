@@ -149,6 +149,13 @@ class MathMessage(RAMMessage):
         super(MathMessage, self).__init__("MATH", timestamp=timestamp, data=payload)
 
 
+class WordPoolMessage(RAMMessage):
+    """Request a word pool."""
+    def __init__(self, session, timestamp=None):
+        super(WordPoolMessage, self).__init__("WORDPOOL", timestamp=timestamp,
+                                              data={"session": session})
+
+
 _mod = sys.modules[__name__]
 _names = dir(_mod)
 message_types = {
