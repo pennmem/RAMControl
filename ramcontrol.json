@@ -9,10 +9,15 @@
       "exp_py": "FR.py",
       "sconfig_file": "FR1_config.py"
     },
-    "FR3":{
+    "FR3": {
       "subdir": "RAM_FR",
       "exp_py": "FR.py",
       "sconfig_file": "FR3_config.py"
+    },
+    "FR5": {
+      "subdir": "RAM_FR",
+      "exp_py": "FR.py",
+      "sconfig_file": "FR5_config.py"
     },
     "catFR1": {
       "subdir": "RAM_catFR",
@@ -33,6 +38,11 @@
       "subdir": "RAM_PAL",
       "exp_py": "PAL.py",
       "sconfig_file": "PAL3_config.py"
+    },
+    "PS4_FR5": {
+      "subdir": "RAM_FR",
+      "exp_py": "FR.py",
+      "sconfig_file": "PS4_FR5_config.py"
     }
   }
 }
