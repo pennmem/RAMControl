@@ -1,10 +1,11 @@
 """Script to start RAM experiments."""
 
+from __future__ import print_function
 import json
 import subprocess
 import os
 import argparse
-import six
+from ramcontrol.launcher import Launcher
 
 
 def absjoin(*paths):
@@ -18,7 +19,7 @@ def run_experiment(exp_config):
     :param dict exp_config:
 
     """
-    exp_dir = absjoin(exp_config['experiment_dir'], exp_config['RAM_exp'])
+    exp_dir = absjoin(exp_config['experiment_dir'], exp_config['subdir'])
 
     pyepl_config_file = absjoin(exp_dir, exp_config['config_file'])
     pyepl_sconfig_file = absjoin(exp_dir, exp_config['sconfig_file'])
@@ -53,29 +54,14 @@ def run_experiment(exp_config):
     p.wait()
 
 
-def build_exp_config(json_config, experiment, **kwargs):
-    """Build experiment configuration from the JSON config file.
-
-    :param dict json_config:
-    :param str experiment: Name of the experiment.
-    :param dict kwargs:
-    :rtype: dict
-
-    """
-    exp_config = json_config['experiments'][experiment]
-    json_config.update(exp_config)
-    json_config.update(kwargs)
-    json_config['experiment'] = experiment
-    return json_config
-
-
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--subject', '-s', dest='subject', default=None, help='Subject Code')
-    parser.add_argument('--experiment', '-x', dest='experiment', default=None, help='Experiment name')
-    parser.add_argument('--resolution', '-r', dest='resolution', default=None, help='Screen resolution')
-    parser.add_argument('--archive', '-a', dest='archive', default=None, help='Data storage directory')
-    parser.add_argument('--no-fs', dest='no_fs', default=False, action='store_true', help='Turn off fullscreen')
+    parser.add_argument('--subject', '-s', default=None, help='Subject Code')
+    parser.add_argument('--experiment', '-x', default=None, help='Experiment name')
+    parser.add_argument('--resolution', '-r', default=None, help='Screen resolution')
+    parser.add_argument('--archive', '-a', default=None, help='Data storage directory')
+    parser.add_argument('--no-fs', dest="no_fs", default=False, action='store_true',
+                        help='Turn off fullscreen')
     parser.add_argument("--no-host", default=False, action="store_true",
                         help="Run without connecting to the host PC (for development only)")
     parser.add_argument("--experiment-dir", "-e", help="Directory containing experiments")
@@ -86,22 +72,20 @@ if __name__ == '__main__':
     config = json.load(open("run_config.json", 'r'))
     args = parse_args()
 
-    while 'experiment' not in args:
-        experiment = six.moves.input("Enter experiment name: ")
-        if experiment not in config['experiments']:
-            print("Experiment must be one of: " + ', '.join(sorted(config['experiments'].keys())))
-        else:
-            args['experiment'] = experiment
+    if "experiment" not in args or "subject" not in args:
+        args = Launcher.get_updated_args(sorted(config["experiments"].keys()), args)
 
-    while 'subject' not in args:
-        subject = six.moves.input("Enter subject code: ")
-        if len(subject.strip()) != 0:
-            args['subject'] = subject
+    if args is not None:
+        # Override default experiment dir
+        if "experiment_dir" in args:
+            config["experiment_dir"] = args["experiment_dir"]
 
-    # Override default experiment dir
-    if "experiment_dir" in args:
-        config["experiment_dir"] = args["experiment_dir"]
+        config.update(config["experiments"][args["experiment"]])
+        config.update(args)
+        config["experiment"] = args["experiment"]
 
-    exp_config = build_exp_config(config, **args)
-
-    run_experiment(exp_config)
+        print("Using configuration\n\n",
+              json.dumps(config, indent=2, sort_keys=True))
+        run_experiment(config)
+    else:
+        print("Canceled!")
