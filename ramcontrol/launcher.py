@@ -25,7 +25,7 @@ class Launcher(QDialog):
         form.addRow(QLabel("Subject"), self.subjectBox)
 
         self.experimentBox = QComboBox()
-        self.experimentBox.addItems(sorted(experiments))
+        self.experimentBox.addItems(sorted(experiments, key=lambda s: s.lower()))
         self.experimentBox.setCurrentText(args.get("experiment", ""))
         form.addRow(QLabel("Experiment"), self.experimentBox)
 
