@@ -69,7 +69,7 @@ def parse_args():
 
 
 if __name__ == '__main__':
-    config = json.load(open("run_config.json", 'r'))
+    config = json.load(open("ramcontrol.json", 'r'))
     args = parse_args()
 
     if "experiment" not in args or "subject" not in args:
