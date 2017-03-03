@@ -4,5 +4,6 @@ pytest-cov==2.4.0
 pyzmq==16.0.2
 six==1.10.0
 tornado==4.4.2
-webrtcvad=2.0.10
+webrtcvad==2.0.10
+-e git+https://github.com/pennmem/wordpool.git#egg=wordpool
 
