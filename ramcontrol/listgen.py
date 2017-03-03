@@ -54,26 +54,28 @@ def assign_list_types(pool, num_baseline, num_nonstim, num_stim, num_ps=0):
 
     """
     assert len(pool) == num_baseline + num_nonstim + num_stim + num_ps + 1
+    practice = [pool.lists.pop(0)]
 
-    # Assign baseline
-    for n in range(1, num_baseline + 1):
-        pool[n].metadata["type"] = "NON-STIM ENCODING"
+    baseline = [pool.lists.pop(0) for _ in range(num_baseline)]
+    for item in baseline:
+        item.metadata["type"] = "NON-STIM ENCODING"
 
-    # Assign PS
-    for n in range(1 + num_baseline, 2 + num_baseline + num_ps):  # FIXME: WRONG
-        pool[n].metadata["type"] = "PS ENCODING"
+    ps = [pool.lists.pop(0) for _ in range(num_ps)]
+    for item in ps:
+        item.metadata["type"] = "PS ENCODING"
 
-    # Assign stim/non-stim
-    rest = ["NON-STIM ENCODING"]*num_nonstim + ["STIM ENCODING"]*num_stim
-    random.shuffle(rest)
-    for i, n in enumerate(range(2 + num_baseline + num_ps, len(pool))):
-        pool[n].metadata["type"] = rest[i]
+    stim_or_nostim = ["NON-STIM ENCODING"]*num_nonstim + ["STIM ENCODING"]*num_stim
+    random.shuffle(stim_or_nostim)
+    for n, kind in enumerate(stim_or_nostim):
+        pool.lists[n].metadata["type"] = kind
 
+    pool.lists = practice + baseline + ps + pool.lists
     return pool
 
 
 if __name__ == "__main__":
     pool = generate_session_pool()
-    pool = assign_list_types(pool, 3, 22, 0, 0)
+    pool = assign_list_types(pool, 3, 7, 11, 4)
+    print(pool)
     for list_ in pool:
         print(list_.metadata["type"])
