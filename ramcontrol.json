@@ -3,6 +3,7 @@
   "resolution": "1440x900",
   "archive_dir": "./data",
   "config_file": "config.py",
+  "ps4able": ["FR5"],
   "experiments": {
     "FR1": {
       "subdir": "RAM_FR",
@@ -38,11 +39,6 @@
       "subdir": "RAM_PAL",
       "exp_py": "PAL.py",
       "sconfig_file": "PAL3_config.py"
-    },
-    "PS4_FR5": {
-      "subdir": "RAM_FR",
-      "exp_py": "FR.py",
-      "sconfig_file": "PS4_FR5_config.py"
     }
   }
 }

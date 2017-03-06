@@ -47,7 +47,8 @@ def run_experiment(exp_config):
     # Additional config options to signal via env vars
     env["RAM_CONFIG"] = json.dumps({
         "no_host": exp_config.pop("no_host"),
-        "voiceserver": exp_config["experiment"] is "FR5"  # TODO: make switchable
+        "voiceserver": exp_config["experiment"] is "FR5",  # TODO: make switchable
+        "ps4": exp_config["ps4"]
     })
 
     p = subprocess.Popen(args, env=env, cwd=exp_dir)
@@ -60,6 +61,8 @@ def parse_args():
     parser.add_argument('--experiment', '-x', default=None, help='Experiment name')
     parser.add_argument('--resolution', '-r', default=None, help='Screen resolution')
     parser.add_argument('--archive', '-a', default=None, help='Data storage directory')
+    parser.add_argument("--ps4", default=False, action="store_true",
+                        help="Run as a PS4 session (only some experiments support this)")
     parser.add_argument('--no-fs', dest="no_fs", default=False, action='store_true',
                         help='Turn off fullscreen')
     parser.add_argument("--no-host", default=False, action="store_true",
@@ -73,7 +76,8 @@ if __name__ == '__main__':
     args = parse_args()
 
     if "experiment" not in args or "subject" not in args:
-        args = Launcher.get_updated_args(sorted(config["experiments"].keys()), args)
+        args = Launcher.get_updated_args(sorted(config["experiments"].keys()),
+                                         args, config["ps4able"])
 
     if args is not None:
         # Override default experiment dir
