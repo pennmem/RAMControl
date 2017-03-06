@@ -19,6 +19,15 @@ def test_generate_session_pool():
         listgen.generate_session_pool(num_lists=random.randrange(26))
         listgen.generate_session_pool(language="DA")
 
+    # Test uniqueness
+    session1 = listgen.generate_session_pool()
+    session2 = listgen.generate_session_pool()
+    for n in range(len(session1)):
+        if n is 0:
+            assert session1[n] == session2[n]  # practice lists always the same
+        else:
+            assert session1[n] != session2[n]
+
 
 def test_assign_list_types():
     session = listgen.generate_session_pool()
