@@ -2,7 +2,6 @@
 
 import os.path as osp
 import subprocess
-import random
 import unicodedata
 
 
@@ -15,3 +14,14 @@ def git_root():
 def data_path():
     """Return the path containing test data."""
     return osp.join(git_root(), "tests", "data")
+
+
+def remove_accents(input_str):
+    """Removes accented characters from an input string.
+
+    :param str input_str:
+    :rtype: str
+
+    """
+    nkfd_form = unicodedata.normalize('NFKD', input_str)
+    return u"".join([c for c in nkfd_form if not unicodedata.combining(c)])
