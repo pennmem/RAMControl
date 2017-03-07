@@ -132,7 +132,7 @@ class RAMControl(object):
         self.zpoller.register(self.voice_socket, zmq.POLLIN)
 
     @classmethod
-    def instance(cls, *args, **kwargs):
+    def instance(cls, *args, **kwargs):  # FIXME: no real reason to do this...
         """Return the singleton :class:`RAMControl` instance."""
         if cls._instance is None:
             cls._instance = RAMControl(*args, **kwargs)
@@ -208,6 +208,8 @@ class RAMControl(object):
     def configure(self, experiment, version, session_num, session_type, subject, states):
         """Set various experiment options so they can be transmitted to the host
         PC and add poll callbacks.
+
+        TODO: move this functionality into ``__init__``.
 
         :param str experiment:
         :param version:

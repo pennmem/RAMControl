@@ -1,26 +1,32 @@
 from abc import ABCMeta, abstractmethod
-import json
 import os
 import sys
+import json
+import codecs
+from contextlib import contextmanager
 import six
 
 from ramcontrol.control import RAMControl
-from ramcontrol.extendedPyepl import CustomAudioTrack
-from pyepl import exputils
+from ramcontrol.messages import (
+    StateMessage
+)
+from ramcontrol.extendedPyepl import (
+    CustomAudioTrack, waitForAnyKeyWithCallback, customMathDistract
+)
+
+from pyepl import exputils, timing
 from pyepl.display import VideoTrack, Text
 from pyepl.keyboard import KeyTrack, Key
 from pyepl.mechinput import ButtonChooser
 from pyepl.textlog import LogTrack
 from pyepl.convenience import waitForAnyKey, flashStimulus
 
-ram_control = RAMControl.instance()
-
 
 @six.add_metaclass(ABCMeta)
 class Experiment(object):
     """Base class to run a RAM experiment. General usage::
 
-        epl_exp = Experiment()
+        epl_exp = Experiment(use_eeg=False)
         epl_exp.parseArgs()
         epl_exp.setup()
         epl_exp.setBreak()  # quit with Esc-F1
@@ -36,6 +42,7 @@ class Experiment(object):
     def __init__(self, epl_exp):
         assert isinstance(epl_exp, exputils.Experiment)
         self.experiment = epl_exp
+        self.controller = RAMControl.instance()
 
         self.clock = exputils.PresentationClock()
         self.config = self.experiment.getConfig()
@@ -69,9 +76,9 @@ class Experiment(object):
             sys.exit(0)
 
         # Set up the RAMControl instance
-        ram_control.configure(self.config.experiment, self.config.version,
-                              session, self.config.stim_type,
-                              self.config.subject, self.config.state_list)
+        self.controller.configure(self.config.experiment, self.config.version,
+                                  session, self.config.stim_type,
+                                  self.config.subject, self.config.state_list)
 
     @property
     def experiment_started(self):
@@ -120,14 +127,38 @@ class Experiment(object):
     #
     #     """
 
+    @contextmanager
+    def state_context(self, state, save=True):
+        """Context manager to log and send state messages. Usage example::
+
+            with self.state_context("COUNTDOWN") as state:
+                self.countdown()
+                # Do something with state. Or not. It's really up to you.
+
+        :param str state: Name of state.
+        :param bool save: Save the experiment state when exiting.
+
+        """
+        exp_state = self.experiment.restoreState()
+        self.log.logMessage(state + "_START", self.clock)
+        self.controller.send(StateMessage(state, True, timestamp=timing.now()))
+        yield exp_state
+        self.controller.send(StateMessage(state, False, timestamp=timing.now()))
+        self.log.logMessage(state + "_END", self.clock)
+
+        # TODO: not sure if always need to do this
+        if save:
+            self.experiment.saveState(exp_state)
+
     def connect_to_control_pc(self):
+        """Wait for a connection with the host PC."""
         if not self.ram_config_env["no_host"]:
             if not self.config.control_pc:
                 return
             video = VideoTrack.lastInstance()
             video.clear('black')
 
-            if not ram_control.initiate_connection():
+            if not self.controller.initiate_connection():
                 waitForAnyKey(self.clock,
                               Text(
                                   "CANNOT SYNC TO CONTROL PC\n"
@@ -135,9 +166,8 @@ class Experiment(object):
                                   size=.05))
                 sys.exit(1)
 
-            cb = lambda: flashStimulus(
-                Text("Waiting for start from control PC..."))
-            ram_control.wait_for_start_message(poll_callback=cb)
+            self.controller.wait_for_start_message(
+                poll_callback=lambda: flashStimulus(Text("Waiting for start from control PC...")))
         else:
             print("***** PROCEEDING WITHOUT CONNECTING TO HOST PC! *****")
 
@@ -168,20 +198,65 @@ class WordTask(Experiment):
 
     def run_distraction(self):
         """Distraction phase."""
+        with self.state_context("DISTRACT", save=False):  # TODO: check on save
+            customMathDistract(clk=self.clock,
+                               mathlog=self.mathlog,
+                               numVars=self.config.MATH_numVars,
+                               maxProbs=self.config.MATH_maxProbs,
+                               plusAndMinus=self.config.MATH_plusAndMinus,
+                               minDuration=self.config.MATH_minDuration,
+                               textSize=self.config.MATH_textSize,
+                               callback=self.control.send_math_message)
+
+    def run_encoding(self, words):
+        """Run an encoding phase.
+
+        :param list words: Words to display.
+
+        """
+        # FIXME: remove if not necessary
+        # if not state and not is_practice:
+        #     raise Exception('State not provided on non-practice list')
+        #
+        # if is_practice:
+        #     list_type = 'PRACTICE_'
+        # else:
+        #     list_type = ''
+
+        with self.state_context("ENCODING_PHASE") as state:
+            pass
+            # 0. log trial number
+            # 1. resynchronize (not used)
+            # 2. countdown
+            # 3. crosshairs
+
+    def run_practice(self, words):
+        """Run a practice encoding phase.
+
+        :param list words: Words to use in the practice encoding phase.
+
+        """
+        with self.state_context("PRACTICE") as state:
+            self.clock.tare()  # FIXME: is this necessary?
+            self.run_encoding(words)
+
+            state.practiceDone = True
+
+        filename = "FIXME"
+        waitForAnyKeyWithCallback(
+            self.clock,
+            Text(codecs.open(filename, encoding='utf-8').read()),
+                 onscreenCallback=lambda: self.control.send(StateMessage('INSTRUCT', True)),
+                 offscreenCallback=lambda: self.control.send(StateMessage('INSTRUCT', False)))
+
+    def run_recall(self):
+        """Run a recall phase."""
+        with self.state_context("RETRIEVAL") as state:
+            pass
 
 
 class FRExperiment(WordTask):
-    """Base for FR tasks.
-
-    :param pyepl.exputils.Experiment:
-    :param
-
-    """
-    def __init__(self, experiment, clock, log, mathlog, video, audio):
-        self.experiment = experiment
-        self.
-        super(FRExperiment, self).__init__("FRx", config)
-
+    """Base for FR tasks."""
     def prepare_experiment(self):
         """Pre-generate all word lists and copy files to the proper locations.
 

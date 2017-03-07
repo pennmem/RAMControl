@@ -38,7 +38,7 @@ class RAMMessage(object):
         }
 
     @staticmethod
-    def now():
+    def now():  # TODO: use the same clock as PyEPL
         """Return the current time in ms."""
         return time.time() * 1000
 
