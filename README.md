@@ -4,9 +4,13 @@
 
 **Note**: These instructions assume PyEPL is already installed.
 
-Clone this repository to a sensible place, e.g.,
-`~/src/task_laptop/ram_tasks`. Experiments are included in this repository via
-git submodules. To obtain:
+Clone this repository and checkout the stable version 3.0 branch:
+
+```
+$ git clone -b v3.0 https://github.com/ramdarpaprojectorg/RAMControl.git
+```
+
+Experiments are included in this repository via git submodules. To obtain:
 
 ```
 $ git submodule init
