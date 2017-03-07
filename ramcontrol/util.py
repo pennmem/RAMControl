@@ -4,6 +4,13 @@ import os.path as osp
 import subprocess
 import unicodedata
 
+# Default RAM environment variable (to be JSONified)
+DEFAULT_ENV = {
+    "no_host": False,
+    "voiceserver": False,
+    "ps4": False
+}
+
 
 def git_root():
     """Return the path to the root git directory."""

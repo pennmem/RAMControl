@@ -4,15 +4,19 @@ import sys
 import json
 import codecs
 from contextlib import contextmanager
+import logging
+
 import six
 
 from ramcontrol.control import RAMControl
+from ramcontrol.util import DEFAULT_ENV
 from ramcontrol.messages import (
     StateMessage
 )
 from ramcontrol.extendedPyepl import (
     CustomAudioTrack, waitForAnyKeyWithCallback, customMathDistract
 )
+from ramcontrol.epl import play_intro_movie
 
 from pyepl import exputils, timing
 from pyepl.display import VideoTrack, Text
@@ -20,6 +24,8 @@ from pyepl.keyboard import KeyTrack, Key
 from pyepl.mechinput import ButtonChooser
 from pyepl.textlog import LogTrack
 from pyepl.convenience import waitForAnyKey, flashStimulus
+
+logger = logging.getLogger(__name__)
 
 
 @six.add_metaclass(ABCMeta)
@@ -69,26 +75,34 @@ class Experiment(object):
         # TODO: save/restore state here??? or just do it in prepare_experiment
 
         # Read environment variable config
-        self.ram_config_env = json.loads(os.environ["RAM_CONFIG"])
+        try:
+            self.ram_config_env = json.loads(os.environ["RAM_CONFIG"])
+        except KeyError:
+            self.ram_config_env = DEFAULT_ENV
 
         # If the session should be skipped, do a hard exit
         if self._should_skip_session(state):
             sys.exit(0)
 
         # Set up the RAMControl instance
+        self.subject = self.experiment.getOptions().get("subject")
         self.controller.configure(self.config.experiment, self.config.version,
                                   session, self.config.stim_type,
-                                  self.config.subject, self.config.state_list)
+                                  self.subject, self.config.state_list)
 
     @property
     def experiment_started(self):
         """Has the experiment been started previously?"""
-        return True if self.exp.restoreState() is not None else False
+        return True if self.experiment.restoreState() is not None else False
 
     @property
     def session_started(self):
         """Has the session been started previously?"""
-        return self.exp.restoreState().session_started
+        state = self.experiment.restoreState()
+        if state is None:
+            return False
+        else:
+            return state.session_started
 
     def _should_skip_session(self, state):
         """Check if session should be skipped
@@ -195,6 +209,9 @@ class WordTask(Experiment):
     """
     def run_instructions(self):
         """Instruction period to explain the task to the subject."""
+        with self.state_context("INSTRUCT"):
+            play_intro_movie(self.experiment, self.video, self.keyboard, True,
+                             self.config.LANGUAGE)
 
     def run_distraction(self):
         """Distraction phase."""
@@ -269,6 +286,9 @@ class WordTask(Experiment):
             # Ending beep
             end_timestamp = self.stop_beep.present(self.clock)
 
+    def run_recognition(self):
+        """Run a recognition phase."""
+
 
 class FRExperiment(WordTask):
     """Base for FR tasks."""
@@ -283,6 +303,7 @@ class FRExperiment(WordTask):
 
         self.run_instructions()
 
+        return
         for list_num, list in enumerate(lists):
             if list_num is 0:
                 self.run_practice(["one", "two", "three"])
@@ -297,7 +318,19 @@ class FRExperiment(WordTask):
 
 
 if __name__ == "__main__":
-    epl_exp = exputils.Experiment(use_eeg=False)
-    epl_exp.parseArgs()
+    import os.path as osp
+    here = osp.realpath(osp.dirname(__file__))
+
+    config_str = osp.abspath(osp.join(here, "..", "experiments/RAM_FR/config.py"))
+    sconfig_str = osp.abspath(osp.join(here, "..", "experiments/RAM_FR/FR1_config.py"))
+
+    epl_exp = exputils.Experiment(subject="R0123P", fullscreen=False,
+                                  use_eeg=False, config=config_str,
+                                  sconfig=sconfig_str)
+    # epl_exp.parseArgs()
+    print(epl_exp.options)
     epl_exp.setup()
     epl_exp.setBreak()  # quit with Esc-F1
+
+    exp = FRExperiment(epl_exp)
+    exp.run()

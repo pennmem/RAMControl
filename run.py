@@ -45,6 +45,7 @@ def run_experiment(exp_config):
     env["PYTHONPATH"] = absjoin(".")
 
     # Additional config options to signal via env vars
+    # TODO: populate from ramcontrol.util.DEFAULT_ENV first
     env["RAM_CONFIG"] = json.dumps({
         "no_host": exp_config.pop("no_host"),
         "voiceserver": exp_config["experiment"] is "FR5",  # TODO: make switchable
