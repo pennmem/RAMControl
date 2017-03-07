@@ -214,15 +214,6 @@ class WordTask(Experiment):
         :param list words: Words to display.
 
         """
-        # FIXME: remove if not necessary
-        # if not state and not is_practice:
-        #     raise Exception('State not provided on non-practice list')
-        #
-        # if is_practice:
-        #     list_type = 'PRACTICE_'
-        # else:
-        #     list_type = ''
-
         with self.state_context("ENCODING_PHASE") as state:
             pass
             # 0. log trial number
@@ -242,17 +233,41 @@ class WordTask(Experiment):
 
             state.practiceDone = True
 
-        filename = "FIXME"
+        filename = "FIXME"  # path to instructions in the appropriate langauge
         waitForAnyKeyWithCallback(
             self.clock,
             Text(codecs.open(filename, encoding='utf-8').read()),
                  onscreenCallback=lambda: self.control.send(StateMessage('INSTRUCT', True)),
                  offscreenCallback=lambda: self.control.send(StateMessage('INSTRUCT', False)))
 
-    def run_recall(self):
-        """Run a recall phase."""
+    def run_orient(self):
+        """Run an orient (crosshairs) phase."""
+        with self.state_context("ORIENT", save=False):
+            start_text = self.video.showCentered(
+                Text(self.config.recallStartText,
+                     size=self.config.wordHeight))
+            self.start_beep.present(self.clock)
+            self.video.unshow(start_text)
+
+    def run_retrieval(self):
+        """Run a retrieval (a.k.a. recall) phase."""
+        # Delay before recall
+        # TODO: maybe move to general run method
+        self.clock.delay(self.config.PauseBeforeRecall,
+                         jitter=self.config.JitterBeforeRecall)
+
+        # TODO: maybe move to general run method
+        self.run_orient()
+
         with self.state_context("RETRIEVAL") as state:
-            pass
+            label = str(state.trialNum)
+
+            # Record responses
+            rec, timestamp = self.audio.record(
+                self.config.recallDuration, label, t=self.clock)
+
+            # Ending beep
+            end_timestamp = self.stop_beep.present(self.clock)
 
 
 class FRExperiment(WordTask):
@@ -264,7 +279,13 @@ class FRExperiment(WordTask):
         # copy word pool
 
     def run(self):
+        lists = []  # FIXME
+
         self.run_instructions()
+
+        for list_num, list in enumerate(lists):
+            if list_num is 0:
+                self.run_practice(["one", "two", "three"])
 
 
 # class CatFRExperiment(FRExperiment):
@@ -273,3 +294,10 @@ class FRExperiment(WordTask):
 #
 # class PALExperiment(WordTask):
 #     """Base for PAL tasks."""
+
+
+if __name__ == "__main__":
+    epl_exp = exputils.Experiment(use_eeg=False)
+    epl_exp.parseArgs()
+    epl_exp.setup()
+    epl_exp.setBreak()  # quit with Esc-F1
