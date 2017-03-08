@@ -1,5 +1,6 @@
 from abc import ABCMeta, abstractmethod
 import os
+import os.path as osp
 import sys
 import json
 import codecs
@@ -8,8 +9,11 @@ import logging
 
 import six
 
+from wordpool import WordList, WordPool
+import wordpool.data
 from ramcontrol.control import RAMControl
 from ramcontrol.util import DEFAULT_ENV
+from ramcontrol.exc import LanguageError
 from ramcontrol.messages import (
     StateMessage
 )
@@ -41,26 +45,29 @@ class Experiment(object):
         experiment.connect_to_control_pc()
         experiment.run()
 
-
     :param exputils.Experiment epl_exp:
 
     """
     def __init__(self, epl_exp):
         assert isinstance(epl_exp, exputils.Experiment)
-        self.experiment = epl_exp
+        self.epl_exp = epl_exp
         self.controller = RAMControl.instance()
 
         self.clock = exputils.PresentationClock()
-        self.config = self.experiment.getConfig()
+        self.config = self.epl_exp.getConfig()
+        logger.debug("config1:\n%s",
+                     json.dumps(self.config.config1.config, indent=2, sort_keys=True))
+        logger.debug("config2:\n%s",
+                     json.dumps(self.config.config2.config, indent=2, sort_keys=True))
         self.name = self.config.experiment
 
         # Session must be set before creating tracks, apparently
-        state = self.experiment.restoreState()
+        state = self.epl_exp.restoreState()
         try:
             session = state.sessionNum
         except AttributeError:
             session = 0
-        self.experiment.setSession(session)
+        self.epl_exp.setSession(session)
 
         # Create all tracks
         self.log = LogTrack("session")
@@ -85,20 +92,45 @@ class Experiment(object):
             sys.exit(0)
 
         # Set up the RAMControl instance
-        self.subject = self.experiment.getOptions().get("subject")
+        # TODO: get rid of this monstrosity
+        self.subject = self.epl_exp.getOptions().get("subject")
         self.controller.configure(self.config.experiment, self.config.version,
-                                  session, self.config.stim_type,
+                                  session,
+                                  "" if not hasattr(self.config, "stim_type") else self.config.stim_type,
                                   self.subject)
+
+    @property
+    def data_root(self):
+        """Root directory for data files. Session-specific data will go in
+        session files below this directory. Directory structure::
+
+            <root>
+            `---- <experiment>
+                  `---- <subject>
+                        `---- <common files>
+                        `---- session_<number>
+                              `---- <session-specific files>
+
+        """
+        dirs = osp.join(self.epl_exp.options["archive"],
+                        self.config.experiment,
+                        self.epl_exp.options["subject"])
+        try:
+            os.makedirs(dirs)
+        except OSError:
+            if not osp.exists(dirs):
+                raise OSError("Can't make directories: " + dirs)
+        return dirs
 
     @property
     def experiment_started(self):
         """Has the experiment been started previously?"""
-        return True if self.experiment.restoreState() is not None else False
+        return True if self.epl_exp.restoreState() is not None else False
 
     @property
     def session_started(self):
         """Has the session been started previously?"""
-        state = self.experiment.restoreState()
+        state = self.epl_exp.restoreState()
         if state is None:
             return False
         else:
@@ -127,7 +159,7 @@ class Experiment(object):
                 state.trialNum = 0
                 state.practiceDone = False
                 state.session_started = False
-                self.experiment.saveState(state)
+                self.epl_exp.saveState(state)
                 waitForAnyKey(self.clock, Text('Session skipped\nRestart RAM_%s to run next session' %
                                                self.config.experiment))
                 return True
@@ -156,7 +188,7 @@ class Experiment(object):
         :param bool save: Save the experiment state when exiting.
 
         """
-        exp_state = self.experiment.restoreState()
+        exp_state = self.epl_exp.restoreState()
         self.log.logMessage(state + "_START", self.clock)
         self.controller.send(StateMessage(state, True, timestamp=timing.now()))
         yield exp_state
@@ -165,7 +197,42 @@ class Experiment(object):
 
         # TODO: not sure if always need to do this
         if save:
-            self.experiment.saveState(exp_state)
+            self.epl_exp.saveState(exp_state)
+
+    @staticmethod
+    def copy_word_pool(data_root, language="en", include_lures=False):
+        """Copy word pools to the data root directory. This method only needs
+        to be called the first time an experiment is run with a given subject.
+
+        This is only a static method because PyEPL makes it nearly impossible
+        to test otherwise.
+
+        :param str data_root: Path to data root directory.
+        :param str language: Language to use for the pools (English or Spanish).
+        :param bool include_lures: Include lure word pool.
+        :raises LanguageError: when a passed language is unavailable
+
+        """
+        # Validate language selection
+        lang = language[:2].lower()
+        if lang not in ["en", "sp"]:
+            raise LanguageError("Invalid language: " + lang)
+        if include_lures:
+            if lang == "sp":
+                raise LanguageError("Spanish lures are not yet available.")
+
+        # Copy wordpool used in experiment...
+        with codecs.open(osp.join(data_root, "RAM_wordpool.txt"),
+                         "w", encoding="utf-8") as wordfile:
+            filename = "ram_wordpool_{:s}.txt".format(lang)
+            wordfile.writelines(wordpool.data.read_list(filename))
+
+        # ... and lures if required
+        if include_lures:
+            with codecs.open(osp.join(data_root, "RAM_lurepool.txt"),
+                             "w", encoding="utf-8") as lurefile:
+                filename = "REC1_lures_{:s}.txt".format(lang)
+                lurefile.writelines(wordpool.data.read_list(filename))
 
     def connect_to_control_pc(self):
         """Wait for a connection with the host PC."""
@@ -213,7 +280,7 @@ class WordTask(Experiment):
     def run_instructions(self):
         """Instruction period to explain the task to the subject."""
         with self.state_context("INSTRUCT"):
-            play_intro_movie(self.experiment, self.video, self.keyboard, True,
+            play_intro_movie(self.epl_exp, self.video, self.keyboard, True,
                              self.config.LANGUAGE)
 
     def run_distraction(self):
@@ -299,7 +366,9 @@ class FRExperiment(WordTask):
         """Pre-generate all word lists and copy files to the proper locations.
 
         """
-        # copy word pool
+        # Copy word pool to the data directory
+        # TODO: only copy lures for tasks using REC1
+        self.copy_word_pool(self.data_root, self.config.LANGUAGE, True)
 
     def run(self):
         lists = []  # FIXME
@@ -322,16 +391,20 @@ class FRExperiment(WordTask):
 
 if __name__ == "__main__":
     import os.path as osp
+    from ramcontrol.util import fake_subject
     here = osp.realpath(osp.dirname(__file__))
+
+    logging.basicConfig(level=logging.DEBUG)
 
     archive_dir = osp.abspath(osp.join(here, "..", "data"))  # needs to be data/<experiment name>
     config_str = osp.abspath(osp.join(here, "configs", "FR", "config.py"))
-    sconfig_str = osp.abspath(osp.join(here, "configs", "FR", "FR1_config.py"))
+    sconfig_str = osp.abspath(osp.join(here, "configs", "FR", "FR5_config.py"))
 
-    epl_exp = exputils.Experiment(subject="R0123P", fullscreen=False,
+    epl_exp = exputils.Experiment(subject=fake_subject(), fullscreen=False,
                                   archive=archive_dir,
                                   use_eeg=False, config=config_str,
-                                  sconfig=sconfig_str)
+                                  sconfig=sconfig_str,
+                                  resolution="1440x900")
     # epl_exp.parseArgs()
     print(epl_exp.options)
     epl_exp.setup()

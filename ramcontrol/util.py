@@ -3,6 +3,8 @@
 import os.path as osp
 import subprocess
 import unicodedata
+import random
+from string import ascii_uppercase
 
 # Default RAM environment variable (to be JSONified)
 DEFAULT_ENV = {
@@ -26,6 +28,12 @@ def data_path():
 def absjoin(*paths):
     """Join a list of paths and return the absolute path."""
     return osp.abspath(osp.join(*paths))
+
+
+def fake_subject():
+    """Return a fake subject ID."""
+    return "R{:04d}{:s}".format(random.randint(0, 999),
+                                random.choice(ascii_uppercase))
 
 
 def remove_accents(input_str):

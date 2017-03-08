@@ -215,7 +215,7 @@ class RAMControl(object):
         :param str experiment:
         :param version:
         :param session_num:
-        :param str session_type:
+        :param str session_type: FIXME: get rid of
         :param str subject:
         :param list states: Allowed states
 
