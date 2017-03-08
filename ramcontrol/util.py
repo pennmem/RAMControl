@@ -23,6 +23,11 @@ def data_path():
     return osp.join(git_root(), "tests", "data")
 
 
+def absjoin(*paths):
+    """Join a list of paths and return the absolute path."""
+    return osp.abspath(osp.join(*paths))
+
+
 def remove_accents(input_str):
     """Removes accented characters from an input string.
 
