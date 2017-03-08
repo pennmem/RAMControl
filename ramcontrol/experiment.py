@@ -88,7 +88,7 @@ class Experiment(object):
         self.subject = self.experiment.getOptions().get("subject")
         self.controller.configure(self.config.experiment, self.config.version,
                                   session, self.config.stim_type,
-                                  self.subject, self.config.state_list)
+                                  self.subject)
 
     @property
     def experiment_started(self):
@@ -324,10 +324,12 @@ if __name__ == "__main__":
     import os.path as osp
     here = osp.realpath(osp.dirname(__file__))
 
-    config_str = osp.abspath(osp.join(here, "..", "experiments/RAM_FR/config.py"))
-    sconfig_str = osp.abspath(osp.join(here, "..", "experiments/RAM_FR/FR1_config.py"))
+    archive_dir = osp.abspath(osp.join(here, "..", "data"))  # needs to be data/<experiment name>
+    config_str = osp.abspath(osp.join(here, "configs", "FR", "config.py"))
+    sconfig_str = osp.abspath(osp.join(here, "configs", "FR", "FR1_config.py"))
 
     epl_exp = exputils.Experiment(subject="R0123P", fullscreen=False,
+                                  archive=archive_dir,
                                   use_eeg=False, config=config_str,
                                   sconfig=sconfig_str)
     # epl_exp.parseArgs()

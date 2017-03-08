@@ -4,9 +4,6 @@
 # AND SPANISH ('SP')
 LANGUAGE = 'EN'
 
-# NEW IN VERSION 1.02
-require_labjack = False
-
 # Control PC
 control_pc = True
 
@@ -51,9 +48,12 @@ stopBeepRiseFall = 100
 orientText = '+'
 recallStartText = '*******'
 
-countdownMovie = 'video_%s/countdown.mpg'%LANGUAGE
-introMovie = 'video_%s/instructions.mpg' #LANGUAGE WILL BE PLACED HERE BY PLAY_INTRO.py
-
+# Videos
+# FIXME: figure out where to really put movies
+video_root = "/Users/depalati/src/RAMControl/experiments/RAM_FR/"
+# FIXME: why are there two countdown movies?
+countdownMovie = video_root + "video_{language:s}/countdown.mpg"
+introMovie = video_root + "video_{language:s}/instructions.mpg"
 
 # Math distractor options
 MATH_numVars = 3

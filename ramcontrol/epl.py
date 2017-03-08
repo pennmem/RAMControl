@@ -85,7 +85,8 @@ def play_intro_movie(exp, video, keyboard, allowSkip, language):
 
     video.clear('black')
 
-    introMovie = config.introMovie % language
+    introMovie = config.introMovie.format(language=language)
+    print(introMovie)
 
     # if the first list has been completed, allow them to skip playing the movie
     if not allowSkip:
