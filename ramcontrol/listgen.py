@@ -37,11 +37,13 @@ def generate_session_pool(words_per_list=12, num_lists=25,
 
 
 def assign_list_types(pool, num_baseline, num_nonstim, num_stim, num_ps=0):
-    """Assign list types to a pool.
+    """Assign list types to a pool. The types are:
 
-    For legacy reasons, stim/non-stim lists are given types ``STIM ENCODING``
-    and ``NON-STIM ENCODING``, respectively, and PS trials are given type
-    ``PS ENCODING`` for consistency.
+    * ``PRACTICE``
+    * ``BASELINE``
+    * ``PS``
+    * ``STIM``
+    * ``NON-STIM``
 
     :param WordPool pool:
     :param int num_baseline: Number of baseline trials *excluding* the practice
@@ -58,13 +60,13 @@ def assign_list_types(pool, num_baseline, num_nonstim, num_stim, num_ps=0):
 
     baseline = [pool.lists.pop(0) for _ in range(num_baseline)]
     for item in baseline:
-        item.metadata["type"] = "NON-STIM ENCODING"
+        item.metadata["type"] = "BASELINE"
 
     ps = [pool.lists.pop(0) for _ in range(num_ps)]
     for item in ps:
-        item.metadata["type"] = "PS ENCODING"
+        item.metadata["type"] = "PS"
 
-    stim_or_nostim = ["NON-STIM ENCODING"]*num_nonstim + ["STIM ENCODING"]*num_stim
+    stim_or_nostim = ["NON-STIM"]*num_nonstim + ["STIM"]*num_stim
     random.shuffle(stim_or_nostim)
     for n, kind in enumerate(stim_or_nostim):
         pool.lists[n].metadata["type"] = kind
@@ -75,7 +77,7 @@ def assign_list_types(pool, num_baseline, num_nonstim, num_stim, num_ps=0):
 
 if __name__ == "__main__":
     pool = generate_session_pool()
-    pool = assign_list_types(pool, 3, 7, 11, 4)
+    pool = assign_list_types(pool, 3, 0, 16, 6)
     print(pool)
     for list_ in pool:
         print(list_.metadata["type"])

@@ -38,15 +38,15 @@ def test_assign_list_types():
             assert session[n].metadata["type"] == "PRACTICE"
             continue
         kind = session[n].metadata["type"]
-        if kind == "PS ENCODING":
+        if kind == "PS":
             n_ps += 1
-        elif kind == "NON-STIM ENCODING":
+        elif kind == "NON-STIM" or kind == "BASELINE":
             n_ns += 1
-        elif kind == "STIM ENCODING":
+        elif kind == "STIM":
             n_s += 1
 
     for n in range(1, 4):
-        assert session[n].metadata["type"] == "NON-STIM ENCODING"
+        assert session[n].metadata["type"] == "BASELINE"
 
     assert n_ps is 4
     assert n_ns is 10
