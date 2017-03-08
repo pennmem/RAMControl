@@ -102,7 +102,10 @@ class Experiment(object):
         if state is None:
             return False
         else:
-            return state.session_started
+            try:
+                return state.session_started
+            except AttributeError:  # a crash most likely happened last time
+                return False
 
     def _should_skip_session(self, state):
         """Check if session should be skipped
