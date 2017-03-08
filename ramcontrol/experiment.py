@@ -225,14 +225,15 @@ class Experiment(object):
         with codecs.open(osp.join(data_root, "RAM_wordpool.txt"),
                          "w", encoding="utf-8") as wordfile:
             filename = "ram_wordpool_{:s}.txt".format(lang)
-            wordfile.writelines(wordpool.data.read_list(filename))
+            wordfile.write("\n".join(wordpool.data.read_list(filename)))
 
         # ... and lures if required
         if include_lures:
             with codecs.open(osp.join(data_root, "RAM_lurepool.txt"),
                              "w", encoding="utf-8") as lurefile:
                 filename = "REC1_lures_{:s}.txt".format(lang)
-                lurefile.writelines(wordpool.data.read_list(filename))
+                print(wordpool.data.read_list(filename))
+                lurefile.write("\n".join(wordpool.data.read_list(filename)))
 
     def connect_to_control_pc(self):
         """Wait for a connection with the host PC."""
