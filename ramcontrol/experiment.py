@@ -6,11 +6,14 @@ import json
 import codecs
 from contextlib import contextmanager
 import logging
+from collections import namedtuple
 
 import six
+import numpy as np
 
 from wordpool import WordList, WordPool
 import wordpool.data
+from ramcontrol import listgen
 from ramcontrol.control import RAMControl
 from ramcontrol.util import DEFAULT_ENV
 from ramcontrol.exc import LanguageError
@@ -105,16 +108,14 @@ class Experiment(object):
         session files below this directory. Directory structure::
 
             <root>
-            `---- <experiment>
+            `---- <experiment> <-- what this function should return
                   `---- <subject>
                         `---- <common files>
                         `---- session_<number>
                               `---- <session-specific files>
 
         """
-        dirs = osp.join(self.epl_exp.options["archive"],
-                        self.config.experiment,
-                        self.epl_exp.options["subject"])
+        dirs = self.epl_exp.options["archive"]
         try:
             os.makedirs(dirs)
         except OSError:
@@ -232,7 +233,6 @@ class Experiment(object):
             with codecs.open(osp.join(data_root, "RAM_lurepool.txt"),
                              "w", encoding="utf-8") as lurefile:
                 filename = "REC1_lures_{:s}.txt".format(lang)
-                print(wordpool.data.read_list(filename))
                 lurefile.write("\n".join(wordpool.data.read_list(filename)))
 
     def connect_to_control_pc(self):
@@ -371,15 +371,24 @@ class FRExperiment(WordTask):
         # TODO: only copy lures for tasks using REC1
         self.copy_word_pool(self.data_root, self.config.LANGUAGE, True)
 
-    def run(self):
-        lists = []  # FIXME
+        # Generate all session lists
+        # FIXME
+        for session in range(self.config.numSessions):
+            pool = listgen.generate_session_pool(language=self.config.LANGUAGE)
+            n_baseline = self.config.nBaselineTrials
+            n_nonstim = self.config.nControlTrials
+            n_stim = self.config.nStimTrials
+            n_ps = 0  # FIXME
+            assigned = listgen.assign_list_types(pool, n_baseline, n_nonstim,
+                                                 n_stim, n_ps)
 
+            for list_ in assigned:
+                print(list_.to_dict())
+
+    def run(self):
         self.run_instructions()
 
         return
-        for list_num, list in enumerate(lists):
-            if list_num is 0:
-                self.run_practice(["one", "two", "three"])
 
 
 # class CatFRExperiment(FRExperiment):
@@ -397,9 +406,11 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.DEBUG)
 
-    archive_dir = osp.abspath(osp.join(here, "..", "data"))  # needs to be data/<experiment name>
+    subject = fake_subject()
+    exp_name = "FR5"
+    archive_dir = osp.abspath(osp.join(here, "..", "data", exp_name))
     config_str = osp.abspath(osp.join(here, "configs", "FR", "config.py"))
-    sconfig_str = osp.abspath(osp.join(here, "configs", "FR", "FR5_config.py"))
+    sconfig_str = osp.abspath(osp.join(here, "configs", "FR", exp_name + "_config.py"))
 
     epl_exp = exputils.Experiment(subject=fake_subject(), fullscreen=False,
                                   archive=archive_dir,
