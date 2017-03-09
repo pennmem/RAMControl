@@ -63,6 +63,7 @@ class Experiment(object):
         logger.debug("config2:\n%s",
                      json.dumps(self.config.config2.config, indent=2, sort_keys=True))
         self.name = self.config.experiment
+        self.subject = self.epl_exp.getOptions().get("subject")
 
         # Session must be set before creating tracks, apparently
         state = self.epl_exp.restoreState()
@@ -96,7 +97,6 @@ class Experiment(object):
 
         # Set up the RAMControl instance
         # TODO: get rid of this monstrosity
-        self.subject = self.epl_exp.getOptions().get("subject")
         self.controller.configure(self.config.experiment, self.config.version,
                                   session,
                                   "" if not hasattr(self.config, "stim_type") else self.config.stim_type,
@@ -202,8 +202,9 @@ class Experiment(object):
 
     @staticmethod
     def copy_word_pool(data_root, language="en", include_lures=False):
-        """Copy word pools to the data root directory. This method only needs
-        to be called the first time an experiment is run with a given subject.
+        """Copy word pools to the subject's data root directory. This method
+        only needs to be called the first time an experiment is run with a
+        given subject.
 
         This is only a static method because PyEPL makes it nearly impossible
         to test otherwise.
@@ -382,8 +383,16 @@ class FRExperiment(WordTask):
             assigned = listgen.assign_list_types(pool, n_baseline, n_nonstim,
                                                  n_stim, n_ps)
 
-            for list_ in assigned:
-                print(list_.to_dict())
+            # Create session directory if it doesn't yet exist
+            session_dir = osp.join(self.data_root, self.subject,
+                                   "session_{:d}".format(session))
+            try:
+                os.makedirs(session_dir)
+            except OSError:
+                print("session", session, "dir already created")
+
+            # Write assigned list to session folders
+            assigned.to_json(osp.join(session_dir, "pool.json"))
 
     def run(self):
         self.run_instructions()
