@@ -1,6 +1,8 @@
 """List generation and I/O."""
 
 import random
+import numpy.random as npr
+import pandas as pd
 from wordpool import WordList, WordPool
 from wordpool.data import read_list
 
@@ -73,6 +75,45 @@ def assign_list_types(pool, num_baseline, num_nonstim, num_stim, num_ps=0):
 
     pool.lists = practice + baseline + ps + pool.lists
     return pool
+
+
+def generate_rec1_blocks(pool, lures):
+    """Generate REC1 word blocks.
+
+    :param WordPool pool: :class:`WordPool` used in verbal task session.
+    :param WordList lures: List of lures to use.
+
+    """
+    df = pool.to_dataframe()
+
+    # Remove practice and baseline lists
+    no_baseline = df[~df.isin(["PRACTICE", "BASELINE"])]
+
+    # Remove last four lists
+    allowed = no_baseline[no_baseline.listno.isin(no_baseline.listno.unique()[:-4])]
+
+    # Select stim and nonstim lists
+    stims = allowed[allowed.type == "STIM"]
+    nonstims = allowed[allowed.type == "NON-STIM"]
+
+    # Randomly select list numbers
+    stim_idx = pd.Series(stims.listno.unique()).sample(6)
+    rec_stims = stims[stims.listno.isin(stim_idx)]
+    nonstim_idx = pd.Series(nonstims.listno.unique()).sample(6)
+    rec_nonstims = nonstims[nonstims.listno.isin(nonstim_idx)]
+
+    # Combine selected words
+    targets = df.concat([rec_stims, rec_nonstims])
+    targets["lure"] = False
+
+    # Give lures list numbers
+    lures = lures.to_dataframe()
+    lures["lure"] = True
+    lures["listno"] = npr.choice(targets.listno.unique(), len(lures))
+
+    # Combine lures and targets
+    combined = df.concat([targets, lures]).sort_values(by="listno")
+    return combined
 
 
 if __name__ == "__main__":
