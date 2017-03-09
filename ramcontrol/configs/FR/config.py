@@ -4,11 +4,8 @@
 # AND SPANISH ('SP')
 LANGUAGE = 'EN'
 
-# Control PC
-control_pc = True
-
 # Number of sessions per subject
-numSessions = 5
+numSessions = 10
 
 # Number of trials/lists per session
 numTrials = 25
@@ -72,13 +69,6 @@ MATH_incorrectBeepDur = 500
 MATH_incorrectBeepFreq = 200
 MATH_incorrectBeepRF = 50
 MATH_incorrectSndFile = None
-
-# Word pool to use
-wp = 'pools_%s/RAM_wordpool.txt' % LANGUAGE
-noAcc_wp = 'RAM_wordpool_noAcc.txt'
-practice_wordList = 'pools_%s/word-pool_PRACTICE.txt'  # LANGUAGE PLACED BY FR.PY
-presentationType = 'text'  # image, sound, text
-presentationAttribute = 'name'  # attribute to use to create the text
 
 # Instructions text file
 pre_practiceList = 'text_%s/pre_practiceList.txt'  # LANGUAGE PLACED BY FR.PY
