@@ -1,17 +1,13 @@
-# NOTE: MODIFY THE FOLLOWING LINE 
-# (and ONLY the following line)
-# TO SWITCH LANGUAGE BETWEEN ENGLISH ('EN')
-# AND SPANISH ('SP')
 LANGUAGE = 'EN'
 
 # Number of sessions per subject
 numSessions = 10
 
-# Number of trials/lists per session
-numTrials = 25
+# Default number of PS lists
+n_ps = 0
 
-# Number of words per trial/list
-listLen = 12
+# Include recognition subtask REC1
+recognition_enabled = False
 
 # Pause+Jitter after orienting stim before first word
 PauseBeforeWords = 1000

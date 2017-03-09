@@ -1,4 +1,3 @@
-# THIS IS THE RIGHT FILE
 experiment = "FR5"
 version = "5.0.0-dev"
 
@@ -9,7 +8,10 @@ n_baseline = 3
 n_stim = 16
 
 # Number of non-stim lists
-n_nonstim = 6
+n_nonstim = 0
 
-# Use REC1
-recognition_enabled = True
+# Number of PS lists
+n_ps = 6
+
+# Don't use REC1
+recognition_enabled = False

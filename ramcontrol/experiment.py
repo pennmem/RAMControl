@@ -72,6 +72,7 @@ class Experiment(object):
         except AttributeError:
             session = 0
         self.epl_exp.setSession(session)
+        self.session = session
 
         # Create all tracks
         self.log = LogTrack("session")
@@ -80,20 +81,23 @@ class Experiment(object):
         self.video = VideoTrack("video")
         self.audio = CustomAudioTrack("audio")
 
-        # Prepare the experiment if not already done
-        if not self.experiment_started:
-            self.prepare_experiment()
-        # TODO: save/restore state here??? or just do it in prepare_experiment
-
         # Read environment variable config
         try:
             self.ram_config_env = json.loads(os.environ["RAM_CONFIG"])
         except KeyError:
             self.ram_config_env = DEFAULT_ENV
 
+        # Prepare the experiment if not already done
+        if not self.experiment_started:
+            self.prepare_experiment()
+        # TODO: save/restore state here??? or just do it in prepare_experiment
+
         # If the session should be skipped, do a hard exit
         if self._should_skip_session(state):
             sys.exit(0)
+
+        # Finalize preparation for the session
+        self.prepare_session()
 
         # Set up the RAMControl instance
         # TODO: get rid of this monstrosity
@@ -114,6 +118,9 @@ class Experiment(object):
                         `---- session_<number>
                               `---- <session-specific files>
 
+        See also :meth:`session_data_dir` for accessing the current session
+        data directory.
+
         """
         dirs = self.epl_exp.options["archive"]
         try:
@@ -122,6 +129,12 @@ class Experiment(object):
             if not osp.exists(dirs):
                 raise OSError("Can't make directories: " + dirs)
         return dirs
+
+    @property
+    def session_data_dir(self):
+        """Return the data directory for the current session."""
+        return osp.join(self.data_root, self.subject,
+                        "session_{:d}".format(self.session))
 
     @property
     def experiment_started(self):
@@ -166,6 +179,7 @@ class Experiment(object):
                 return True
         return False
 
+    # TODO: this would be good to add, probably
     # @abstractmethod
     # def validate_config(self, config):
     #     """Implement this method to validate passed configuration before
@@ -177,8 +191,23 @@ class Experiment(object):
     #
     #     """
 
+    @property
+    def state(self):
+        """Returns the experimental state (implmented via PyEPL)."""
+        return self.epl_exp.restoreState()
+
+    # TODO: figure out how to do this properly with PyEPL
+    # @state.setter
+    # def state(self, new_state):
+    #     self.update_state()
+
+    def update_state(self, **kwargs):
+        """Update the experiment's state with keyword arguments."""
+        state = self.epl_exp.restoreState()
+        self.epl_exp.saveState(state, **kwargs)
+
     @contextmanager
-    def state_context(self, state, save=True):
+    def state_context(self, state):
         """Context manager to log and send state messages. Usage example::
 
             with self.state_context("COUNTDOWN") as state:
@@ -186,7 +215,6 @@ class Experiment(object):
                 # Do something with state. Or not. It's really up to you.
 
         :param str state: Name of state.
-        :param bool save: Save the experiment state when exiting.
 
         """
         exp_state = self.epl_exp.restoreState()
@@ -195,10 +223,6 @@ class Experiment(object):
         yield exp_state
         self.controller.send(StateMessage(state, False, timestamp=timing.now()))
         self.log.logMessage(state + "_END", self.clock)
-
-        # TODO: not sure if always need to do this
-        if save:
-            self.epl_exp.saveState(exp_state)
 
     @staticmethod
     def copy_word_pool(data_root, language="en", include_lures=False):
@@ -258,6 +282,17 @@ class Experiment(object):
             print("***** PROCEEDING WITHOUT CONNECTING TO HOST PC! *****")
 
     @abstractmethod
+    def define_state_variables(self):
+        """Define required experiment-specific state variables here. Overridden
+        docstrings should explain what variables are being defined.
+
+        Example for PyEPL::
+
+            self.update_state(is_ughful=True, ughful_index=99)
+
+        """
+
+    @abstractmethod
     def prepare_experiment(self):
         """Code for preparing an entire experiment across all sessions should
         go here.
@@ -269,16 +304,55 @@ class Experiment(object):
         """
 
     @abstractmethod
+    def prepare_session(self):
+        """Code for preparing a specific session of an experiment should go
+        here.
+
+        """
+
+    @abstractmethod
     def run(self):
         """Experiment logic should go here."""
 
 
 class WordTask(Experiment):
-    """Class for "word"-based tasks (e.g., free recall).
+    """Class for "word"-based tasks (e.g., free recall)."""
+    def define_state_variables(self):
+        """Defines the following state variables:
 
-    This class mainly exists to define helpers common to all RAM verbal tasks.
+        * ``all_lists`` - generated lists for as many sessions as allowed by
+          the config file. Type: list
+        * ``list_index`` - current list number. Type: int
 
-    """
+        All variables are initially set to ``None`` until initialized and are
+        accessible as properties.
+
+        """
+        kwargs = dict()
+        if not hasattr(self.state, "all_lists"):
+            kwargs["all_lists"] = None
+        if not hasattr(self.state, "list_index"):
+            kwargs["list_index"] = None
+        self.update_state(**kwargs)
+
+    @property
+    def all_lists(self):
+        return self.state.all_lists
+
+    @all_lists.setter
+    def all_lists(self, lists):
+        assert isinstance(lists, list)
+        self.update_state(all_lists=lists)
+
+    @property
+    def list_index(self):
+        return self.state.list_index
+
+    @list_index.setter
+    def list_index(self, new_index):
+        assert isinstance(new_index, list)
+        self.update_state(list_index=new_index)
+
     def run_instructions(self):
         """Instruction period to explain the task to the subject."""
         with self.state_context("INSTRUCT"):
@@ -287,7 +361,7 @@ class WordTask(Experiment):
 
     def run_distraction(self):
         """Distraction phase."""
-        with self.state_context("DISTRACT", save=False):  # TODO: check on save
+        with self.state_context("DISTRACT"):  # TODO: check on save
             customMathDistract(clk=self.clock,
                                mathlog=self.mathlog,
                                numVars=self.config.MATH_numVars,
@@ -297,13 +371,9 @@ class WordTask(Experiment):
                                textSize=self.config.MATH_textSize,
                                callback=self.control.send_math_message)
 
-    def run_encoding(self, words):
-        """Run an encoding phase.
-
-        :param list words: Words to display.
-
-        """
-        with self.state_context("ENCODING_PHASE") as state:
+    def run_encoding(self):
+        """Run an encoding phase."""
+        with self.state_context("ENCODING_PHASE"):
             pass
             # 0. log trial number
             # 1. resynchronize (not used)
@@ -318,20 +388,18 @@ class WordTask(Experiment):
         """
         with self.state_context("PRACTICE") as state:
             self.clock.tare()  # FIXME: is this necessary?
-            self.run_encoding(words)
-
-            state.practiceDone = True
+            self.run_encoding()
 
         filename = "FIXME"  # path to instructions in the appropriate langauge
         waitForAnyKeyWithCallback(
             self.clock,
             Text(codecs.open(filename, encoding='utf-8').read()),
-                 onscreenCallback=lambda: self.control.send(StateMessage('INSTRUCT', True)),
-                 offscreenCallback=lambda: self.control.send(StateMessage('INSTRUCT', False)))
+                 onscreenCallback=lambda: self.controller.send(StateMessage('INSTRUCT', True)),
+                 offscreenCallback=lambda: self.controller.send(StateMessage('INSTRUCT', False)))
 
     def run_orient(self):
         """Run an orient (crosshairs) phase."""
-        with self.state_context("ORIENT", save=False):
+        with self.state_context("ORIENT"):
             start_text = self.video.showCentered(
                 Text(self.config.recallStartText,
                      size=self.config.wordHeight))
@@ -373,13 +441,13 @@ class FRExperiment(WordTask):
         self.copy_word_pool(self.data_root, self.config.LANGUAGE, True)
 
         # Generate all session lists
-        # FIXME
+        all_lists = []
         for session in range(self.config.numSessions):
             pool = listgen.generate_session_pool(language=self.config.LANGUAGE)
-            n_baseline = self.config.nBaselineTrials
-            n_nonstim = self.config.nControlTrials
-            n_stim = self.config.nStimTrials
-            n_ps = 0  # FIXME
+            n_baseline = self.config.n_baseline
+            n_nonstim = self.config.n_nonstim
+            n_stim = self.config.n_stim
+            n_ps = self.config.n_ps
             assigned = listgen.assign_list_types(pool, n_baseline, n_nonstim,
                                                  n_stim, n_ps)
 
@@ -389,16 +457,31 @@ class FRExperiment(WordTask):
             try:
                 os.makedirs(session_dir)
             except OSError:
-                print("session", session, "dir already created")
+                logger.warning("Session %d already created", session)
 
             # Write assigned list to session folders
             assigned.to_json(osp.join(session_dir, "pool.json"))
 
+            all_lists.append(assigned)
+
+        # Store lists in the state
+        self.all_lists = all_lists
+
+        # Generate recognition phase lists if this experiment supports it
+        if self.config.recognition_enabled:
+            # Load lures
+            # TODO: update when Spanish allowed
+            lures = WordList(wordpool.data.read_list("REC1_lures_en.txt"))
+
+    def prepare_session(self):
+        pass
+
     def run(self):
         self.run_instructions()
 
-        return
-
+        # for listno, list_ in enumerate(lists):
+        #     if
+        #     self.run_practice(words)
 
 # class CatFRExperiment(FRExperiment):
 #     """Base for CatFR tasks."""
@@ -421,7 +504,7 @@ if __name__ == "__main__":
     config_str = osp.abspath(osp.join(here, "configs", "FR", "config.py"))
     sconfig_str = osp.abspath(osp.join(here, "configs", "FR", exp_name + "_config.py"))
 
-    epl_exp = exputils.Experiment(subject=fake_subject(), fullscreen=False,
+    epl_exp = exputils.Experiment(subject=subject, fullscreen=False,
                                   archive=archive_dir,
                                   use_eeg=False, config=config_str,
                                   sconfig=sconfig_str,
