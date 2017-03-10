@@ -41,88 +41,86 @@ def skip_session(exp):
         log.logMessage('SESSION_SKIPPED', PresentationClock().get())
 
 
-def play_whole_movie(video, audio, movieFile, clock, bc=None):
-    """Plays any movie file and audio file synchronously.
+class PyEPLHelpers(object):
+    """Helpers for PyEPL-based experiments.
 
-    Imported from RAM_FR but seemingly not used
-    (FR.py defines its own version...).
-
-    FIXME: move functionality here from FR.py
-
-    """
-    movieObject = Movie(movieFile)
-    movieObject.load()
-    video.showCentered(movieObject)
-    video.playMovie(movieObject)
-
-    # Stop on button press if BC passed in, otherwise wait until the movie
-    # is finished.
-    if bc is None:
-        clock.delay(movieObject.getTotalTime())
-        clock.wait()
-    else:
-        clock.wait()
-        bc.wait()
-    video.stopMovie(movieObject)
-    movieObject.unload()
-
-
-def play_intro_movie(exp, video, keyboard, allowSkip, language):
-    """Uses the experimental configuration to load a movie and sound
-    clip and plays them synchonously with the movie centered on the
-    screen
-
-    (NOTE: video and sound had to be split to allow for playing of files
-    that were exported from keynote, which are not compatible with MPEG1
-    format
-
-    Imported from RAM_FR.
+    :param epl_exp: PyEPL :class:`Experiment` instance.
+    :param video: PyEPL :class:`Video` instance.
+    :param audio: PyEPL :class:`audio` instance.
+    :param clock: PyEPL :class:`clock` instance.
 
     """
-    config = exp.getConfig()
-    clock = PresentationClock()
-    audio = AudioTrack.lastInstance()
+    def __init__(self, epl_exp, video, audio, clock):
+        self.exp = epl_exp
+        self.video = video
+        self.audio = audio
+        self.clock = clock
+        
+    def play_movie_sync(self, filename, bc=None):
+        """Plays a whole movie synchronously.
 
-    video.clear('black')
+        :param str filename: Path to movie file.
+        :param ButtonChooser bc: When given, allows for cancelling the movie.
 
-    introMovie = config.introMovie.format(language=language)
-    print(introMovie)
+        """
+        movie = Movie(filename)
+        movie_shown = self.video.showCentered(movie)
+        self.video.playMovie(movie)
 
-    # if the first list has been completed, allow them to skip playing the movie
-    if not allowSkip:
-        waitForAnyKey(clock, Text('Press any key to play movie'))
-        continueText = Text('Hit SPACE at any time to continue')
-        shown = video.showAnchored(continueText, SOUTH, video.propToPixel(.5, 1))
-        stopBc = ButtonChooser(Key('SPACE'))
-        play_whole_movie(video, audio, introMovie, clock, stopBc)
-        video.unshow(shown)
-        seenOnce = True
-    else:
-        bc = ButtonChooser(Key('Y'), Key('N'))
-        _, button, _ = Text(
-            "Press Y to play instructional video \n"
-            "Press N continue to practice list"
-        ).present(bc=bc)
-        if button == Key('N'):
-            return
-        seenOnce = False
+        # Stop on button press if BC passed in, otherwise wait until the movie
+        # is finished.
+        if bc is None:
+            self.clock.delay(movie.getTotalTime())
+            self.clock.wait()
+        else:
+            self.clock.wait()
+            bc.wait()
+        self.video.stopMovie(movie)
+        movie.unload()
+        #self.video.unshow(movie_shown)
 
-    bc = ButtonChooser(Key('Y'), Key('N'))
+    def play_intro_movie(self, filename, allow_skip=True):
+        """Play an intro movie, allowing cancellation.
 
-    # Allowed to skip the movie the second time that it has been watched
-    while True:
-        if seenOnce:
+        :param str filename: Path to movie file.
+        :param bool allow_skip: Allow skipping the intro video.
+
+        """
+        self.video.clear('black')
+
+        # if the first list has been completed, allow them to skip playing the movie
+        if not allow_skip:
+            waitForAnyKey(self.clock, Text('Press any key to play movie'))
+            shown = self.video.showAnchored(
+                Text('Hit SPACE at any time to continue'), SOUTH,
+                self.video.propToPixel(.5, 1))
+            self.play_movie_sync(filename, ButtonChooser(Key('SPACE')))
+            self.video.unshow(shown)
+            seen_once = True
+        else:
+            bc = ButtonChooser(Key('Y'), Key('N'))
             _, button, _ = Text(
-                "Press Y to continue to practice list, \n"
-                "Press N to replay instructional video"
-            ).present(bc=bc)
-            if button == Key('Y'):
-                break
+                'Press Y to play instructional video \n Press N to continue to practice list') \
+                .present(bc=bc)
+            if button == Key('N'):
+                return
+            seen_once = False
 
-        continueText = Text('Hit SPACE at any time to continue')
-        shown = video.showAnchored(continueText, SOUTH, video.propToPixel(.5, 1))
+        bc = ButtonChooser(Key('Y'), Key('N'))
 
-        stopBc = ButtonChooser(Key('SPACE'))
-        play_whole_movie(video, audio, introMovie,  clock, stopBc)
-        seenOnce = True
-        video.unshow(shown)
+        # Allowed to skip the movie the second time that it has been watched
+        while True:
+            if seen_once:
+                _, button, _ = Text(
+                    'Press Y to continue to practice list, \n Press N to replay instructional video') \
+                    .present(bc=bc)
+                if button == Key('Y'):
+                    break
+            shown = self.video.showAnchored(
+                Text('Hit SPACE at any time to continue'), SOUTH,
+                self.video.propToPixel(.5, 1))
+
+            stop_bc = ButtonChooser(Key('SPACE'))
+            self.play_movie_sync(filename, stop_bc)
+            seen_once = True
+            self.video.unshow(shown)

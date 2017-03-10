@@ -12,3 +12,7 @@ class LanguageError(RamException):
     in a specific experiment.
 
     """
+
+
+class ExperimentError(RamException):
+    """Generic error raised in experiments."""

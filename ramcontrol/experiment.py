@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 from abc import ABCMeta, abstractmethod
 import os
 import os.path as osp
@@ -6,6 +8,7 @@ import json
 import codecs
 from contextlib import contextmanager
 import logging
+import time
 
 import six
 import pandas as pd
@@ -15,14 +18,14 @@ import wordpool.data
 from ramcontrol import listgen
 from ramcontrol.control import RAMControl
 from ramcontrol.util import DEFAULT_ENV
-from ramcontrol.exc import LanguageError
+from ramcontrol.exc import LanguageError, ExperimentError
 from ramcontrol.messages import (
     StateMessage
 )
 from ramcontrol.extendedPyepl import (
     CustomAudioTrack, waitForAnyKeyWithCallback, customMathDistract
 )
-from ramcontrol.epl import play_intro_movie
+from ramcontrol.epl import PyEPLHelpers
 
 from pyepl import exputils, timing
 from pyepl.display import VideoTrack, Text
@@ -86,6 +89,10 @@ class Experiment(object):
         self.keyboard = KeyTrack("keyboard")
         self.video = VideoTrack("video")
         self.audio = CustomAudioTrack("audio")
+
+        # Helpers for common PyEPL routines
+        self.epl_helpers = PyEPLHelpers(self.epl_exp, self.video, self.audio,
+                                        self.clock)
 
         # Read environment variable config
         try:
@@ -213,7 +220,7 @@ class Experiment(object):
         self.epl_exp.saveState(state, **kwargs)
 
     @contextmanager
-    def state_context(self, state):
+    def state_context(self, state, **kwargs):
         """Context manager to log and send state messages. Usage example::
 
             with self.state_context("COUNTDOWN") as state:
@@ -221,13 +228,17 @@ class Experiment(object):
                 # Do something with state. Or not. It's really up to you.
 
         :param str state: Name of state.
+        :param dict kwargs: Additional keyword arguments to append to the STATE
+            message sent to the host PC.
 
         """
         exp_state = self.epl_exp.restoreState()
         self.log.logMessage(state + "_START", self.clock)
-        self.controller.send(StateMessage(state, True, timestamp=timing.now()))
+        self.controller.send(StateMessage(state, True, timestamp=timing.now(),
+                                          **kwargs))
         yield exp_state
-        self.controller.send(StateMessage(state, False, timestamp=timing.now()))
+        self.controller.send(StateMessage(state, False, timestamp=timing.now(),
+                                          **kwargs))
         self.log.logMessage(state + "_END", self.clock)
 
     @staticmethod
@@ -372,11 +383,34 @@ class WordTask(Experiment):
         assert isinstance(new_blocks, list)
         self.update_state(all_rec_blocks=new_blocks)
 
+    def display_word(self, word, index):
+        """Displays a single word in the list.
+
+        :param str word: Word to display.
+        :param index: Serial position in the list of the word.
+
+        """
+        text = Text(word, size=self.config.wordHeight)
+
+        self.clock.delay(self.config.ISI, self.config.Jitter)
+        self.clock.wait()
+
+        with self.state_context("WORD", word=word, index=index):
+            text.present(self.clock, self.config.wordDuration)
+
     def run_instructions(self):
         """Instruction period to explain the task to the subject."""
         with self.state_context("INSTRUCT"):
-            play_intro_movie(self.epl_exp, self.video, self.keyboard, True,
-                             self.config.LANGUAGE)
+            self.epl_helpers.play_intro_movie(
+                self.config.introMovie.format(language=self.config.LANGUAGE))
+
+    def run_countdown(self):
+        """Display the countdown movie."""
+        self.video.clear('black')
+        with self.state_context("COUNTDOWN"):
+            self.epl_helpers.play_movie_sync(self.config.countdownMovie)
+            # play_whole_movie(self.video, self.audio,
+            #                  self.config.countdownMovie, self.clock)
 
     def run_distraction(self):
         """Distraction phase."""
@@ -388,19 +422,30 @@ class WordTask(Experiment):
                                plusAndMinus=self.config.MATH_plusAndMinus,
                                minDuration=self.config.MATH_minDuration,
                                textSize=self.config.MATH_textSize,
-                               callback=self.control.send_math_message)
+                               callback=self.controller.send_math_message)
 
-    def run_encoding(self):
-        """Run an encoding phase."""
-        with self.state_context("ENCODING_PHASE"):
-            pass
+    def run_encoding(self, words):
+        """Run an encoding phase.
+
+        :param pd.DataFrame words: Words and other data
+
+        """
+        with self.state_context("ENCODING"):
+            timestamp = self.clock
+            # TODO: log message
+
+            for n, row in enumerate(words):
+                pass  # display word
+
             # 0. log trial number
             # 1. resynchronize (not used)
             # 2. countdown
             # 3. crosshairs
 
-    def run_practice(self, words):
+    def run_practice(self):
         """Run a practice encoding phase.
+
+        TODO: does this really need to be separate from normal?
 
         :param list words: Words to use in the practice encoding phase.
 
@@ -447,6 +492,12 @@ class WordTask(Experiment):
 
     def run_recognition(self):
         """Run a recognition phase."""
+        if not self.config.recognition_enabled:
+            raise ExperimentError("Recognition subtask not enabled!")
+        rec_list = self.all_rec_blocks[self.session]
+        for item in rec_list:
+            # Present word
+            continue
 
 
 class FRExperiment(WordTask):
@@ -507,7 +558,16 @@ class FRExperiment(WordTask):
         pass
 
     def run(self):
-        self.run_instructions()
+        self.video.clear("black")
+
+        # self.run_instructions()
+        # self.run_countdown()
+
+        self.run_orient()
+        self.display_word("YUGE", 0)
+        self.run_orient()
+        self.run_distraction()
+        self.run_orient()
 
         # for listno, list_ in enumerate(lists):
         #     if

@@ -45,7 +45,7 @@ recallStartText = '*******'
 # FIXME: figure out where to really put movies
 video_root = "/Users/depalati/src/RAMControl/experiments/RAM_FR/"
 # FIXME: why are there two countdown movies?
-countdownMovie = video_root + "video_{language:s}/countdown.mpg"
+countdownMovie = video_root + "video_{language:s}/countdown.mpg".format(language=LANGUAGE)
 introMovie = video_root + "video_{language:s}/instructions.mpg"
 
 # Math distractor options

@@ -117,12 +117,9 @@ class StateMessage(RAMMessage):
 
       BASELINE, PS, STIM, NON-STIM
 
-    FIXME: make sure this still works for WORD states
-
     """
-    def __init__(self, state, value, timestamp=None, meta={}):
-        assert isinstance(meta, dict)
-        data = dict(name=state, value=value, meta=meta)
+    def __init__(self, state, value, timestamp=None, **kwargs):
+        data = dict(name=state, value=value, **kwargs)
         super(StateMessage, self).__init__("STATE", data=data, timestamp=timestamp)
 
 
