@@ -19,9 +19,7 @@ from ramcontrol import listgen
 from ramcontrol.control import RAMControl
 from ramcontrol.util import DEFAULT_ENV
 from ramcontrol.exc import LanguageError, ExperimentError
-from ramcontrol.messages import (
-    StateMessage
-)
+from ramcontrol.messages import StateMessage, TrialMessage
 from ramcontrol.extendedPyepl import (
     CustomAudioTrack, waitForAnyKeyWithCallback, customMathDistract
 )
@@ -371,7 +369,7 @@ class WordTask(Experiment):
 
     @list_index.setter
     def list_index(self, new_index):
-        assert isinstance(new_index, list)
+        assert isinstance(new_index, int)
         self.update_state(list_index=new_index)
 
     @property
@@ -427,15 +425,12 @@ class WordTask(Experiment):
     def run_encoding(self, words):
         """Run an encoding phase.
 
-        :param pd.DataFrame words: Words and other data
+        :param list words:
 
         """
         with self.state_context("ENCODING"):
-            timestamp = self.clock
-            # TODO: log message
-
-            for n, row in enumerate(words):
-                pass  # display word
+            for n, word in enumerate(words):
+                self.display_word(word, n)
 
             # 0. log trial number
             # 1. resynchronize (not used)
@@ -467,7 +462,11 @@ class WordTask(Experiment):
             start_text = self.video.showCentered(
                 Text(self.config.recallStartText,
                      size=self.config.wordHeight))
-            self.start_beep.present(self.clock)
+
+            self.epl_helpers.play_start_beep()
+            self.clock.delay(self.config.PauseBeforeWords, jitter=self.config.JitterBeforeWords)
+            self.clock.wait()
+
             self.video.unshow(start_text)
 
     def run_retrieval(self):
@@ -488,7 +487,7 @@ class WordTask(Experiment):
                 self.config.recallDuration, label, t=self.clock)
 
             # Ending beep
-            end_timestamp = self.stop_beep.present(self.clock)
+            end_timestamp = self.epl_helpers.play_stop_beep()
 
     def run_recognition(self):
         """Run a recognition phase."""
@@ -563,15 +562,24 @@ class FRExperiment(WordTask):
         # self.run_instructions()
         # self.run_countdown()
 
-        self.run_orient()
-        self.display_word("YUGE", 0)
-        self.run_orient()
-        self.run_distraction()
-        self.run_orient()
+        # Get the current list
+        try:
+            idx = self.list_index
+        except AttributeError:  # first time
+            idx = 0
+            self.list_index = idx
 
-        # for listno, list_ in enumerate(lists):
-        #     if
-        #     self.run_practice(words)
+        wordlist = self.all_lists[self.list_index]
+
+        for trial, words in enumerate(wordlist):
+            if trial == 0:
+                continue  # actually, just show the message about it being practice
+            self.controller.send(TrialMessage(trial))
+            # TODO: log to file properly
+            self.run_encoding(words)
+            # self.run_distraction()
+            self.run_orient()
+
 
 # class CatFRExperiment(FRExperiment):
 #     """Base for CatFR tasks."""
@@ -600,7 +608,6 @@ if __name__ == "__main__":
                                   sconfig=sconfig_str,
                                   resolution="1440x900")
     # epl_exp.parseArgs()
-    print(epl_exp.options)
     epl_exp.setup()
     epl_exp.setBreak()  # quit with Esc-F1
 

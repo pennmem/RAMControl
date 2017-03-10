@@ -8,6 +8,7 @@ from pyepl.locals import (
     VideoTrack, AudioTrack, LogTrack, KeyTrack, Key, Text, ButtonChooser,
     PresentationClock, SOUTH, waitForAnyKey, Movie
 )
+from ramcontrol.extendedPyepl import CustomBeep
 
 
 # From RAM_FR, but seemingly not used
@@ -55,6 +56,24 @@ class PyEPLHelpers(object):
         self.video = video
         self.audio = audio
         self.clock = clock
+
+        config = self.exp.getConfig()
+
+        self._start_beep = CustomBeep(
+            config.startBeepFreq,
+            config.startBeepDur,
+            config.startBeepRiseFall)
+
+        self._stop_beep = CustomBeep(
+            config.stopBeepFreq,
+            config.stopBeepDur,
+            config.stopBeepRiseFall)
+
+    def play_start_beep(self):
+        self._start_beep.present(self.clock)
+
+    def play_stop_beep(self):
+        self._stop_beep.present(self.clock)
         
     def play_movie_sync(self, filename, bc=None):
         """Plays a whole movie synchronously.
