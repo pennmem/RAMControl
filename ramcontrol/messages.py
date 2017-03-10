@@ -139,6 +139,7 @@ class ReadyMessage(RAMMessage):
         super(ReadyMessage, self).__init__("READY", timestamp=timestamp)
 
 
+# TODO: Remove (all information can be encoded in STATE message)
 class WordMessage(RAMMessage):
     """Inform the host PC that a new word is being displayed."""
     def __init__(self, word, timestamp=None):

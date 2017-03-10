@@ -1,6 +1,7 @@
 """List generation and I/O."""
 
 import random
+import numpy as np
 import numpy.random as npr
 import pandas as pd
 from wordpool import WordList, WordPool
@@ -87,38 +88,41 @@ def generate_rec1_blocks(pool, lures):
     df = pool.to_dataframe()
 
     # Remove practice and baseline lists
-    no_baseline = df[~df.isin(["PRACTICE", "BASELINE"])]
+    allowed = df[~df.isin(["PRACTICE", "BASELINE"])]
 
-    # Remove last four lists
-    allowed = no_baseline[no_baseline.listno.isin(no_baseline.listno.unique()[:-4])]
+    # Divide into stim lists (exclude if in last four)...
+    stims = allowed[(allowed.type == "STIM") & (allowed.listno <= allowed.listno.max() - 4)]
 
-    # Select stim and nonstim lists
-    stims = allowed[allowed.type == "STIM"]
+    # ...and nonstim lists (take all)
     nonstims = allowed[allowed.type == "NON-STIM"]
 
-    # Randomly select list numbers
+    # Randomly select stim list numbers
     stim_idx = pd.Series(stims.listno.unique()).sample(6)
     rec_stims = stims[stims.listno.isin(stim_idx)]
-    nonstim_idx = pd.Series(nonstims.listno.unique()).sample(6)
-    rec_nonstims = nonstims[nonstims.listno.isin(nonstim_idx)]
+    rec_nonstims = nonstims
 
     # Combine selected words
-    targets = df.concat([rec_stims, rec_nonstims])
-    targets["lure"] = False
+    targets = pd.concat([rec_stims, rec_nonstims])
 
     # Give lures list numbers
     lures = lures.to_dataframe()
-    lures["lure"] = True
+    lures["type"] = "LURE"
     lures["listno"] = npr.choice(targets.listno.unique(), len(lures))
 
     # Combine lures and targets
-    combined = df.concat([targets, lures]).sort_values(by="listno")
-    return combined
+    combined = pd.concat([targets, lures]).sort_values(by="listno")
+    listnos = combined.listno.unique()
+
+    # Break into two blocks and shuffle
+    block_listnos = [listnos[:int(len(listnos)/2)], listnos[int(len(listnos)/2):]]
+    blocks = [combined[combined.listno.isin(idx)].sample(frac=1) for idx in block_listnos]
+    return blocks
 
 
 if __name__ == "__main__":
     pool = generate_session_pool()
-    pool = assign_list_types(pool, 3, 0, 16, 6)
-    print(pool)
-    for list_ in pool:
-        print(list_.metadata["type"])
+    assigned = assign_list_types(pool, 3, 6, 16, 0)
+    lures = WordList(read_list("REC1_lures_en.txt"))
+    blocks = generate_rec1_blocks(assigned, lures)
+    for block in blocks:
+        print(block)

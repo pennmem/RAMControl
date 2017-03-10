@@ -1,6 +1,7 @@
 import random
 import pytest
 from wordpool import WordList, WordPool
+from wordpool.data import read_list
 from ramcontrol import listgen
 
 
@@ -51,3 +52,22 @@ def test_assign_list_types():
     assert n_ps is 4
     assert n_ns is 10
     assert n_s is 11
+
+
+def test_generate_rec1_blocks():
+    pool = listgen.generate_session_pool()
+    assigned = listgen.assign_list_types(pool, 3, 6, 16, 0)
+    lures = WordList(read_list("REC1_lures_en.txt"))
+    blocks = listgen.generate_rec1_blocks(assigned, lures)
+
+    # Check ordering and length
+    assert len(blocks) is 2
+    idxs = [sorted(block.listno.unique()) for block in blocks]
+    assert len(idxs[0]) == len(idxs[1])
+    for n in range(len(idxs[0])):
+        assert idxs[0][n] < idxs[1][n]
+
+    # Check shuffling
+    blocks2 = listgen.generate_rec1_blocks(assigned, lures)
+    for n, block in enumerate(blocks2):
+        assert block.word.iloc[0] != blocks[n].word.iloc[0]
