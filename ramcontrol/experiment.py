@@ -6,10 +6,9 @@ import json
 import codecs
 from contextlib import contextmanager
 import logging
-from collections import namedtuple
 
 import six
-import numpy as np
+import pandas as pd
 
 from wordpool import WordList, WordPool
 import wordpool.data
@@ -323,6 +322,8 @@ class WordTask(Experiment):
         * ``all_lists`` - generated lists for as many sessions as allowed by
           the config file. Type: list
         * ``list_index`` - current list number. Type: int
+        * ``all_rec_blocks`` - generated REC blocks for as many sessions as
+          allowed by the config file. Type: list
 
         All variables are initially set to ``None`` until initialized and are
         accessible as properties.
@@ -333,6 +334,8 @@ class WordTask(Experiment):
             kwargs["all_lists"] = None
         if not hasattr(self.state, "list_index"):
             kwargs["list_index"] = None
+        if not hasattr(self.state, "rec_blocks"):
+            kwargs["all_rec_blocks"] = None
         self.update_state(**kwargs)
 
     @property
@@ -352,6 +355,15 @@ class WordTask(Experiment):
     def list_index(self, new_index):
         assert isinstance(new_index, list)
         self.update_state(list_index=new_index)
+
+    @property
+    def all_rec_blocks(self):
+        return self.state.all_rec_blocks
+
+    @all_rec_blocks.setter
+    def all_rec_blocks(self, new_blocks):
+        assert isinstance(new_blocks, list)
+        self.update_state(all_rec_blocks=new_blocks)
 
     def run_instructions(self):
         """Instruction period to explain the task to the subject."""
@@ -438,10 +450,12 @@ class FRExperiment(WordTask):
         """
         # Copy word pool to the data directory
         # TODO: only copy lures for tasks using REC1
-        self.copy_word_pool(self.data_root, self.config.LANGUAGE, True)
+        self.copy_word_pool(osp.join(self.data_root, self.subject),
+                            self.config.LANGUAGE, True)
 
-        # Generate all session lists
+        # Generate all session lists and REC blocks
         all_lists = []
+        all_rec_blocks = []
         for session in range(self.config.numSessions):
             pool = listgen.generate_session_pool(language=self.config.LANGUAGE)
             n_baseline = self.config.n_baseline
@@ -464,14 +478,24 @@ class FRExperiment(WordTask):
 
             all_lists.append(assigned)
 
-        # Store lists in the state
-        self.all_lists = all_lists
+            # Generate recognition phase lists if this experiment supports it
+            # and save to session folder
+            if self.config.recognition_enabled:
+                # Load lures
+                # TODO: update when Spanish allowed
+                lures = WordList(wordpool.data.read_list("REC1_lures_en.txt"))
+                rec_blocks = listgen.generate_rec1_blocks(pool, lures)
 
-        # Generate recognition phase lists if this experiment supports it
-        if self.config.recognition_enabled:
-            # Load lures
-            # TODO: update when Spanish allowed
-            lures = WordList(wordpool.data.read_list("REC1_lures_en.txt"))
+                # Save to session folder
+                df = pd.concat(rec_blocks)
+                df.to_json(osp.join(session_dir, "rec_blocks.json"),
+                           orient="records")
+
+                all_rec_blocks.append(rec_blocks)
+
+        # Store lists and REC blocks in the state
+        self.all_lists = all_lists
+        self.all_rec_blocks = all_rec_blocks
 
     def prepare_session(self):
         pass

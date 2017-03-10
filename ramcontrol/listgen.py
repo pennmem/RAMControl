@@ -83,6 +83,7 @@ def generate_rec1_blocks(pool, lures):
 
     :param WordPool pool: :class:`WordPool` used in verbal task session.
     :param WordList lures: List of lures to use.
+    :returns: A list of two :class:`pd.DataFrame`s.
 
     """
     df = pool.to_dataframe()
