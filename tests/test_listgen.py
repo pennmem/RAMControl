@@ -1,5 +1,6 @@
 import random
 import pytest
+import pandas as pd
 from wordpool import WordList, WordPool
 from wordpool.data import read_list
 from ramcontrol import listgen
@@ -60,14 +61,11 @@ def test_generate_rec1_blocks():
     lures = WordList(read_list("REC1_lures_en.txt"))
     blocks = listgen.generate_rec1_blocks(assigned, lures)
 
-    # Check ordering and length
-    assert len(blocks) is 2
-    idxs = [sorted(block.listno.unique()) for block in blocks]
-    assert len(idxs[0]) == len(idxs[1])
-    for n in range(len(idxs[0])):
-        assert idxs[0][n] < idxs[1][n]
+    assert isinstance(blocks, pd.DataFrame)
+    assert not all([s == u for s, u in zip(sorted(blocks.listno), blocks.listno)])
 
-    # Check shuffling
     blocks2 = listgen.generate_rec1_blocks(assigned, lures)
-    for n, block in enumerate(blocks2):
-        assert block.word.iloc[0] != blocks[n].word.iloc[0]
+    for n in range(len(blocks.word)):
+        if blocks.word.iloc[0] != blocks2.word.iloc[0]:
+            break
+    assert n < len(blocks.word)

@@ -83,7 +83,7 @@ def generate_rec1_blocks(pool, lures):
 
     :param WordPool pool: :class:`WordPool` used in verbal task session.
     :param WordList lures: List of lures to use.
-    :returns: A list of two :class:`pd.DataFrame`s.
+    :returns: :class:`pd.DataFrame`.
 
     """
     df = pool.to_dataframe()
@@ -117,7 +117,7 @@ def generate_rec1_blocks(pool, lures):
     # Break into two blocks and shuffle
     block_listnos = [listnos[:int(len(listnos)/2)], listnos[int(len(listnos)/2):]]
     blocks = [combined[combined.listno.isin(idx)].sample(frac=1) for idx in block_listnos]
-    return blocks
+    return pd.concat(blocks)
 
 
 if __name__ == "__main__":

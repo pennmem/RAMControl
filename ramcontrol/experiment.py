@@ -47,6 +47,13 @@ class Experiment(object):
         experiment.connect_to_control_pc()
         experiment.run()
 
+    The general flow is as follows:
+
+    1. Load state.
+    2. If state not found, initialize experiment.
+    3. Load/initialize session.
+    4. Run session.
+
     :param exputils.Experiment epl_exp:
 
     """
@@ -487,9 +494,8 @@ class FRExperiment(WordTask):
                 rec_blocks = listgen.generate_rec1_blocks(pool, lures)
 
                 # Save to session folder
-                df = pd.concat(rec_blocks)
-                df.to_json(osp.join(session_dir, "rec_blocks.json"),
-                           orient="records")
+                rec_blocks.to_json(osp.join(session_dir, "rec_blocks.json"),
+                                   orient="records")
 
                 all_rec_blocks.append(rec_blocks)
 
