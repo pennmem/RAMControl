@@ -381,11 +381,13 @@ class WordTask(Experiment):
         assert isinstance(new_blocks, list)
         self.update_state(all_rec_blocks=new_blocks)
 
-    def display_word(self, word, index):
+    def display_word(self, word, index, phase):
         """Displays a single word in the list.
 
         :param str word: Word to display.
         :param index: Serial position in the list of the word.
+        :param str phase: Experiment "phase": PS, STIM, NON-STIM, BASELINE, or
+            PRACTICE.
 
         """
         text = Text(word, size=self.config.wordHeight)
@@ -393,7 +395,8 @@ class WordTask(Experiment):
         self.clock.delay(self.config.ISI, self.config.Jitter)
         self.clock.wait()
 
-        with self.state_context("WORD", word=word, index=index):
+        with self.state_context("WORD", word=word, index=index,
+                                phase_type=phase):
             text.present(self.clock, self.config.wordDuration)
 
     def run_instructions(self):
@@ -425,12 +428,12 @@ class WordTask(Experiment):
     def run_encoding(self, words):
         """Run an encoding phase.
 
-        :param list words:
+        :param pd.DataFrame words:
 
         """
         with self.state_context("ENCODING"):
-            for n, word in enumerate(words):
-                self.display_word(word, n)
+            for n, row in words.iterrows():
+                self.display_word(row.word, n, row.type)
 
             # 0. log trial number
             # 1. resynchronize (not used)
@@ -494,9 +497,10 @@ class WordTask(Experiment):
         if not self.config.recognition_enabled:
             raise ExperimentError("Recognition subtask not enabled!")
         rec_list = self.all_rec_blocks[self.session]
-        for item in rec_list:
-            # Present word
-            continue
+
+        with self.state_context("RECOGNITION"):
+            for n, item in enumerate(rec_list):
+                self.display_word(item.word, n, item.type)
 
 
 class FRExperiment(WordTask):
@@ -569,16 +573,20 @@ class FRExperiment(WordTask):
             idx = 0
             self.list_index = idx
 
-        wordlist = self.all_lists[self.list_index]
+        wordlist = self.all_lists[self.list_index].to_dataframe()
 
-        for trial, words in enumerate(wordlist):
-            if trial == 0:
-                continue  # actually, just show the message about it being practice
-            self.controller.send(TrialMessage(trial))
-            # TODO: log to file properly
-            self.run_encoding(words)
-            # self.run_distraction()
-            self.run_orient()
+        if True:
+            for listno in sorted(wordlist.listno.unique()):
+                if listno == 0:
+                    continue  # actually, just show the message about it being practice
+                words = wordlist[wordlist.listno == listno]
+                self.controller.send(TrialMessage(listno))
+                # TODO: log to file properly
+                self.run_encoding(words)
+                # self.run_distraction()
+                self.run_orient()
+        if False:
+            self.run_recognition()
 
 
 # class CatFRExperiment(FRExperiment):
