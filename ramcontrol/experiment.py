@@ -58,7 +58,9 @@ class Experiment(object):
     :param exputils.Experiment epl_exp:
 
     """
-    def __init__(self, epl_exp):
+    def __init__(self, epl_exp, debug=False):
+        self._debug = debug
+
         assert isinstance(epl_exp, exputils.Experiment)
         self.epl_exp = epl_exp
         self.controller = RAMControl.instance()
@@ -116,6 +118,15 @@ class Experiment(object):
                                   session,
                                   "" if not hasattr(self.config, "stim_type") else self.config.stim_type,
                                   self.subject)
+
+    @property
+    def debug(self):
+        """Internal flag for enabling debug/development mode."""
+        return self._debug
+
+    @debug.setter
+    def debug(self, debug):
+        self._debug = debug
 
     @property
     def data_root(self):
@@ -254,6 +265,8 @@ class Experiment(object):
         :raises LanguageError: when a passed language is unavailable
 
         """
+        logger.info("Copying word pool(s)...")
+
         # Validate language selection
         lang = language[:2].lower()
         if lang not in ["en", "sp"]:
@@ -294,7 +307,7 @@ class Experiment(object):
             self.controller.wait_for_start_message(
                 poll_callback=lambda: flashStimulus(Text("Waiting for start from control PC...")))
         else:
-            print("***** PROCEEDING WITHOUT CONNECTING TO HOST PC! *****")
+            logger.warning("***** PROCEEDING WITHOUT CONNECTING TO HOST PC! *****")
 
     @abstractmethod
     def define_state_variables(self):
@@ -381,23 +394,28 @@ class WordTask(Experiment):
         assert isinstance(new_blocks, list)
         self.update_state(all_rec_blocks=new_blocks)
 
-    def display_word(self, word, index, phase):
+    def display_word(self, word, index, phase, wait=False, keys=["SPACE"]):
         """Displays a single word in the list.
 
         :param str word: Word to display.
         :param index: Serial position in the list of the word.
         :param str phase: Experiment "phase": PS, STIM, NON-STIM, BASELINE, or
             PRACTICE.
+        :param bool wait: When False, display the word for an amount of time
+            set by the experimental configuration; when True, wait until a key
+            is pressed.
+        :param list keys: List of keys to accept when ``wait`` is True.
 
         """
         text = Text(word, size=self.config.wordHeight)
 
-        self.clock.delay(self.config.ISI, self.config.Jitter)
-        self.clock.wait()
-
         with self.state_context("WORD", word=word, index=index,
                                 phase_type=phase):
-            text.present(self.clock, self.config.wordDuration)
+            if not wait:
+                text.present(self.clock, self.config.wordDuration)
+            else:
+                key, timestamp = self.epl_helpers.show_text_and_wait_for_keyboard_input(word)
+                # TODO: send key log to host PC (PyEPL already logs it)
 
     def run_instructions(self):
         """Instruction period to explain the task to the subject."""
@@ -415,7 +433,7 @@ class WordTask(Experiment):
 
     def run_distraction(self):
         """Distraction phase."""
-        with self.state_context("DISTRACT"):  # TODO: check on save
+        with self.state_context("DISTRACT"):
             customMathDistract(clk=self.clock,
                                mathlog=self.mathlog,
                                numVars=self.config.MATH_numVars,
@@ -425,39 +443,25 @@ class WordTask(Experiment):
                                textSize=self.config.MATH_textSize,
                                callback=self.controller.send_math_message)
 
-    def run_encoding(self, words):
+    def run_encoding(self, words, practice=False):
         """Run an encoding phase.
 
         :param pd.DataFrame words:
+        :param bool practice: This is the practice session.
 
         """
         with self.state_context("ENCODING"):
             for n, row in words.iterrows():
+                self.clock.delay(self.config.ISI, self.config.Jitter)
+                self.clock.wait()
                 self.display_word(row.word, n, row.type)
 
-            # 0. log trial number
-            # 1. resynchronize (not used)
-            # 2. countdown
-            # 3. crosshairs
-
-    def run_practice(self):
-        """Run a practice encoding phase.
-
-        TODO: does this really need to be separate from normal?
-
-        :param list words: Words to use in the practice encoding phase.
-
-        """
-        with self.state_context("PRACTICE") as state:
-            self.clock.tare()  # FIXME: is this necessary?
-            self.run_encoding()
-
-        filename = "FIXME"  # path to instructions in the appropriate langauge
-        waitForAnyKeyWithCallback(
-            self.clock,
-            Text(codecs.open(filename, encoding='utf-8').read()),
-                 onscreenCallback=lambda: self.controller.send(StateMessage('INSTRUCT', True)),
-                 offscreenCallback=lambda: self.controller.send(StateMessage('INSTRUCT', False)))
+        if practice:
+            filename = "FIXME"  # path to instructions in the appropriate langauge
+            with self.state_context("INSTRUCT"):
+                waitForAnyKeyWithCallback(
+                    self.clock,
+                    Text(codecs.open(filename, encoding='utf-8').read()))
 
     def run_orient(self):
         """Run an orient (crosshairs) phase."""
@@ -499,8 +503,10 @@ class WordTask(Experiment):
         rec_list = self.all_rec_blocks[self.session]
 
         with self.state_context("RECOGNITION"):
-            for n, item in enumerate(rec_list):
-                self.display_word(item.word, n, item.type)
+            for n, item in rec_list.iterrows():
+                self.display_word(item.word, n, item.type, wait=True)
+                if self.debug and n > 0:
+                    return
 
 
 class FRExperiment(WordTask):
@@ -575,7 +581,7 @@ class FRExperiment(WordTask):
 
         wordlist = self.all_lists[self.list_index].to_dataframe()
 
-        if True:
+        if False:
             for listno in sorted(wordlist.listno.unique()):
                 if listno == 0:
                     continue  # actually, just show the message about it being practice
@@ -585,8 +591,12 @@ class FRExperiment(WordTask):
                 self.run_encoding(words)
                 # self.run_distraction()
                 self.run_orient()
-        if False:
+        if True:
             self.run_recognition()
+
+        # Ensure final messages have enough time to get sent
+        self.clock.delay(100)
+        self.clock.wait()
 
 
 # class CatFRExperiment(FRExperiment):
@@ -619,5 +629,5 @@ if __name__ == "__main__":
     epl_exp.setup()
     epl_exp.setBreak()  # quit with Esc-F1
 
-    exp = FRExperiment(epl_exp)
+    exp = FRExperiment(epl_exp, debug=True)
     exp.run()
