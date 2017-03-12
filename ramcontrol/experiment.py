@@ -8,12 +8,11 @@ import json
 import codecs
 from contextlib import contextmanager
 import logging
-import time
 
 import six
 import pandas as pd
 
-from wordpool import WordList, WordPool
+from wordpool import WordList
 import wordpool.data
 from ramcontrol import listgen
 from ramcontrol.control import RAMControl
@@ -33,6 +32,52 @@ from pyepl.textlog import LogTrack
 from pyepl.convenience import waitForAnyKey, flashStimulus
 
 logger = logging.getLogger(__name__)
+
+
+class Timings(object):
+    """Convenience class to store all timing settings."""
+    def __init__(self, word_duration, recall_duration, encoding_delay,
+                 recall_delay, isi, jitter, encoding_jitter, recall_jitter):
+        """
+        :param int word_duration:
+        :param int recall_duration:
+        :param int encoding_delay:
+        :param int recall_delay:
+        :param int isi:
+        :param int jitter:
+        :param int encoding_jitter:
+        :param int recall_jitter:
+
+        """
+        self.word_duration = word_duration
+        self.recall_duration = recall_duration
+        self.encoding_delay = encoding_delay
+        self.recall_delay = recall_delay
+        self.isi = isi
+        self.jitter = jitter
+        self.encoding_jitter = encoding_jitter
+        self.recall_jitter = recall_jitter
+
+    @classmethod
+    def make_from_config(cls, config):
+        """Create a new :class:`Timings` instance from the settings in the
+        experimental configuration.
+
+        :param config:
+
+        """
+        # TODO: rename config file variable names to be PEP8-compliant
+        return Timings(config.wordDuration, config.recallDuration,
+                       config.PauseBeforeWords, config.pauseBeforeRecall,
+                       config.ISI, config.JitterBeforeWords, config.Jitter)
+
+    @classmethod
+    def make_debug(cls):
+        """Create a new :class:`Timings` instance with shorter intervals for
+        aiding development.
+
+        """
+        return Timings(20, 20, 10, 10, 10, 0, 0, 0)
 
 
 @six.add_metaclass(ABCMeta)
@@ -71,17 +116,17 @@ class Experiment(object):
                      json.dumps(self.config.config1.config, indent=2, sort_keys=True))
         logger.debug("config2:\n%s",
                      json.dumps(self.config.config2.config, indent=2, sort_keys=True))
+
+        if self.debug:
+            self.timings = Timings.make_debug()
+        else:
+            self.timings = Timings.make_from_config(self.config)
+
         self.name = self.config.experiment
         self.subject = self.epl_exp.getOptions().get("subject")
 
         # Session must be set before creating tracks, apparently
-        state = self.epl_exp.restoreState()
-        try:
-            session = state.sessionNum
-        except AttributeError:
-            session = 0
-        self.epl_exp.setSession(session)
-        self.session = session
+        self.epl_exp.setSession(self.session)
 
         # Create all tracks
         self.log = LogTrack("session")
@@ -103,10 +148,9 @@ class Experiment(object):
         # Prepare the experiment if not already done
         if not self.experiment_started:
             self.prepare_experiment()
-        # TODO: save/restore state here??? or just do it in prepare_experiment
 
         # If the session should be skipped, do a hard exit
-        if self._should_skip_session(state):
+        if self._should_skip_session():
             sys.exit(0)
 
         # Finalize preparation for the session
@@ -115,7 +159,7 @@ class Experiment(object):
         # Set up the RAMControl instance
         # TODO: get rid of this monstrosity
         self.controller.configure(self.config.experiment, self.config.version,
-                                  session,
+                                  self.session,
                                   "" if not hasattr(self.config, "stim_type") else self.config.stim_type,
                                   self.subject)
 
@@ -127,6 +171,19 @@ class Experiment(object):
     @debug.setter
     def debug(self, debug):
         self._debug = debug
+
+    @property
+    def session(self):
+        """The session number."""
+        try:
+            session = self.state.sessionNum
+        except AttributeError:
+            session = 0
+        return session
+
+    @session.setter
+    def session(self, session):
+        self.epl_exp.setSession(session)
 
     @property
     def data_root(self):
@@ -175,7 +232,7 @@ class Experiment(object):
             except AttributeError:  # a crash most likely happened last time
                 return False
 
-    def _should_skip_session(self, state):
+    def _should_skip_session(self):
         """Check if session should be skipped
 
         :return: True if session is skipped, False otherwise
@@ -185,17 +242,17 @@ class Experiment(object):
             bc = ButtonChooser(Key('SPACE') & Key('RETURN'), Key('ESCAPE'))
             self.video.clear('black')
             _, button, timestamp = Text(
-                'Session %d was previously started\n' % (state.sessionNum + 1) +
+                'Session %d was previously started\n' % (self.state.sessionNum + 1) +
                 'Press SPACE + RETURN to skip session\n' +
                 'Press ESCAPE to continue'
             ).present(self.clock, bc=bc)
             if 'AND' in button.name:
                 self.log_message('SESSION_SKIPPED', timestamp)
-                state.sessionNum += 1
-                state.trialNum = 0
-                state.practiceDone = False
-                state.session_started = False
-                self.epl_exp.saveState(state)
+                self.state.sessionNum += 1
+                self.state.trialNum = 0
+                self.state.practiceDone = False
+                self.state.session_started = False
+                self.epl_exp.saveState(self.state)
                 waitForAnyKey(self.clock, Text('Session skipped\nRestart RAM_%s to run next session' %
                                                self.config.experiment))
                 return True
@@ -422,7 +479,7 @@ class WordTask(Experiment):
         with self.state_context("WORD", word=word, index=index,
                                 phase_type=phase):
             if not wait:
-                text.present(self.clock, self.config.wordDuration)
+                text.present(self.clock, self.timings.word_duration)
             else:
                 key, timestamp = self.epl_helpers.show_text_and_wait_for_keyboard_input(word)
                 # TODO: send key log to host PC (PyEPL already logs it)
@@ -462,7 +519,7 @@ class WordTask(Experiment):
         """
         with self.state_context("ENCODING"):
             for n, row in words.iterrows():
-                self.clock.delay(self.config.ISI, self.config.Jitter)
+                self.clock.delay(self.timings.isi, self.timings.jitter)
                 self.clock.wait()
                 self.display_word(row.word, n, row.type)
 
@@ -480,8 +537,11 @@ class WordTask(Experiment):
                 Text(self.config.recallStartText,
                      size=self.config.wordHeight))
 
-            self.epl_helpers.play_start_beep()
-            self.clock.delay(self.config.PauseBeforeWords, jitter=self.config.JitterBeforeWords)
+            if not self.debug:
+                self.epl_helpers.play_start_beep()
+
+            self.clock.delay(self.timings.encoding_delay,
+                             jitter=self.timings.encoding_jitter)
             self.clock.wait()
 
             self.video.unshow(start_text)
@@ -490,8 +550,9 @@ class WordTask(Experiment):
         """Run a retrieval (a.k.a. recall) phase."""
         # Delay before recall
         # TODO: maybe move to general run method
-        self.clock.delay(self.config.PauseBeforeRecall,
-                         jitter=self.config.JitterBeforeRecall)
+        self.clock.delay(self.timings.recall_delay,
+                         jitter=self.timings.recall_jitter)
+        self.clock.wait()  # TODO: check if needed here
 
         # TODO: maybe move to general run method
         self.run_orient()
@@ -591,7 +652,7 @@ class FRExperiment(WordTask):
 
         wordlist = self.all_lists[self.list_index].to_dataframe()
 
-        if False:
+        if True:
             for listno in sorted(wordlist.listno.unique()):
                 if listno == 0:
                     continue  # actually, just show the message about it being practice
@@ -601,7 +662,7 @@ class FRExperiment(WordTask):
                 self.run_encoding(words)
                 # self.run_distraction()
                 self.run_orient()
-        if True:
+        if False:
             self.run_recognition()
 
 
