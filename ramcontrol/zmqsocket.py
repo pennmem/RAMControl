@@ -2,11 +2,7 @@ import os
 import logging
 import time
 import json
-
-try:
-    from queue import Queue
-except ImportError:
-    from Queue import Queue
+from six.moves.queue import Queue
 
 import zmq
 
@@ -56,6 +52,11 @@ class SocketServer(object):
     def log_path(self, path):
         self._msg_log_filename = os.path.join(path, "messages.log")
         self._msg_log = open(self._msg_log_filename, "a")
+
+    def join(self):
+        """Block until all outgoing messages have been processed."""
+        logger.warning("This doesn't work yet...")
+        # self._out_queue.join()
 
     def bind(self, address="tcp://*:8889"):
         """Bind the socket to start listening for connections.
@@ -144,6 +145,7 @@ class SocketServer(object):
             while not self._out_queue.empty():
                 msg = self._out_queue.get_nowait()
                 self.send(msg)
+                self._out_queue.task_done()  # so we can join the queue elsewhere
                 self.log_message(msg, incoming=False)
         except:
             logger.error("Error in outgoing message processing", exc_info=True)

@@ -342,6 +342,16 @@ class Experiment(object):
     def run(self):
         """Experiment logic should go here."""
 
+    def start(self):
+        """Start the experiment."""
+        self.run()
+
+        # Add some buffer time to ensure queued messages get sent
+        self.clock.delay(100)
+        self.clock.wait()
+
+        self.controller.shutdown()
+
 
 class WordTask(Experiment):
     """Class for "word"-based tasks (e.g., free recall)."""
@@ -594,10 +604,6 @@ class FRExperiment(WordTask):
         if True:
             self.run_recognition()
 
-        # Ensure final messages have enough time to get sent
-        self.clock.delay(100)
-        self.clock.wait()
-
 
 # class CatFRExperiment(FRExperiment):
 #     """Base for CatFR tasks."""
@@ -630,4 +636,4 @@ if __name__ == "__main__":
     epl_exp.setBreak()  # quit with Esc-F1
 
     exp = FRExperiment(epl_exp, debug=True)
-    exp.run()
+    exp.start()

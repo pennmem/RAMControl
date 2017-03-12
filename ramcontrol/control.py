@@ -169,6 +169,7 @@ class RAMControl(object):
             self.voice_server.quit()
             self.voice_socket.close()
             self.voice_server.join(timeout=1)
+        self.socket.join()
 
     def check_connection(self):
         """Checks that we're still connected."""
