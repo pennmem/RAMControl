@@ -541,9 +541,9 @@ class WordTask(Experiment):
             # play_whole_movie(self.video, self.audio,
             #                  self.config.countdownMovie, self.clock)
 
-    def run_distraction(self):
+    def run_distraction(self, phase_type):
         """Distraction phase."""
-        with self.state_context("DISTRACT"):
+        with self.state_context("DISTRACT", phase_type=phase_type):
             customMathDistract(clk=self.clock,
                                mathlog=self.mathlog,
                                numVars=self.config.MATH_numVars,
@@ -568,45 +568,38 @@ class WordTask(Experiment):
                 self.display_word(row.word, row.listno, n, row.type)
 
         if practice:
-            filename = "FIXME"  # path to instructions in the appropriate langauge
-            with self.state_context("INSTRUCT"):
-                waitForAnyKeyWithCallback(
-                    self.clock,
-                    Text(codecs.open(filename, encoding='utf-8').read()))
+            filename = "FIXME"  # path to instructions in the appropriate language
+            text = Text("I CAN HAZ INSTRUCT?")
+            # text = Text(codecs.open(filename, encoding='utf-8').read())
+            with self.state_context("INSTRUCT", phase_type=phase_type):
+                waitForAnyKeyWithCallback(self.clock, text)
 
     def run_orient(self, phase_type):
-        """Run an orient (crosshairs) phase."""
+        """Run an orient phase."""
         with self.state_context("ORIENT", phase_type=phase_type):
-            start_text = self.video.showCentered(
-                Text(self.config.recallStartText,
-                     size=self.config.wordHeight))
+            text = Text(self.config.recallStartText)
+
+            # FIXME: should I be using encoding timings here?
+            text.present(self.clock, self.timings.encoding_delay,
+                         jitter=self.timings.encoding_jitter)
 
             if not self.debug:
                 self.epl_helpers.play_start_beep()
 
-            self.clock.delay(self.timings.encoding_delay,
-                             jitter=self.timings.encoding_jitter)
-            self.clock.wait()
+            #self.clock.delay(self.timings.encoding_delay,
+            #                 jitter=self.timings.encoding_jitter)
+            #self.clock.wait()
 
-            self.video.unshow(start_text)
+            self.video.unshow(text)
 
     def run_retrieval(self, phase_type):
         """Run a retrieval (a.k.a. recall) phase."""
-        # Delay before recall
-        # TODO: maybe move to general run method
-        self.clock.delay(self.timings.recall_delay,
-                         jitter=self.timings.recall_jitter)
-        self.clock.wait()  # TODO: check if needed here
-
-        # TODO: maybe move to general run method
-        self.run_orient(phase_type)
-
         with self.state_context("RETRIEVAL", phase_type=phase_type) as state:
-            label = str(state.trialNum)
+            label = str(self.list_index)
 
             # Record responses
             rec, timestamp = self.audio.record(
-                self.config.recallDuration, label, t=self.clock)
+                self.timings.recall_duration, label, t=self.clock)
 
             # Ending beep
             end_timestamp = self.epl_helpers.play_stop_beep()
@@ -704,9 +697,22 @@ class FRExperiment(WordTask):
 
                 self.controller.send(TrialMessage(listno))
                 self.log_event("TRIAL", listno=listno, phase_type=phase_type)
+
+                # Encoding
                 self.run_encoding(words, phase_type)
-                # self.run_distraction(phase_type)
+
+                # Distract
+                self.run_distraction(phase_type)
                 self.run_orient(phase_type)
+
+                # Delay before retrieval
+                self.clock.delay(self.timings.recall_delay,
+                                 jitter=self.timings.recall_jitter)
+                self.clock.wait()
+
+                # Retrieval
+                self.run_orient(phase_type)
+                self.run_retrieval(phase_type)
         if False:
             self.run_recognition()
 
