@@ -675,7 +675,7 @@ def customMathDistract(clk = None,
                            (probtxt, rstr, isCorrect, prob_rt[0], prob_rt[1]),
                            timestamp=probstart)
         callback(probtxt.strip("'"), rstr.strip("'"), bool(isCorrect),
-                 max(prob_rt), timestamp)
+                 max(prob_rt), timing.now())
 
         # clear the problem
         v.unshow(pt,rt)
