@@ -69,8 +69,9 @@ class Timings(object):
         """
         # TODO: rename config file variable names to be PEP8-compliant
         return Timings(config.wordDuration, config.recallDuration,
-                       config.PauseBeforeWords, config.pauseBeforeRecall,
-                       config.ISI, config.JitterBeforeWords, config.Jitter)
+                       config.PauseBeforeWords, config.PauseBeforeRecall,
+                       config.ISI, config.JitterBeforeWords, config.Jitter,
+                       config.JitterBeforeRecall)
 
     @classmethod
     def make_debug(cls):
@@ -101,10 +102,13 @@ class Experiment(object):
     3. Load/initialize session.
     4. Run session.
 
-    :param exputils.Experiment epl_exp:
+    :param exputils.Experiment epl_exp: PyEPL experiment instance.
+    :param bool debug: Enables debug mode.
+    :param bool fast_timing: When debug is also set to True, this will speed up
+        timings a lot.
 
     """
-    def __init__(self, epl_exp, debug=False):
+    def __init__(self, epl_exp, debug=False, fast_timing=False):
         self._debug = debug
 
         assert isinstance(epl_exp, exputils.Experiment)
@@ -118,7 +122,7 @@ class Experiment(object):
         logger.debug("config2:\n%s",
                      json.dumps(self.config.config2.config, indent=2, sort_keys=True))
 
-        if self.debug:
+        if self.debug and fast_timing:
             self.timings = Timings.make_debug()
         else:
             self.timings = Timings.make_from_config(self.config)
@@ -166,6 +170,9 @@ class Experiment(object):
                                   self.session,
                                   "" if not hasattr(self.config, "stim_type") else self.config.stim_type,
                                   self.subject)
+
+        # Set network log path
+        self.controller.socket.log_path = self.session_data_dir
 
     @property
     def debug(self):

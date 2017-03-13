@@ -13,8 +13,3 @@ n_nonstim = 6
 
 # Use REC1
 recognition_enabled = True
-
-# FIXME COMMENT THESE OUT!
-wordDuration = 100
-ISI = 100
-Jitter = 100

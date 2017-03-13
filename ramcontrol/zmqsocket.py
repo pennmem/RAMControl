@@ -96,7 +96,7 @@ class SocketServer(object):
                 self.sock.send(out, zmq.NOBLOCK)
             except:
                 pass
-        except Exception as e:
+        except Exception:
             logger.error("Sending failed!", exc_info=True)
 
     def send_heartbeat(self):
