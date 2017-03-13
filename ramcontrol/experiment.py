@@ -220,15 +220,14 @@ class Experiment(object):
                         "session_{:d}".format(self.session))
 
     @property
-    def hdf_filename(self):
-        """Returns the HDF5 data file name for storing session data.
+    def log_filename(self):
+        """Return the JSON (for now) log filename.
 
-        At the moment, this is just duplicating some logging for easier data
-        analysis and testing, but later we may want to transition to using HDF5
-        for everything.
+        This appends a new JSON object on each line, so newlines are not
+        supported within the log.
 
         """
-        return osp.join(self.session_data_dir, "session.h5")
+        return osp.join(self.session_data_dir, "sessionlog.json")
 
     @property
     def experiment_started(self):
@@ -301,23 +300,25 @@ class Experiment(object):
         self.epl_exp.saveState(state, **kwargs)
 
     def log_event(self, event, **kwargs):
-        """Log an event.
+        """Log an event. Logs are currently stored both by PyEPL and in a more
+        pandas-friendly JSONized format. The JSON format has one entry per line
+        and can be read into a pandas DataFrame like::
+
+            with open("sessionlog.json") as log:
+                entries = [json.loads(entry) for entry in log.readlines()]
+                df = pd.DataFrame.from_records(entries, index="index")
 
         :param str event: Event description.
         :param dict kwargs: Additional details to log with event.
 
         """
         self.log.logMessage(event + " " + json.dumps(kwargs), self.clock)
-        with pd.HDFStore(self.hdf_filename) as store:
-            entry = {"event": event, "timestamp": timing.now()}
-            entry.update(kwargs)
-            df = pd.DataFrame(entry, index=[next(self._log_index)])
-            try:
-                store.append("/logs/session", df)
-            except ValueError:
-                old = store.get("/logs/session")
-                new = pd.concat([old, df])
-                store.put("/logs/session", new)
+        with open(self.log_filename, "a") as logfile:
+            kwargs.update({
+                "index": next(self._log_index),
+                "event": event, "timestamp": timing.now()
+            })
+            logfile.write("{:s}\n".format(json.dumps(kwargs)))
 
     @contextmanager
     def state_context(self, state, **kwargs):
@@ -495,11 +496,12 @@ class WordTask(Experiment):
         assert isinstance(new_blocks, list)
         self.update_state(all_rec_blocks=new_blocks)
 
-    def display_word(self, word, index, phase, wait=False, keys=["SPACE"]):
+    def display_word(self, word, listno, serialpos, phase, wait=False, keys=["SPACE"]):
         """Displays a single word in the list.
 
         :param str word: Word to display.
-        :param index: Serial position in the list of the word.
+        :param int listno: List number.
+        :param int serialpos: Serial position in the list of the word.
         :param str phase: Experiment "phase": PS, STIM, NON-STIM, BASELINE, or
             PRACTICE.
         :param bool wait: When False, display the word for an amount of time
@@ -510,7 +512,7 @@ class WordTask(Experiment):
         """
         text = Text(word, size=self.config.wordHeight)
 
-        with self.state_context("WORD", word=word, index=index,
+        with self.state_context("WORD", word=word, listno=listno, serialpos=serialpos,
                                 phase_type=phase):
             if not wait:
                 text.present(self.clock, self.timings.word_duration)
@@ -555,7 +557,7 @@ class WordTask(Experiment):
             for n, row in words.iterrows():
                 self.clock.delay(self.timings.isi, self.timings.jitter)
                 self.clock.wait()
-                self.display_word(row.word, n, row.type)
+                self.display_word(row.word, row.listno, n, row.type)
 
         if practice:
             filename = "FIXME"  # path to instructions in the appropriate langauge
@@ -609,7 +611,7 @@ class WordTask(Experiment):
 
         with self.state_context("RECOGNITION"):
             for n, item in rec_list.iterrows():
-                self.display_word(item.word, n, item.type, wait=True)
+                self.display_word(item.word, item.listno, n, item.type, wait=True)
                 if self.debug and n > 0:
                     return
 
@@ -689,7 +691,8 @@ class FRExperiment(WordTask):
         if True:
             for listno in sorted(wordlist.listno.unique()):
                 if listno == 0:
-                    continue  # actually, just show the message about it being practice
+                    # continue  # actually, just show the message about it being practice
+                    pass
                 words = wordlist[wordlist.listno == listno]
                 self.controller.send(TrialMessage(listno))
                 # TODO: log to file properly
