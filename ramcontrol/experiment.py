@@ -553,14 +553,15 @@ class WordTask(Experiment):
                                textSize=self.config.MATH_textSize,
                                callback=self.controller.send_math_message)
 
-    def run_encoding(self, words, practice=False):
+    def run_encoding(self, words, phase_type, practice=False):
         """Run an encoding phase.
 
         :param pd.DataFrame words:
+        :param str phase_type: Phase type (BASELINE, ...)
         :param bool practice: This is the practice session.
 
         """
-        with self.state_context("ENCODING"):
+        with self.state_context("ENCODING", phase_type=phase_type):
             for n, row in words.iterrows():
                 self.clock.delay(self.timings.isi, self.timings.jitter)
                 self.clock.wait()
@@ -573,9 +574,9 @@ class WordTask(Experiment):
                     self.clock,
                     Text(codecs.open(filename, encoding='utf-8').read()))
 
-    def run_orient(self):
+    def run_orient(self, phase_type):
         """Run an orient (crosshairs) phase."""
-        with self.state_context("ORIENT"):
+        with self.state_context("ORIENT", phase_type=phase_type):
             start_text = self.video.showCentered(
                 Text(self.config.recallStartText,
                      size=self.config.wordHeight))
@@ -589,7 +590,7 @@ class WordTask(Experiment):
 
             self.video.unshow(start_text)
 
-    def run_retrieval(self):
+    def run_retrieval(self, phase_type):
         """Run a retrieval (a.k.a. recall) phase."""
         # Delay before recall
         # TODO: maybe move to general run method
@@ -598,9 +599,9 @@ class WordTask(Experiment):
         self.clock.wait()  # TODO: check if needed here
 
         # TODO: maybe move to general run method
-        self.run_orient()
+        self.run_orient(phase_type)
 
-        with self.state_context("RETRIEVAL") as state:
+        with self.state_context("RETRIEVAL", phase_type=phase_type) as state:
             label = str(state.trialNum)
 
             # Record responses
@@ -697,15 +698,15 @@ class FRExperiment(WordTask):
 
         if True:
             for listno in sorted(wordlist.listno.unique()):
-                if listno == 0:
-                    # continue  # actually, just show the message about it being practice
-                    pass
                 words = wordlist[wordlist.listno == listno]
+                phase_type = words.type.iloc[0]
+                assert all(words.type == phase_type)
+
                 self.controller.send(TrialMessage(listno))
-                # TODO: log to file properly
-                self.run_encoding(words)
-                # self.run_distraction()
-                self.run_orient()
+                self.log_event("TRIAL", listno=listno, phase_type=phase_type)
+                self.run_encoding(words, phase_type)
+                # self.run_distraction(phase_type)
+                self.run_orient(phase_type)
         if False:
             self.run_recognition()
 
@@ -740,5 +741,5 @@ if __name__ == "__main__":
     epl_exp.setup()
     epl_exp.setBreak()  # quit with Esc-F1
 
-    exp = FRExperiment(epl_exp, debug=True)
+    exp = FRExperiment(epl_exp, debug=True, fast_timing=True)
     exp.start()
