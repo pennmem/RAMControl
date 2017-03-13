@@ -114,11 +114,8 @@ class SocketServer(object):
         if not incoming:
             message = message.to_dict()
 
-        self._msg_log.write("{timestamp:f}\t{mtype:s}\t{in_or_out:s}\t{msg:s}\n".format(
-            timestamp=time.time(),
-            mtype=message["type"],
-            in_or_out=("in" if incoming else "out"),
-            msg=json.dumps(message)))
+        message["in_or_out"] = "in" if incoming else "out"
+        self._msg_log.write("{:s}\n".format(json.dumps(message)))
         self._msg_log.flush()
 
     def handle_incoming(self):
