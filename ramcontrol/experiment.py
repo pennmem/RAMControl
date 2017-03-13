@@ -7,6 +7,7 @@ import sys
 import json
 import codecs
 from contextlib import contextmanager
+import itertools
 import logging
 
 import six
@@ -125,6 +126,9 @@ class Experiment(object):
         self.name = self.config.experiment
         self.subject = self.epl_exp.getOptions().get("subject")
 
+        # For indexing log entries
+        self._log_index = itertools.count()
+
         # Session must be set before creating tracks, apparently
         self.epl_exp.setSession(self.session)
 
@@ -216,6 +220,17 @@ class Experiment(object):
                         "session_{:d}".format(self.session))
 
     @property
+    def hdf_filename(self):
+        """Returns the HDF5 data file name for storing session data.
+
+        At the moment, this is just duplicating some logging for easier data
+        analysis and testing, but later we may want to transition to using HDF5
+        for everything.
+
+        """
+        return osp.join(self.session_data_dir, "session.h5")
+
+    @property
     def experiment_started(self):
         """Has the experiment been started previously?"""
         return True if self.epl_exp.restoreState() is not None else False
@@ -247,7 +262,7 @@ class Experiment(object):
                 'Press ESCAPE to continue'
             ).present(self.clock, bc=bc)
             if 'AND' in button.name:
-                self.log_message('SESSION_SKIPPED', timestamp)
+                self.log_event('SESSION_SKIPPED')
                 self.state.sessionNum += 1
                 self.state.trialNum = 0
                 self.state.practiceDone = False
@@ -285,6 +300,25 @@ class Experiment(object):
         state = self.epl_exp.restoreState()
         self.epl_exp.saveState(state, **kwargs)
 
+    def log_event(self, event, **kwargs):
+        """Log an event.
+
+        :param str event: Event description.
+        :param dict kwargs: Additional details to log with event.
+
+        """
+        self.log.logMessage(event + " " + json.dumps(kwargs), self.clock)
+        with pd.HDFStore(self.hdf_filename) as store:
+            entry = {"event": event, "timestamp": timing.now()}
+            entry.update(kwargs)
+            df = pd.DataFrame(entry, index=[next(self._log_index)])
+            try:
+                store.append("/logs/session", df)
+            except ValueError:
+                old = store.get("/logs/session")
+                new = pd.concat([old, df])
+                store.put("/logs/session", new)
+
     @contextmanager
     def state_context(self, state, **kwargs):
         """Context manager to log and send state messages. Usage example::
@@ -299,13 +333,13 @@ class Experiment(object):
 
         """
         exp_state = self.epl_exp.restoreState()
-        self.log.logMessage(state + "_START", self.clock)
+        self.log_event(state + "_START", **kwargs)
         self.controller.send(StateMessage(state, True, timestamp=timing.now(),
                                           **kwargs))
         yield exp_state
         self.controller.send(StateMessage(state, False, timestamp=timing.now(),
                                           **kwargs))
-        self.log.logMessage(state + "_END", self.clock)
+        self.log_event(state + "_END", **kwargs)
 
     @staticmethod
     def copy_word_pool(data_root, language="en", include_lures=False):
