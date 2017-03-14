@@ -83,7 +83,6 @@ class RAMControl(object):
         self.version = ''
         self.session_num = -1
         self.subject = ''
-        self.allowed_states = []
 
         # Configure basic message handlers
         self.handlers = {
@@ -203,7 +202,7 @@ class RAMControl(object):
         """
         self.handlers[name] = func
 
-    def configure(self, experiment, version, session_num, subject, states=[]):
+    def configure(self, experiment, version, session_num, subject):
         """Set various experiment options so they can be transmitted to the host
         PC and add poll callbacks.
 
@@ -213,16 +212,12 @@ class RAMControl(object):
         :param version:
         :param session_num:
         :param str subject:
-        :param list states: Allowed states
-
-        FIXME: remove allowed states
 
         """
         self.experiment = experiment
         self.version = version
         self.session_num = session_num
         self.subject = subject
-        self.allowed_states = states
         self._configured = True
 
         addPollCallback(self.socket.update)
@@ -306,7 +301,6 @@ class RAMControl(object):
         self.send(VersionMessage(self.version))
         self.send(SessionMessage(self.session_num, ''))
         self.send(SubjectIdMessage(self.subject))
-        # self.send(DefineMessage(self.allowed_states))
         self.start_heartbeat()
 
         logger.info("Connection succeeded.")
