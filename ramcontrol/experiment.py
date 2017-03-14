@@ -11,7 +11,6 @@ import itertools
 import logging
 
 import six
-import pandas as pd
 
 from wordpool import WordList
 import wordpool.data
@@ -167,9 +166,7 @@ class Experiment(object):
         # Set up the RAMControl instance
         # TODO: get rid of this monstrosity
         self.controller.configure(self.config.experiment, self.config.version,
-                                  self.session,
-                                  "" if not hasattr(self.config, "stim_type") else self.config.stim_type,
-                                  self.subject)
+                                  self.session, self.subject)
 
         # Set network log path
         self.controller.socket.log_path = self.session_data_dir

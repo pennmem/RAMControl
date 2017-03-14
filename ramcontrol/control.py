@@ -57,7 +57,6 @@ class RAMControl(object):
     Process::
 
         control = RAMControl.instance()  # gets singleton
-        control.initialize()
         control.connect_to_host # blocks
 
     """
@@ -72,7 +71,6 @@ class RAMControl(object):
 
         self.connection_timeout = connection_timeout
 
-        self._initialized = False
         self._synced = Event()
         self._started = False  # received START from control PC
         self._configured = False
@@ -84,7 +82,6 @@ class RAMControl(object):
         self.experiment = ''
         self.version = ''
         self.session_num = -1
-        self.session_type = ''
         self.subject = ''
         self.allowed_states = []
 
@@ -163,7 +160,7 @@ class RAMControl(object):
 
     def shutdown(self):
         """Cleanly disconnect and close sockets and servers."""
-        print("Shutting down.")
+        logger.info("Shutting down.")
         self.send(ExitMessage())
         if self.voice_server is not None:
             self.voice_server.quit()
@@ -206,8 +203,7 @@ class RAMControl(object):
         """
         self.handlers[name] = func
 
-    def configure(self, experiment, version, session_num, session_type, subject,
-                  states=[]):
+    def configure(self, experiment, version, session_num, subject, states=[]):
         """Set various experiment options so they can be transmitted to the host
         PC and add poll callbacks.
 
@@ -216,7 +212,6 @@ class RAMControl(object):
         :param str experiment:
         :param version:
         :param session_num:
-        :param str session_type: FIXME: get rid of
         :param str subject:
         :param list states: Allowed states
 
@@ -226,7 +221,6 @@ class RAMControl(object):
         self.experiment = experiment
         self.version = version
         self.session_num = session_num
-        self.session_type = session_type
         self.subject = subject
         self.allowed_states = states
         self._configured = True
@@ -310,7 +304,7 @@ class RAMControl(object):
         # Send experiment info to host
         self.send(ExperimentNameMessage(self.experiment))
         self.send(VersionMessage(self.version))
-        self.send(SessionMessage(self.session_num, self.session_type))
+        self.send(SessionMessage(self.session_num, ''))
         self.send(SubjectIdMessage(self.subject))
         # self.send(DefineMessage(self.allowed_states))
         self.start_heartbeat()
