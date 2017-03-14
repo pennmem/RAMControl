@@ -54,10 +54,8 @@ class RAMControl(object):
     :param int connection_timeout: Network timeout limit in seconds.
     :param int log_level: Log level to use.
 
-    Process::
-
-        control = RAMControl.instance()  # gets singleton
-        control.connect_to_host # blocks
+    TODO: Make experiment a member of this.
+    TODO: Rename to something like ExperimentRunner.
 
     """
     DEFAULT_HEARTBEAT_INTERVAL = 1000  # ms
