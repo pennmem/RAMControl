@@ -192,6 +192,7 @@ class Experiment(object):
     @session.setter
     def session(self, session):
         self.epl_exp.setSession(session)
+        self.update_state(sessionNum=session)
 
     @property
     def data_root(self):
@@ -634,6 +635,7 @@ class FRExperiment(WordTask):
         all_lists = []
         all_rec_blocks = []
         for session in range(self.config.numSessions):
+            logger.info("Pre-generating word lists for session %d", session)
             pool = listgen.generate_session_pool(language=self.config.LANGUAGE)
             n_baseline = self.config.n_baseline
             n_nonstim = self.config.n_nonstim
@@ -658,8 +660,8 @@ class FRExperiment(WordTask):
             # Generate recognition phase lists if this experiment supports it
             # and save to session folder
             if self.config.recognition_enabled:
-                logger.info("Pre-generating REC1 blocks for %d sessions",
-                            self.config.numSessions)
+                logger.info("Pre-generating REC1 blocks for session %d",
+                            session)
 
                 # Load lures
                 # TODO: update when Spanish allowed
@@ -696,9 +698,11 @@ class FRExperiment(WordTask):
             idx = 0
             self.list_index = idx
 
+        if self.list_index > len(self.all_lists):  # reset required
+            self.list_index = 0
         wordlist = self.all_lists[self.list_index].to_dataframe()
 
-        for listno in sorted(wordlist.listno.unique()):
+        for listno in range(self.list_index, len(wordlist.listno.unique())):
             words = wordlist[wordlist.listno == listno]
             phase_type = words.type.iloc[0]
             assert all(words.type == phase_type)
@@ -728,7 +732,7 @@ class FRExperiment(WordTask):
         if self.config.recognition_enabled:
             self.run_recognition()
 
-        # Update session number stored in state
+        # Update session number stored in state and reset list index
         self.session += 1
 
 # class CatFRExperiment(FRExperiment):
@@ -746,7 +750,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.DEBUG)
 
-    subject = fake_subject()
+    subject = "R0000P"  # fake_subject()
     exp_name = "FR5"
     archive_dir = osp.abspath(osp.join(here, "..", "data", exp_name))
     config_str = osp.abspath(osp.join(here, "configs", "FR", "config.py"))
