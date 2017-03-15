@@ -1,6 +1,5 @@
 import logging
 from logging.handlers import RotatingFileHandler, DatagramHandler
-from socket import socket, AF_INET, SOCK_DGRAM
 from six.moves import socketserver, cPickle as pickle
 from six.moves.queue import Queue
 from threading import Thread
@@ -9,26 +8,20 @@ from multiprocessing import Process
 DEFAULT_LOG_PORT = 9123
 
 
-class LogHandler(socketserver.DatagramRequestHandler):
-    def handle(self):
-        try:
-            # It is mostly undocumented, but there are 4 bytes which give the
-            # length of the pickled LogRecord.
-            _ = self.rfile.read(4)
-            msg = self.rfile.read()
-            LogServer.queue.put(logging.makeLogRecord(pickle.loads(msg)))
-        except:
-            print("Error reading log record!")
+def log_server(filename, host="127.0.0.1", port=DEFAULT_LOG_PORT):
+    """Target for a process to run a server to aggregate and record all log
+    messages to disk.
 
+    :param str filename: Log file name.
+    :param str host: Host to bind to.
+    :param int port: UDP port number to bind to.
 
-class LogServer(socketserver.ThreadingUDPServer):
-    """Centralized server for handling logging to files."""
-    filename = "logs.log"
+    """
     queue = Queue()
 
-    def consume(self):
+    def consume():
         while True:
-            record = self.queue.get()
+            record = queue.get()
             print({
                 "timestamp": record.created,
                 "name": record.name,
@@ -40,22 +33,23 @@ class LogServer(socketserver.ThreadingUDPServer):
                 "msg": record.msg
             })
 
-    @staticmethod
-    def run(host, port, filename=None):
-        """Run a :class:`LogServer` instance.
+    class Handler(socketserver.DatagramRequestHandler):
+        def handle(self):
+            try:
+                # It is mostly undocumented, but there are 4 bytes which give
+                # the length of the pickled LogRecord.
+                _ = self.rfile.read(4)
+                msg = self.rfile.read()
+                queue.put(logging.makeLogRecord(pickle.loads(msg)))
+            except:
+                print("Error reading log record!")
 
-        :param str host: Address string.
-        :param int port: Port number.
-        :param str filename: Base filename for logs.
+    consumer = Thread(target=consume, name="log_consumer")
+    consumer.daemon = True
+    consumer.start()
 
-        """
-        consumer = LogServer((host, port), LogHandler)
-        if filename is not None:
-            consumer.filename = filename
-        consume_thread = Thread(target=consumer.consume)
-        consume_thread.daemon = True
-        consume_thread.start()
-        consumer.serve_forever()
+    server = socketserver.ThreadingUDPServer((host, port), Handler)
+    server.serve_forever()
 
 
 def create_logger(name, host="127.0.0.1", port=DEFAULT_LOG_PORT):
@@ -116,7 +110,7 @@ if __name__ == "__main__":
             logger.debug("hi %d", n)
             time.sleep(random.randint(1, 3))
 
-    server = Process(target=LogServer.run, args=("127.0.0.1", DEFAULT_LOG_PORT))
+    server = Process(target=log_server, args=("logs.log",))
     server.start()
 
     procs = [Process(target=log_producer) for _ in range(1)]
