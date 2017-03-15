@@ -624,10 +624,13 @@ class FRExperiment(WordTask):
         """
         # Copy word pool to the data directory
         # TODO: only copy lures for tasks using REC1
+        logger.info("Copying word pool(s) to data directory")
         self.copy_word_pool(osp.join(self.data_root, self.subject),
                             self.config.LANGUAGE, True)
 
         # Generate all session lists and REC blocks
+        logger.info("Pre-generating all word lists for %d sessions",
+                    self.config.numSessions)
         all_lists = []
         all_rec_blocks = []
         for session in range(self.config.numSessions):
@@ -655,6 +658,9 @@ class FRExperiment(WordTask):
             # Generate recognition phase lists if this experiment supports it
             # and save to session folder
             if self.config.recognition_enabled:
+                logger.info("Pre-generating REC1 blocks for %d sessions",
+                            self.config.numSessions)
+
                 # Load lures
                 # TODO: update when Spanish allowed
                 lures = WordList(wordpool.data.read_list("REC1_lures_en.txt"))
@@ -675,6 +681,10 @@ class FRExperiment(WordTask):
 
     def run(self):
         self.video.clear("black")
+
+        # Send session info to the host
+        self.controller.send_experiment_info(self.name, self.config.version,
+                                             self.subject, self.session)
 
         # self.run_instructions()
         # self.run_countdown()
@@ -718,6 +728,8 @@ class FRExperiment(WordTask):
         if self.config.recognition_enabled:
             self.run_recognition()
 
+        # Update session number stored in state
+        self.session += 1
 
 # class CatFRExperiment(FRExperiment):
 #     """Base for CatFR tasks."""

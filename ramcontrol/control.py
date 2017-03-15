@@ -230,6 +230,24 @@ class RAMControl(object):
         else:
             self.socket.enqueue_message(message)
 
+    def send_experiment_info(self, name, version, subject, session):
+        """Sends information about the experiment.
+
+        .. note::
+
+            This is a separate method for now simply because older versions
+            required multiple message types. When everything is updated to only
+            use a :class:`SessionMessage`, this should be removed.
+
+        :param str name: Name of the experiment.
+        :param str version: Version of the experiment.
+
+        """
+        self.send(ExperimentNameMessage(name))
+        self.send(VersionMessage(version))
+        self.send(SubjectIdMessage(subject))
+        self.send(SessionMessage(name, version, subject, session))
+
     def send_math_message(self, problem, response, correct, response_time_ms,
                           timestamp):
         """Special callback to parse math events and send to the host PC.

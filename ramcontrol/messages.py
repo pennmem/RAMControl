@@ -72,9 +72,11 @@ class VersionMessage(RAMMessage):
 
 class SessionMessage(RAMMessage):
     """Transmit information about the current session."""
-    def __init__(self, session, session_type, timestamp=None):
+    def __init__(self, name, version, subject, session, timestamp=None):
         data = {
-            "session_type": session_type,
+            "name": name,
+            "version": version,
+            "subject": subject,
             "session_number": session
         }
         super(SessionMessage, self).__init__("SESSION", timestamp=timestamp, data=data)
