@@ -231,7 +231,7 @@ class Experiment(object):
         supported within the log.
 
         """
-        return osp.join(self.session_data_dir, "sessionlog.json")
+        return osp.join(self.session_data_dir, "sessionlog.log")
 
     @property
     def experiment_started(self):
@@ -308,7 +308,7 @@ class Experiment(object):
         pandas-friendly JSONized format. The JSON format has one entry per line
         and can be read into a pandas DataFrame like::
 
-            with open("sessionlog.json") as log:
+            with open("sessionlog.log") as log:
                 entries = [json.loads(entry) for entry in log.readlines()]
                 df = pd.DataFrame.from_records(entries, index="index")
 
@@ -500,7 +500,8 @@ class WordTask(Experiment):
         assert isinstance(new_blocks, list)
         self.update_state(all_rec_blocks=new_blocks)
 
-    def display_word(self, word, listno, serialpos, phase, wait=False, keys=["SPACE"]):
+    def display_word(self, word, listno, serialpos, phase, wait=False,
+                     keys=["SPACE"]):
         """Displays a single word in the list.
 
         :param str word: Word to display.
@@ -521,7 +522,7 @@ class WordTask(Experiment):
             if not wait:
                 text.present(self.clock, self.timings.word_duration)
             else:
-                key, timestamp = self.epl_helpers.show_text_and_wait_for_keyboard_input(word)
+                key, timestamp = self.epl_helpers.show_text_and_wait_for_keyboard_input(word, keys)
                 # TODO: send key log to host PC (PyEPL already logs it)
 
     def run_instructions(self):
@@ -541,10 +542,11 @@ class WordTask(Experiment):
     def run_distraction(self, phase_type):
         """Distraction phase."""
         with self.state_context("DISTRACT", phase_type=phase_type):
+            problems = self.config.MATH_maxProbs if not self._debug else 1
             customMathDistract(clk=self.clock,
                                mathlog=self.mathlog,
                                numVars=self.config.MATH_numVars,
-                               maxProbs=self.config.MATH_maxProbs,
+                               maxProbs=problems,
                                plusAndMinus=self.config.MATH_plusAndMinus,
                                minDuration=self.config.MATH_minDuration,
                                textSize=self.config.MATH_textSize,
@@ -558,18 +560,18 @@ class WordTask(Experiment):
         :param bool practice: This is the practice session.
 
         """
-        with self.state_context("ENCODING", phase_type=phase_type):
-            for n, row in words.iterrows():
-                self.clock.delay(self.timings.isi, self.timings.jitter)
-                self.clock.wait()
-                self.display_word(row.word, row.listno, n, row.type)
-
         if practice:
             filename = "FIXME"  # path to instructions in the appropriate language
             text = Text("I CAN HAZ INSTRUCT?")
             # text = Text(codecs.open(filename, encoding='utf-8').read())
             with self.state_context("INSTRUCT", phase_type=phase_type):
                 waitForAnyKeyWithCallback(self.clock, text)
+
+        with self.state_context("ENCODING", phase_type=phase_type):
+            for n, row in words.iterrows():
+                self.clock.delay(self.timings.isi, self.timings.jitter)
+                self.clock.wait()
+                self.display_word(row.word, row.listno, n, row.type)
 
     def run_orient(self, phase_type):
         """Run an orient phase."""
@@ -686,31 +688,34 @@ class FRExperiment(WordTask):
 
         wordlist = self.all_lists[self.list_index].to_dataframe()
 
-        if True:
-            for listno in sorted(wordlist.listno.unique()):
-                words = wordlist[wordlist.listno == listno]
-                phase_type = words.type.iloc[0]
-                assert all(words.type == phase_type)
+        for listno in sorted(wordlist.listno.unique()):
+            words = wordlist[wordlist.listno == listno]
+            phase_type = words.type.iloc[0]
+            assert all(words.type == phase_type)
 
-                self.controller.send(TrialMessage(listno))
-                self.log_event("TRIAL", listno=listno, phase_type=phase_type)
+            self.controller.send(TrialMessage(listno))
+            self.log_event("TRIAL", listno=listno, phase_type=phase_type)
 
-                # Encoding
-                self.run_encoding(words, phase_type)
+            # Encoding
+            self.run_encoding(words, phase_type, practice=(listno == 0))
 
-                # Distract
-                self.run_distraction(phase_type)
-                self.run_orient(phase_type)
+            # Distract
+            self.run_distraction(phase_type)
+            self.run_orient(phase_type)
 
-                # Delay before retrieval
-                self.clock.delay(self.timings.recall_delay,
-                                 jitter=self.timings.recall_jitter)
-                self.clock.wait()
+            # Delay before retrieval
+            self.clock.delay(self.timings.recall_delay,
+                             jitter=self.timings.recall_jitter)
+            self.clock.wait()
 
-                # Retrieval
-                self.run_orient(phase_type)
-                self.run_retrieval(phase_type)
-        if False:
+            # Retrieval
+            self.run_orient(phase_type)
+            self.run_retrieval(phase_type)
+
+            # Update list index stored in state
+            self.list_index += 1
+
+        if self.config.recognition_enabled:
             self.run_recognition()
 
 
