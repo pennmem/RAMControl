@@ -818,5 +818,10 @@ if __name__ == "__main__":
         "recognition": True,
     }
 
-    exp = FRExperiment(epl_exp, debug=True, **skips)
+    kwargs = {
+        "fast_timing": True
+    }
+    kwargs.update(skips)
+
+    exp = FRExperiment(epl_exp, debug=True, **kwargs)
     exp.start()

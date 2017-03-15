@@ -84,19 +84,19 @@ class PyEPLHelpers(object):
         """
         movie = Movie(filename)
         movie_shown = self.video.showCentered(movie)
-        self.video.playMovie(movie)
+        self.video.playMovie(movie, self.clock)
 
         # Stop on button press if BC passed in, otherwise wait until the movie
         # is finished.
         if bc is None:
-            self.clock.delay(movie.getTotalTime())
+            # self.clock.delay(movie.getTotalTime())
             self.clock.wait()
         else:
             self.clock.wait()
             bc.wait()
         self.video.stopMovie(movie)
         movie.unload()
-        #self.video.unshow(movie_shown)
+        self.video.unshow(movie_shown)
 
     def play_intro_movie(self, filename, allow_skip=True):
         """Play an intro movie, allowing cancellation.
