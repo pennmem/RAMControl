@@ -1,11 +1,76 @@
+import os.path
 import logging
 from logging.handlers import RotatingFileHandler, DatagramHandler
-from six.moves import socketserver, cPickle as pickle
-from six.moves.queue import Queue
 from threading import Thread
 from multiprocessing import Process
+import uuid
+
+from six.moves import socketserver, cPickle as pickle
+from six.moves.queue import Queue
+
+import pandas as pd
 
 DEFAULT_LOG_PORT = 9123
+
+
+class PandasHandler(logging.Handler):
+    """Base handler class to utilize pandas for log handling."""
+    def __init__(self, level=None):
+        if level is None:
+            level = logging.INFO
+        super(PandasHandler, self).__init__(level)
+        self.entry = None
+
+    def index(self):
+        """Create a UUID to uniquely label the log index. Override to apply a
+        sequential or other type of index.
+
+        """
+        return uuid.uuid1()
+
+    def dictify(self, record):
+        """Convert a :class:`logging.LogRecord` into a dict. Override to change
+        what ultimately gets written to disk.
+
+        """
+        return {
+            "timestamp": [record.created],
+            "name": [record.name],
+            "levelname": [record.levelname],
+            "pathname": [record.pathname],
+            "lineno": [record.lineno],
+            "threadName": [record.threadName],
+            "processName": [record.processName],
+            "msg": [record.msg]
+        }
+
+    def emit(self, record):
+        """Call this with ``super``; then, ``self.entry`` will be a
+        :class:`pd.DataFrame` generated from the dictified log entry.
+
+        """
+        self.entry = pd.DataFrame(self.dictify(record), index=[self.index()])
+
+
+class CSVHandler(PandasHandler):
+    """Handler to log to csv files."""
+    def __init__(self, filename, delimiter=";", level=None):
+        super(CSVHandler, self).__init__(level)
+        self.filename = filename
+
+        if not os.path.exists(self.filename):
+            self._write_header = True
+        else:
+            self._write_header = False
+
+        self.delimiter = delimiter
+
+    def emit(self, record):
+        super(CSVHandler, self).emit(record)
+        self.entry.to_csv(self.filename, sep=self.delimiter, mode="a",
+                          header=self._write_header)
+        if self._write_header:
+            self._write_header = False
 
 
 def log_server(handlers=[], host="127.0.0.1", port=DEFAULT_LOG_PORT,
@@ -34,17 +99,9 @@ def log_server(handlers=[], host="127.0.0.1", port=DEFAULT_LOG_PORT,
     def consume():
         while True:
             record = queue.get()
-            for handler in handlers:
-                logging.getLogger(record.name).handle(record)
+            logging.getLogger(record.name).handle(record)
             # print({
-            #     "timestamp": record.created,
-            #     "name": record.name,
-            #     "levelname": record.levelname,
-            #     "pathname": record.pathname,
-            #     "lineno": record.lineno,
-            #     "threadName": record.threadName,
-            #     "processName": record.processName,
-            #     "msg": record.msg
+
             # })
 
     class Handler(socketserver.DatagramRequestHandler):
@@ -127,7 +184,8 @@ if __name__ == "__main__":
             time.sleep(random.randint(1, 3))
 
     handlers = [
-        RotatingFileHandler("/tmp/logs.log", maxBytes=10e6, backupCount=5)
+        RotatingFileHandler("/tmp/logs.log", maxBytes=10e6, backupCount=5),
+        CSVHandler("/tmp/test.csv", delimiter="\t")
     ]
 
     for handler in handlers:
