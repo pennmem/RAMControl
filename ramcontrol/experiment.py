@@ -103,12 +103,13 @@ class Experiment(object):
 
     :param exputils.Experiment epl_exp: PyEPL experiment instance.
     :param bool debug: Enables debug mode.
-    :param bool fast_timing: When debug is also set to True, this will speed up
-        timings a lot.
+    :param dict kwargs: Additional keyword arguments used primarily for debug
+         settings.
 
     """
-    def __init__(self, epl_exp, debug=False, fast_timing=False):
+    def __init__(self, epl_exp, debug=False, **kwargs):
         self._debug = debug
+        self.kwargs = kwargs
 
         assert isinstance(epl_exp, exputils.Experiment)
         self.epl_exp = epl_exp
@@ -121,7 +122,7 @@ class Experiment(object):
         logger.debug("config2:\n%s",
                      json.dumps(self.config.config2.config, indent=2, sort_keys=True))
 
-        if self.debug and fast_timing:
+        if self.debug and self.kwargs.get("fast_timing", False):
             self.timings = Timings.make_debug()
         else:
             self.timings = Timings.make_from_config(self.config)
@@ -288,6 +289,21 @@ class Experiment(object):
     #     misconfigured.
     #
     #     """
+
+    def skip_it(self, key):
+        """Checks if a section is skippable when debug mode is enabled. This is
+        determined by the value of the key in ``self.kwargs``.
+
+        :param str key: Key to check.
+
+        """
+        if not self.debug:
+            return False
+        else:
+            skip = self.kwargs.get(key, False)
+            if skip:
+                logger.warning("Skipping %s!", key)
+            return skip
 
     @property
     def state(self):
@@ -528,12 +544,18 @@ class WordTask(Experiment):
 
     def run_instructions(self):
         """Instruction period to explain the task to the subject."""
+        if self.skip_it("instructions"):
+            return
+
         with self.state_context("INSTRUCT"):
             self.epl_helpers.play_intro_movie(
                 self.config.introMovie.format(language=self.config.LANGUAGE))
 
     def run_countdown(self):
         """Display the countdown movie."""
+        if self.skip_it("countdown"):
+            return
+
         self.video.clear('black')
         with self.state_context("COUNTDOWN"):
             self.epl_helpers.play_movie_sync(self.config.countdownMovie)
@@ -542,6 +564,9 @@ class WordTask(Experiment):
 
     def run_distraction(self, phase_type):
         """Distraction phase."""
+        if self.skip_it("distraction"):
+            return
+
         with self.state_context("DISTRACT", phase_type=phase_type):
             problems = self.config.MATH_maxProbs if not self._debug else 1
             customMathDistract(clk=self.clock,
@@ -561,7 +586,13 @@ class WordTask(Experiment):
         :param bool practice: This is the practice session.
 
         """
+        if self.skip_it("encoding"):
+            return
+
         if practice:
+            if self.skip_it("practice"):
+                return
+
             filename = "FIXME"  # path to instructions in the appropriate language
             text = Text("I CAN HAZ INSTRUCT?")
             # text = Text(codecs.open(filename, encoding='utf-8').read())
@@ -576,6 +607,9 @@ class WordTask(Experiment):
 
     def run_orient(self, phase_type):
         """Run an orient phase."""
+        if self.skip_it("orient"):
+            return
+
         with self.state_context("ORIENT", phase_type=phase_type):
             text = Text(self.config.recallStartText)
 
@@ -594,6 +628,9 @@ class WordTask(Experiment):
 
     def run_retrieval(self, phase_type):
         """Run a retrieval (a.k.a. recall) phase."""
+        if self.skip_it("retrieval"):
+            return
+
         with self.state_context("RETRIEVAL", phase_type=phase_type) as state:
             label = str(self.list_index)
 
@@ -606,6 +643,9 @@ class WordTask(Experiment):
 
     def run_recognition(self):
         """Run a recognition phase."""
+        if self.skip_it("recognition"):
+            return
+
         if not self.config.recognition_enabled:
             raise ExperimentError("Recognition subtask not enabled!")
         rec_list = self.all_rec_blocks[self.session]
@@ -688,8 +728,7 @@ class FRExperiment(WordTask):
         self.controller.send_experiment_info(self.name, self.config.version,
                                              self.subject, self.session)
 
-        # self.run_instructions()
-        # self.run_countdown()
+        self.run_instructions()
 
         # Get the current list
         try:
@@ -709,6 +748,9 @@ class FRExperiment(WordTask):
 
             self.controller.send(TrialMessage(listno))
             self.log_event("TRIAL", listno=listno, phase_type=phase_type)
+
+            # Countdown to encoding
+            self.run_countdown()
 
             # Encoding
             self.run_encoding(words, phase_type, practice=(listno == 0))
@@ -765,5 +807,16 @@ if __name__ == "__main__":
     epl_exp.setup()
     epl_exp.setBreak()  # quit with Esc-F1
 
-    exp = FRExperiment(epl_exp, debug=True, fast_timing=True)
+    skips = {
+        # "countdown": True,
+        "distraction": True,
+        # "encoding": True,
+        "instructions": True,
+        "orient": True,
+        "practice": True,
+        "retrieval": True,
+        "recognition": True,
+    }
+
+    exp = FRExperiment(epl_exp, debug=True, **skips)
     exp.start()
