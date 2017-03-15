@@ -3,6 +3,7 @@ from logging.handlers import RotatingFileHandler, DatagramHandler
 from socket import socket, AF_INET, SOCK_DGRAM
 from six.moves import socketserver, cPickle as pickle
 from six.moves.queue import Queue
+from threading import Thread
 from multiprocessing import Process
 
 DEFAULT_LOG_PORT = 9123
@@ -10,10 +11,14 @@ DEFAULT_LOG_PORT = 9123
 
 class LogHandler(socketserver.DatagramRequestHandler):
     def handle(self):
-        msg, _ = self.request
-        record = logging.makeLogRecord(msg)
-        print(record)
-        # print(pickle.loads(msg))
+        try:
+            # It is mostly undocumented, but there are 4 bytes which give the
+            # length of the pickled LogRecord.
+            _ = self.rfile.read(4)
+            msg = self.rfile.read()
+            LogServer.queue.put(logging.makeLogRecord(pickle.loads(msg)))
+        except:
+            print("Error reading log record!")
 
 
 class LogServer(socketserver.ThreadingUDPServer):
@@ -24,7 +29,16 @@ class LogServer(socketserver.ThreadingUDPServer):
     def consume(self):
         while True:
             record = self.queue.get()
-            print(record)
+            print({
+                "timestamp": record.created,
+                "name": record.name,
+                "levelname": record.levelname,
+                "pathname": record.pathname,
+                "lineno": record.lineno,
+                "threadName": record.threadName,
+                "processName": record.processName,
+                "msg": record.msg
+            })
 
     @staticmethod
     def run(host, port, filename=None):
@@ -38,6 +52,9 @@ class LogServer(socketserver.ThreadingUDPServer):
         consumer = LogServer((host, port), LogHandler)
         if filename is not None:
             consumer.filename = filename
+        consume_thread = Thread(target=consumer.consume)
+        consume_thread.daemon = True
+        consume_thread.start()
         consumer.serve_forever()
 
 
@@ -90,7 +107,7 @@ if __name__ == "__main__":
 
     def log_producer():
         logger = create_logger(random.choice(string.ascii_lowercase))
-        for _ in range(3):
+        for _ in range(1):
             n = random.randint(0, 10)
             logger.info("hi %d", n)
             logger.warning("hi %d", n)
@@ -102,7 +119,7 @@ if __name__ == "__main__":
     server = Process(target=LogServer.run, args=("127.0.0.1", DEFAULT_LOG_PORT))
     server.start()
 
-    procs = [Process(target=log_producer) for _ in range(3)]
+    procs = [Process(target=log_producer) for _ in range(1)]
 
     for proc in procs:
         proc.start()
