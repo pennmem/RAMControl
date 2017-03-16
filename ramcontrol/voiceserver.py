@@ -21,16 +21,10 @@ import wave
 
 from pyaudio import PyAudio, paInt16
 from webrtcvad import Vad
-
+from logserver import create_logger
 import zmq
 
 from .exc import WrongProcessError
-from .log import setup_logging
-from .util import data_path
-
-# TODO: implement real logging
-# see https://docs.python.org/3/howto/logging-cookbook.html#logging-to-a-single-file-from-multiple-processes
-logger = logging.getLogger(__name__)
 
 SAMPLE_RATE = 16000
 FRAMES_PER_BUFFER = 1024
@@ -48,17 +42,18 @@ class VoiceServer(Process):
         transients).
     :param str filename: WAV file to read for testing (doesn't use microphone).
         Note that this will actually play the WAV file.
-    :param int loglevel: Logging level to use. If None, don't set this.
+    :param int loglevel: Logging level to use. If None, assume ``logging.INFO``.
 
     """
     def __init__(self, sock_addr="tcp://127.0.0.1:9898", vad_level=3,
-                 consecutive_frames=3, filename=None, loglevel=None):
+                 consecutive_frames=3, filename=None, loglevel=logging.INFO):
         super(VoiceServer, self).__init__()
 
         self.addr = sock_addr
         self.vad_aggressiveness = vad_level
         self.consecutive_frames = consecutive_frames
         self.filename = filename
+        self.logger = None  # to be defined once the process starts
         self.loglevel = loglevel
 
         self.queue = Queue()
@@ -91,7 +86,7 @@ class VoiceServer(Process):
         """
         socket = ctx.socket(zmq.PUB)
         socket.connect(self.addr)
-        logger.debug("Connecting to address %s", self.addr)
+        self.logger.debug("Connecting to address %s", self.addr)
 
         vad = Vad(self.vad_aggressiveness)
         speaking = False  # to keep track of if vocalization ongoing
@@ -117,7 +112,7 @@ class VoiceServer(Process):
                             "value": True,
                             "timestamp": framecount[0]["timestamp"]
                         })
-                        logger.debug("Started speaking at %f", now)
+                        self.logger.debug("Started speaking at %f", now)
                 else:
                     if speaking:
                         speaking = False
@@ -126,7 +121,7 @@ class VoiceServer(Process):
                             "value": False,
                             "timestamp": now
                         })
-                        logger.debug("Stopped speaking at %f", now)
+                        self.logger.debug("Stopped speaking at %f", now)
                     framecount = []
 
                 offset += n
@@ -134,18 +129,18 @@ class VoiceServer(Process):
     def quit(self):
         """Terminate the process."""
         if not self.done.is_set():
-            logger.info("Shutting down voice server...")
+            self.logger.info("Shutting down voice server...")
             self.done.set()
         else:
-            logger.error("Voice server already shut down!")
+            self.logger.error("Voice server already shut down!")
 
     def run(self):
-        setup_logging(level=self.loglevel or logging.INFO)
-
         ctx = zmq.Context()
 
         audio = PyAudio()
         wav = None
+
+        self.logger = create_logger("voiceserver", level=self.loglevel)
 
         # We're live
         if self.filename is None:
@@ -185,12 +180,12 @@ class VoiceServer(Process):
                 self.queue.put(data)
             except IOError:
                 # TODO: real error handling
-                logger.error("Exception in voiceserver", exc_info=True)
+                self.logger.error("Exception in voiceserver", exc_info=True)
             except KeyboardInterrupt:
-                logger.info("Keyboard interrupt detected")
+                self.logger.info("Keyboard interrupt detected")
                 self.quit()
             except:
-                logger.error("Unknown error", exc_info=True)
+                self.logger.error("Unknown error", exc_info=True)
 
         if stream is not None:
             stream.close()
@@ -208,7 +203,7 @@ def main():
     parser = ArgumentParser(description=__doc__)
     parser.add_argument("-f", "--filename", default=None, type=str,
                         help="Path to wav file as input")
-    parser.add_argument("-l", "--loglevel", choices=levels,
+    parser.add_argument("-l", "--loglevel", choices=levels, default="info",
                         help="Log level")
 
     args = parser.parse_args()
