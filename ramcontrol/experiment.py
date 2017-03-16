@@ -345,20 +345,18 @@ class Experiment(object):
     def state_context(self, state, **kwargs):
         """Context manager to log and send state messages. Usage example::
 
-            with self.state_context("COUNTDOWN") as state:
-                self.countdown()
-                # Do something with state. Or not. It's really up to you.
+            with self.state_context("COUNTDOWN"):
+                self.do_thing()
 
         :param str state: Name of state.
         :param dict kwargs: Additional keyword arguments to append to the STATE
             message sent to the host PC.
 
         """
-        exp_state = self.epl_exp.restoreState()
         self.log_event(state + "_START", **kwargs)
         self.controller.send(StateMessage(state, True, timestamp=timing.now(),
                                           **kwargs))
-        yield exp_state
+        yield
         self.controller.send(StateMessage(state, False, timestamp=timing.now(),
                                           **kwargs))
         self.log_event(state + "_END", **kwargs)
@@ -617,8 +615,7 @@ class WordTask(Experiment):
             text.present(self.clock, self.timings.encoding_delay,
                          jitter=self.timings.encoding_jitter)
 
-            if not self.debug:
-                self.epl_helpers.play_start_beep()
+            self.epl_helpers.play_start_beep()
 
             #self.clock.delay(self.timings.encoding_delay,
             #                 jitter=self.timings.encoding_jitter)
@@ -631,7 +628,7 @@ class WordTask(Experiment):
         if self.skip_it("retrieval"):
             return
 
-        with self.state_context("RETRIEVAL", phase_type=phase_type) as state:
+        with self.state_context("RETRIEVAL", phase_type=phase_type):
             label = str(self.list_index)
 
             # Record responses
@@ -808,13 +805,13 @@ if __name__ == "__main__":
     epl_exp.setBreak()  # quit with Esc-F1
 
     skips = {
-        # "countdown": True,
+        "countdown": True,
         "distraction": True,
         # "encoding": True,
         "instructions": True,
-        "orient": True,
-        "practice": True,
-        "retrieval": True,
+        # "orient": True,
+        # "practice": True,
+        # "retrieval": True,
         "recognition": True,
     }
 
