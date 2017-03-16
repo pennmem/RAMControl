@@ -1,9 +1,0 @@
-[submodule "experiments/RAM_FR"]
-	path = experiments/RAM_FR
-	url = https://github.com/ramdarpaprojectorg/RAM_FR.git
-[submodule "experiments/RAM_catFR"]
-	path = experiments/RAM_catFR
-	url = https://github.com/ramdarpaprojectorg/RAM_catFR.git
-[submodule "experiments/RAM_PAL"]
-	path = experiments/RAM_PAL
-	url = https://github.com/ramdarpaprojectorg/RAM_PAL
