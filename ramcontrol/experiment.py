@@ -8,12 +8,16 @@ import json
 import codecs
 from contextlib import contextmanager
 import itertools
+import functools
 import logging
 
 import six
+import psutil
 
 from wordpool import WordList
 import wordpool.data
+from logserver import create_logger
+
 from ramcontrol import listgen
 from ramcontrol.control import RAMControl
 from ramcontrol.util import DEFAULT_ENV
@@ -31,7 +35,21 @@ from pyepl.mechinput import ButtonChooser
 from pyepl.textlog import LogTrack
 from pyepl.convenience import waitForAnyKey, flashStimulus
 
-logger = logging.getLogger(__name__)
+
+def skippable(func):
+    """Decorator to skip a run_x method. Just add ``skip_x`` to the ``kwargs``
+    given to the :class:`Experiment` instance.
+
+    """
+    if not func.__name__.startswith("run_"):
+        raise RuntimeError("You can only use this decorator with run_xyz methods!")
+
+    @functools.wraps(func)
+    def wrapper(self, *args, **kwargs):
+        skip_key = "skip_" + func.__name__.lstrip("run_")
+        if not self.kwargs.get(skip_key, False):
+            func(self, *args, **kwargs)
+    return wrapper
 
 
 class Timings(object):
@@ -117,10 +135,13 @@ class Experiment(object):
 
         self.clock = exputils.PresentationClock()
         self.config = self.epl_exp.getConfig()
-        logger.debug("config1:\n%s",
-                     json.dumps(self.config.config1.config, indent=2, sort_keys=True))
-        logger.debug("config2:\n%s",
-                     json.dumps(self.config.config2.config, indent=2, sort_keys=True))
+        self.logger = create_logger(
+            __name__, level=(logging.DEBUG if debug else logging.INFO))
+
+        # print("config1:\n%s",
+        #       json.dumps(self.config.config1.config, indent=2, sort_keys=True))
+        # print("config2:\n%s",
+        #       json.dumps(self.config.config2.config, indent=2, sort_keys=True))
 
         if self.debug and self.kwargs.get("fast_timing", False):
             self.timings = Timings.make_debug()
@@ -302,7 +323,7 @@ class Experiment(object):
         else:
             skip = self.kwargs.get(key, False)
             if skip:
-                logger.warning("Skipping %s!", key)
+                self.logger.warning("Skipping %s!", key)
             return skip
 
     @property
@@ -376,6 +397,7 @@ class Experiment(object):
         :raises LanguageError: when a passed language is unavailable
 
         """
+        logger = create_logger(__name__)
         logger.info("Copying word pool(s)...")
 
         # Validate language selection
@@ -418,7 +440,7 @@ class Experiment(object):
             self.controller.wait_for_start_message(
                 poll_callback=lambda: flashStimulus(Text("Waiting for start from control PC...")))
         else:
-            logger.warning("***** PROCEEDING WITHOUT CONNECTING TO HOST PC! *****")
+            self.logger.warning("***** PROCEEDING WITHOUT CONNECTING TO HOST PC! *****")
 
     @abstractmethod
     def define_state_variables(self):
@@ -540,31 +562,25 @@ class WordTask(Experiment):
                 key, timestamp = self.epl_helpers.show_text_and_wait_for_keyboard_input(word, keys)
                 # TODO: send key log to host PC (PyEPL already logs it)
 
+    @skippable
     def run_instructions(self):
         """Instruction period to explain the task to the subject."""
-        if self.skip_it("instructions"):
-            return
-
         with self.state_context("INSTRUCT"):
             self.epl_helpers.play_intro_movie(
                 self.config.introMovie.format(language=self.config.LANGUAGE))
 
+    @skippable
     def run_countdown(self):
         """Display the countdown movie."""
-        if self.skip_it("countdown"):
-            return
-
         self.video.clear('black')
         with self.state_context("COUNTDOWN"):
             self.epl_helpers.play_movie_sync(self.config.countdownMovie)
             # play_whole_movie(self.video, self.audio,
             #                  self.config.countdownMovie, self.clock)
 
+    @skippable
     def run_distraction(self, phase_type):
         """Distraction phase."""
-        if self.skip_it("distraction"):
-            return
-
         with self.state_context("DISTRACT", phase_type=phase_type):
             problems = self.config.MATH_maxProbs if not self._debug else 1
             customMathDistract(clk=self.clock,
@@ -576,6 +592,7 @@ class WordTask(Experiment):
                                textSize=self.config.MATH_textSize,
                                callback=self.controller.send_math_message)
 
+    @skippable
     def run_encoding(self, words, phase_type, practice=False):
         """Run an encoding phase.
 
@@ -584,9 +601,6 @@ class WordTask(Experiment):
         :param bool practice: This is the practice session.
 
         """
-        if self.skip_it("encoding"):
-            return
-
         if practice:
             if self.skip_it("practice"):
                 return
@@ -603,11 +617,9 @@ class WordTask(Experiment):
                 self.clock.wait()
                 self.display_word(row.word, row.listno, n, row.type)
 
+    @skippable
     def run_orient(self, phase_type):
         """Run an orient phase."""
-        if self.skip_it("orient"):
-            return
-
         with self.state_context("ORIENT", phase_type=phase_type):
             text = Text(self.config.recallStartText)
 
@@ -615,7 +627,8 @@ class WordTask(Experiment):
             text.present(self.clock, self.timings.encoding_delay,
                          jitter=self.timings.encoding_jitter)
 
-            self.epl_helpers.play_start_beep()
+            if self.kwargs.get("play_beeps", True):
+                self.epl_helpers.play_start_beep()
 
             #self.clock.delay(self.timings.encoding_delay,
             #                 jitter=self.timings.encoding_jitter)
@@ -623,11 +636,9 @@ class WordTask(Experiment):
 
             self.video.unshow(text)
 
+    @skippable
     def run_retrieval(self, phase_type):
         """Run a retrieval (a.k.a. recall) phase."""
-        if self.skip_it("retrieval"):
-            return
-
         with self.state_context("RETRIEVAL", phase_type=phase_type):
             label = str(self.list_index)
 
@@ -636,13 +647,12 @@ class WordTask(Experiment):
                 self.timings.recall_duration, label, t=self.clock)
 
             # Ending beep
-            end_timestamp = self.epl_helpers.play_stop_beep()
+            if self.kwargs.get("play_beeps", True):
+                end_timestamp = self.epl_helpers.play_stop_beep()
 
+    @skippable
     def run_recognition(self):
         """Run a recognition phase."""
-        if self.skip_it("recognition"):
-            return
-
         if not self.config.recognition_enabled:
             raise ExperimentError("Recognition subtask not enabled!")
         rec_list = self.all_rec_blocks[self.session]
@@ -662,17 +672,18 @@ class FRExperiment(WordTask):
         """
         # Copy word pool to the data directory
         # TODO: only copy lures for tasks using REC1
-        logger.info("Copying word pool(s) to data directory")
+        self.logger.info("Copying word pool(s) to data directory")
         self.copy_word_pool(osp.join(self.data_root, self.subject),
                             self.config.LANGUAGE, True)
 
         # Generate all session lists and REC blocks
-        logger.info("Pre-generating all word lists for %d sessions",
-                    self.config.numSessions)
+        self.logger.info("Pre-generating all word lists for %d sessions",
+                         self.config.numSessions)
         all_lists = []
         all_rec_blocks = []
         for session in range(self.config.numSessions):
-            logger.info("Pre-generating word lists for session %d", session)
+            self.logger.info("Pre-generating word lists for session %d",
+                             session)
             pool = listgen.generate_session_pool(language=self.config.LANGUAGE)
             n_baseline = self.config.n_baseline
             n_nonstim = self.config.n_nonstim
@@ -687,7 +698,7 @@ class FRExperiment(WordTask):
             try:
                 os.makedirs(session_dir)
             except OSError:
-                logger.warning("Session %d already created", session)
+                self.logger.warning("Session %d already created", session)
 
             # Write assigned list to session folders
             assigned.to_json(osp.join(session_dir, "pool.json"))
@@ -697,8 +708,8 @@ class FRExperiment(WordTask):
             # Generate recognition phase lists if this experiment supports it
             # and save to session folder
             if self.config.recognition_enabled:
-                logger.info("Pre-generating REC1 blocks for session %d",
-                            session)
+                self.logger.info("Pre-generating REC1 blocks for session %d",
+                                 session)
 
                 # Load lures
                 # TODO: update when Spanish allowed
@@ -783,11 +794,20 @@ class FRExperiment(WordTask):
 
 
 if __name__ == "__main__":
+    import os
     import os.path as osp
-    from ramcontrol.util import fake_subject
-    here = osp.realpath(osp.dirname(__file__))
+    import time
+    from multiprocessing import Process
+    import atexit
 
-    logging.basicConfig(level=logging.DEBUG)
+    import logserver
+    from logserver.handlers import SQLiteHandler
+    from ramcontrol.util import fake_subject
+
+    pid = os.getpid()
+    proc = psutil.Process(pid)
+
+    here = osp.realpath(osp.dirname(__file__))
 
     subject = "R0000P"  # fake_subject()
     exp_name = "FR5"
@@ -800,25 +820,40 @@ if __name__ == "__main__":
                                   use_eeg=False, config=config_str,
                                   sconfig=sconfig_str,
                                   resolution="1440x900")
+
     # epl_exp.parseArgs()
     epl_exp.setup()
     epl_exp.setBreak()  # quit with Esc-F1
 
-    skips = {
-        "countdown": True,
-        "distraction": True,
-        # "encoding": True,
-        "instructions": True,
-        # "orient": True,
-        # "practice": True,
-        # "retrieval": True,
-        "recognition": True,
-    }
-
     kwargs = {
-        "fast_timing": True
+        # Uncomment things to skip stuff for development
+        "skip_countdown": True,
+        "skip_distraction": True,
+        # "skip_encoding": True,
+        "skip_instructions": True,
+        # "skip_orient": True,
+        # "skip_practice": True,
+        # "skip_retrieval": True,
+        "skip_recognition": True,
+
+        "fast_timing": True,
+        "play_beeps": False
     }
-    kwargs.update(skips)
 
     exp = FRExperiment(epl_exp, debug=True, **kwargs)
+
+    log_path = osp.join(exp.session_data_dir, "logs.sqlite")
+    log_args = ([SQLiteHandler(log_path)],)
+    log_process = Process(target=logserver.run_server, args=log_args,
+                          name="log_process")
+
+    # Some funny business seems to be happening with PyEPL...
+    def cleanup():
+        time.sleep(0.25)
+        for p in proc.children():
+            p.kill()
+
+    atexit.register(cleanup)
+    log_process.start()
     exp.start()
+

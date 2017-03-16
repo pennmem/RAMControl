@@ -1,14 +1,11 @@
-import os
-import logging
 import time
 import json
 from six.moves.queue import Queue
 
 import zmq
+from logserver import create_logger
 
 from messages import RAMMessage, HeartbeatMessage
-
-logger = logging.getLogger(__name__)
 
 
 class SocketServer(object):
@@ -40,22 +37,12 @@ class SocketServer(object):
         # time of last sent heartbeat message
         self._last_heartbeat = 0.
 
-        # File to log sent and received messages.
-        self._msg_log_filename = None
-        self._msg_log = None
-
-    @property
-    def log_path(self):
-        return self._msg_log_filename
-
-    @log_path.setter
-    def log_path(self, path):
-        self._msg_log_filename = os.path.join(path, "messages.log")
-        self._msg_log = open(self._msg_log_filename, "a")
+        # Logging of sent and received messages.
+        self.logger = create_logger(__name__)
 
     def join(self):
         """Block until all outgoing messages have been processed."""
-        logger.warning("This doesn't work yet...")
+        self.logger.warning("This doesn't work yet...")
         # self._out_queue.join()
 
     def bind(self, address="tcp://*:8889"):
@@ -74,7 +61,7 @@ class SocketServer(object):
             only argument.
 
         """
-        logger.debug("Adding handler: %s", func.__name__)
+        self.logger.debug("Adding handler: %s", func.__name__)
         self._handlers.append(func)
 
     def enqueue_message(self, msg):
@@ -91,13 +78,13 @@ class SocketServer(object):
         """
         out = msg.jsonize()
         try:
-            logger.debug("Sending message: %s", out)
+            self.logger.debug("Sending message: %s", out)
             try:
                 self.sock.send(out, zmq.NOBLOCK)
             except:
                 pass
         except Exception:
-            logger.error("Sending failed!", exc_info=True)
+            self.logger.error("Sending failed!", exc_info=True)
 
     def send_heartbeat(self):
         """Convenience method to send a heartbeat message to the host PC."""
@@ -107,16 +94,11 @@ class SocketServer(object):
 
     def log_message(self, message, incoming=True):
         """Log a message to the log file."""
-        if self._msg_log is None:
-            logger.warning("Message log hasn't been opened yet")
-            return
-
         if not incoming:
             message = message.to_dict()
 
         message["in_or_out"] = "in" if incoming else "out"
-        self._msg_log.write("{:s}\n".format(json.dumps(message)))
-        self._msg_log.flush()
+        self.logger.info("%s", json.dumps(message))
 
     def handle_incoming(self):
         events = self.poller.poll(1)
@@ -125,16 +107,14 @@ class SocketServer(object):
                 msg = self.sock.recv_json()
                 self.log_message(msg, incoming=True)
             except:
-                logger.error("Unable to decode JSON.", exc_info=True)
+                self.logger.error("Unable to decode JSON.", exc_info=True)
                 return
-
-            logger.info("Incoming message: %s", msg)
 
             for handler in self._handlers:
                 try:
                     handler(msg)
                 except:
-                    logger.error("Error handling message", exc_info=True)
+                    self.logger.error("Error handling message", exc_info=True)
                     continue
 
     def handle_outgoing(self):
@@ -145,7 +125,8 @@ class SocketServer(object):
                 self._out_queue.task_done()  # so we can join the queue elsewhere
                 self.log_message(msg, incoming=False)
         except:
-            logger.error("Error in outgoing message processing", exc_info=True)
+            self.logger.error("Error in outgoing message processing",
+                              exc_info=True)
 
     def update(self):
         """Call periodically to check for incoming messages and/or send messages
@@ -155,9 +136,3 @@ class SocketServer(object):
         self.handle_incoming()
         self.handle_outgoing()
 
-
-if __name__ == "__main__":
-    logging.basicConfig(level=logging.DEBUG)
-
-    server = SocketServer()
-    server.bind()

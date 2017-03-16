@@ -13,6 +13,7 @@ except ImportError:
     from Queue import Queue, Empty
 
 import zmq
+from logserver import create_logger
 
 from pyepl.locals import *
 from pyepl.locals import Text
@@ -21,11 +22,7 @@ from pyepl.hardware import addPollCallback, removePollCallback
 from .zmqsocket import SocketServer
 from .exc import RamException
 from .messages import *
-from .log import setup_logging
 from .voiceserver import VoiceServer
-
-# logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 
 def default_attempt_callback():
@@ -36,7 +33,7 @@ def default_connecting_callback():
     try:
         flashStimulus(Text("Connecting to Control PC"), 800)
     except AttributeError:
-        logger.info("Connecting to control PC")
+        print("Connecting to control PC")
 
 
 def default_success_callback():
@@ -94,7 +91,7 @@ class RAMControl(object):
         }
 
         # Enable logging
-        setup_logging(name=logger.name, level=log_level)
+        self.logger = create_logger(__name__, level=log_level)
 
         try:
             ram_env = json.loads(os.environ["RAM_CONFIG"])
@@ -104,8 +101,9 @@ class RAMControl(object):
             if ram_env["no_host"]:
                 address = "tcp://*:8889"
         except KeyError:
-            logger.error("No RAM_CONFIG environment variable defined. Proceed with caution."
-                         " voiceserver assumed to *not* be required!")
+            self.logger.error(
+                "No RAM_CONFIG environment variable defined. Proceed with caution."
+                " voiceserver assumed to *not* be required!")
             ram_env = {"voiceserver": False}
 
         self.ctx = zmq.Context()
@@ -157,7 +155,7 @@ class RAMControl(object):
 
     def shutdown(self):
         """Cleanly disconnect and close sockets and servers."""
-        logger.info("Shutting down.")
+        self.logger.info("Shutting down.")
         self.send(ExitMessage())
         if self.voice_server is not None:
             self.voice_server.quit()
@@ -171,7 +169,7 @@ class RAMControl(object):
             t = time.time() - self._last_heartbeat_received
             if t >= self.connection_timeout and self._connected:
                 self._connected = False
-                logger.info("Quitting due to disconnect")
+                self.logger.info("Quitting due to disconnect")
                 self.shutdown()
                 sys.exit(0)
             else:
@@ -186,9 +184,9 @@ class RAMControl(object):
                 self.socket.enqueue_message(
                     self.build_message("STATE", msg["timestamp"], msg["state"], msg["value"]))
             except AssertionError:
-                logger.error("Received a malformed message from the voice server")
+                self.logger.error("Received a malformed message from the voice server")
             except:
-                logger.error("Unknown exception when reading from the voice server",
+                self.logger.error("Unknown exception when reading from the voice server",
                              exc_info=True)
 
     def register_handler(self, name, func):
@@ -266,12 +264,12 @@ class RAMControl(object):
 
     def start_heartbeat(self):
         """Begin sending heartbeat messages to the host PC."""
-        logger.info("Starting heartbeat...")
+        self.logger.info("Starting heartbeat...")
         addPollCallback(self.socket.send_heartbeat)
 
     def stop_heartbeat(self):
         """Stop sending heartbeat messages."""
-        logger.info("Stopping heartbeat...")
+        self.logger.info("Stopping heartbeat...")
         removePollCallback(self.socket.send_heartbeat)
 
     def align_clocks(self, poll_interval=1, callback=None):
@@ -279,7 +277,7 @@ class RAMControl(object):
         self._synced.clear()
         self.send(AlignClockMessage())
         while not self._synced:
-            logger.debug("syncing...")
+            self.logger.debug("syncing...")
             self._synced.wait(poll_interval)
             if callback is not None:
                 callback()
@@ -301,7 +299,7 @@ class RAMControl(object):
 
         """
         if not self._configured:
-            logger.error("Cannot connect before configuring")
+            self.logger.error("Cannot connect before configuring")
             raise RamException("Unconfigured RAMControl")
 
         while not self._connected:
@@ -319,7 +317,7 @@ class RAMControl(object):
         self.send(SubjectIdMessage(self.subject))
         self.start_heartbeat()
 
-        logger.info("Connection succeeded.")
+        self.logger.info("Connection succeeded.")
         return True
 
     def wait_for_start_message(self, poll_callback=None, interval=1):
@@ -347,39 +345,40 @@ class RAMControl(object):
         try:
             mtype = msg["type"]
         except KeyError:
-            logger.error("No 'type' key in message!")
+            self.logger.error("No 'type' key in message!")
             return
 
         if mtype not in self.handlers:
-            logger.error("Unknown message type %s received. Message=%s", mtype, msg)
+            self.logger.error("Unknown message type %s received. Message=%s",
+                              mtype, msg)
             return
 
         try:
             self.handlers[mtype](msg)
         except Exception as e:
-            logger.error("Error handling message:\n%s", str(e))
+            self.logger.error("Error handling message:\n%s", str(e))
 
     # Individual message handlers
     # -------------------------------------------------------------------------
 
     def id_handler(self, msg):
         """Handle ID messages."""
-        logger.debug("I don't think this is ever used.")
+        self.logger.debug("I don't think this is ever used.")
 
     def sync_handler(self, msg):
         """Send SYNC pulses back to the host PC."""
         num = msg["num"]
-        logger.info("Sync {} received".format(num))
+        self.logger.info("Sync {} received".format(num))
         self.send(SyncMessage(num=num))
 
     def synced_handler(self, msg):
         """Receive notification that SYNC process was successful."""
-        logger.info("Synchronization complete")
+        self.logger.info("Synchronization complete")
         self._synced.set()
 
     def exit_handler(self, msg):
         """Received exit from the host PC."""
-        logger.info("RAMControl exiting")
+        self.logger.info("RAMControl exiting")
         self.shutdown()
 
     def connected_handler(self, msg):
@@ -389,19 +388,11 @@ class RAMControl(object):
 
     def heartbeat_handler(self, msg):
         """Received echoed heartbeat message from host."""
-        logger.debug("Heartbeat returned.")
+        self.logger.debug("Heartbeat returned.")
         self._last_heartbeat_received = time.time()
 
     def start_handler(self, msg):
         """Received START command."""
-        logger.info("Got START")
+        self.logger.info("Got START")
         self._started = True
 
-
-if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
-
-    ram_control = RAMControl.instance()
-
-    ram_control.configure("", 1, 1, "", "me", [])
-    ram_control.initiate_connection()
