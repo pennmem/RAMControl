@@ -6,13 +6,6 @@ import unicodedata
 import random
 from string import ascii_uppercase
 
-# Default RAM environment variable (to be JSONified)
-DEFAULT_ENV = {
-    "no_host": False,
-    "voiceserver": False,
-    "ps4": False
-}
-
 
 def git_root():
     """Return the path to the root git directory."""
@@ -45,3 +38,14 @@ def remove_accents(input_str):
     """
     nkfd_form = unicodedata.normalize('NFKD', input_str)
     return u"".join([c for c in nkfd_form if not unicodedata.combining(c)])
+
+
+def make_env(no_host=False, voiceserver=False, ps4=False):
+    """Return a dict to update/populate the ``RAM_CONFIG`` env var.
+
+    :param bool no_host: Don't connect to the host.
+    :param bool voiceserver: Don't boot the voiceserver.
+    :param bool ps4: Run a combined PS4-xyz task.
+
+    """
+    return locals()

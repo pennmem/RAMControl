@@ -20,7 +20,7 @@ from logserver import create_logger
 
 from ramcontrol import listgen
 from ramcontrol.control import RAMControl
-from ramcontrol.util import DEFAULT_ENV
+from ramcontrol.util import make_env
 from ramcontrol.exc import LanguageError, ExperimentError
 from ramcontrol.messages import StateMessage, TrialMessage
 from ramcontrol.extendedPyepl import (
@@ -173,7 +173,7 @@ class Experiment(object):
         try:
             self.ram_config_env = json.loads(os.environ["RAM_CONFIG"])
         except KeyError:
-            self.ram_config_env = DEFAULT_ENV
+            self.ram_config_env = make_env()
 
         # Prepare the experiment if not already done
         if not self.experiment_started:
@@ -583,6 +583,10 @@ class WordTask(Experiment):
             #                  self.config.countdownMovie, self.clock)
 
     @skippable
+    def run_mic_test(self):
+        self.logger.warning("FIXME: no mic test yet!")
+
+    @skippable
     def run_distraction(self, phase_type):
         """Distraction phase."""
         with self.state_context("DISTRACT", phase_type=phase_type):
@@ -741,6 +745,7 @@ class FRExperiment(WordTask):
                                              self.subject, self.session)
 
         self.run_instructions()
+        self.run_mic_test()
 
         # Get the current list
         try:
@@ -818,6 +823,7 @@ if __name__ == "__main__":
     archive_dir = osp.abspath(osp.join(here, "..", "data", exp_name))
     config_str = osp.abspath(osp.join(here, "configs", "FR", "config.py"))
     sconfig_str = osp.abspath(osp.join(here, "configs", "FR", exp_name + "_config.py"))
+    os.environ["RAM_CONFIG"] = json.dumps(make_env(no_host=True, voiceserver=True))
 
     epl_exp = exputils.Experiment(subject=subject, fullscreen=False,
                                   archive=archive_dir,
@@ -835,6 +841,7 @@ if __name__ == "__main__":
         "skip_distraction": True,
         # "skip_encoding": True,
         "skip_instructions": True,
+        "skip_mic_test": False,
         "skip_orient": True,
         # "skip_practice": True,
         "skip_retrieval": True,
@@ -860,4 +867,3 @@ if __name__ == "__main__":
 
     log_process.start()
     exp.start()
-
