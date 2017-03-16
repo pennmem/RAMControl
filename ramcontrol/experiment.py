@@ -129,6 +129,12 @@ class Experiment(object):
         self._debug = debug
         self.kwargs = kwargs
 
+        # Read environment variable config
+        try:
+            self.ram_config_env = json.loads(os.environ["RAM_CONFIG"])
+        except KeyError:
+            self.ram_config_env = make_env()
+
         assert isinstance(epl_exp, exputils.Experiment)
         self.epl_exp = epl_exp
         self.controller = RAMControl.instance()
@@ -152,9 +158,6 @@ class Experiment(object):
         self.name = self.config.experiment
         self.subject = self.epl_exp.getOptions().get("subject")
 
-        # For indexing log entries
-        self._log_index = itertools.count()
-
         # Session must be set before creating tracks, apparently
         self.epl_exp.setSession(self.session)
 
@@ -162,18 +165,6 @@ class Experiment(object):
         self.log = LogTrack("session")
         self.mathlog = LogTrack("math")
         self.keyboard = KeyTrack("keyboard")
-        self.video = VideoTrack("video")
-        self.audio = CustomAudioTrack("audio")
-
-        # Helpers for common PyEPL routines
-        self.epl_helpers = PyEPLHelpers(self.epl_exp, self.video, self.audio,
-                                        self.clock)
-
-        # Read environment variable config
-        try:
-            self.ram_config_env = json.loads(os.environ["RAM_CONFIG"])
-        except KeyError:
-            self.ram_config_env = make_env()
 
         # Prepare the experiment if not already done
         if not self.experiment_started:
@@ -193,6 +184,14 @@ class Experiment(object):
 
         # Set network log path
         self.controller.socket.log_path = self.session_data_dir
+
+        # Initialize video and audi
+        self.video = VideoTrack("video")
+        self.audio = CustomAudioTrack("audio")
+
+        # Helpers for common PyEPL routines
+        self.epl_helpers = PyEPLHelpers(self.epl_exp, self.video, self.audio,
+                                        self.clock)
 
     @property
     def debug(self):
@@ -358,7 +357,6 @@ class Experiment(object):
         self.log.logMessage(event + " " + json.dumps(kwargs), self.clock)
         with open(self.log_filename, "a") as logfile:
             kwargs.update({
-                "index": next(self._log_index),
                 "event": event, "timestamp": timing.now()
             })
             msg = json.dumps(kwargs)
