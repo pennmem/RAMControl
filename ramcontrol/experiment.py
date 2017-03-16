@@ -46,7 +46,7 @@ def skippable(func):
 
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
-        skip_key = "skip_" + func.__name__.lstrip("run_")
+        skip_key = "skip_" + ''.join(func.__name__.split("_")[1:])
         if not self.kwargs.get(skip_key, False):
             func(self, *args, **kwargs)
     return wrapper
@@ -136,7 +136,8 @@ class Experiment(object):
         self.clock = exputils.PresentationClock()
         self.config = self.epl_exp.getConfig()
         self.logger = create_logger(
-            __name__, level=(logging.DEBUG if debug else logging.INFO))
+            "experiment", level=(logging.DEBUG if debug else logging.INFO))
+        self.event_logger = create_logger("events")
 
         # print("config1:\n%s",
         #       json.dumps(self.config.config1.config, indent=2, sort_keys=True))
@@ -360,7 +361,9 @@ class Experiment(object):
                 "index": next(self._log_index),
                 "event": event, "timestamp": timing.now()
             })
-            logfile.write("{:s}\n".format(json.dumps(kwargs)))
+            msg = json.dumps(kwargs)
+            logfile.write("{:s}\n".format(msg))
+            self.event_logger.info(msg)
 
     @contextmanager
     def state_context(self, state, **kwargs):
@@ -831,9 +834,9 @@ if __name__ == "__main__":
         "skip_distraction": True,
         # "skip_encoding": True,
         "skip_instructions": True,
-        # "skip_orient": True,
+        "skip_orient": True,
         # "skip_practice": True,
-        # "skip_retrieval": True,
+        "skip_retrieval": True,
         "skip_recognition": True,
 
         "fast_timing": True,
@@ -848,12 +851,12 @@ if __name__ == "__main__":
                           name="log_process")
 
     # Some funny business seems to be happening with PyEPL...
+    @atexit.register
     def cleanup():
         time.sleep(0.25)
         for p in proc.children():
             p.kill()
 
-    atexit.register(cleanup)
     log_process.start()
     exp.start()
 

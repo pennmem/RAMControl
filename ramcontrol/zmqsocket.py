@@ -38,7 +38,7 @@ class SocketServer(object):
         self._last_heartbeat = 0.
 
         # Logging of sent and received messages.
-        self.logger = create_logger(__name__)
+        self.logger = create_logger("network")
 
     def join(self):
         """Block until all outgoing messages have been processed."""
