@@ -144,10 +144,12 @@ class PyEPLHelpers(object):
             seen_once = True
             self.video.unshow(shown)
 
-    def show_text_and_wait_for_keyboard_input(self, text, keys=["SPACE"]):
+    def show_text_and_wait_for_keyboard_input(self, text, font_height,
+                                              keys=["SPACE"]):
         """Display text and wait for the user to hit a key.
         
         :param str text: Text to display.
+        :param font_height: Config variable defined height of font to use.
         :param list keys: List of keys to accept.
         :returns: Tuple of key pressed, timestamp of key press.
 
@@ -156,5 +158,5 @@ class PyEPLHelpers(object):
             raise NotImplementedError("TODO: allow more than just SPACE key")
         bc = ButtonChooser(Key('SPACE'))
         self.video.clear('black')
-        _, key, timestamp = Text(text).present(self.clock, bc=bc)
+        _, key, timestamp = Text(text, size=font_height).present(self.clock, bc=bc)
         return key, timestamp

@@ -91,7 +91,7 @@ class RAMControl(object):
         }
 
         # Enable logging
-        self.logger = create_logger(__name__, level=log_level)
+        self.logger = create_logger("controller", level=log_level)
 
         try:
             ram_env = json.loads(os.environ["RAM_CONFIG"])

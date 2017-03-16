@@ -562,7 +562,8 @@ class WordTask(Experiment):
             if not wait:
                 text.present(self.clock, self.timings.word_duration)
             else:
-                key, timestamp = self.epl_helpers.show_text_and_wait_for_keyboard_input(word, keys)
+                key, timestamp = self.epl_helpers.show_text_and_wait_for_keyboard_input(
+                    word, self.config.wordHeight, keys)
                 # TODO: send key log to host PC (PyEPL already logs it)
 
     @skippable
@@ -837,7 +838,7 @@ if __name__ == "__main__":
         "skip_orient": True,
         # "skip_practice": True,
         "skip_retrieval": True,
-        "skip_recognition": True,
+        # "skip_recognition": True,
 
         "fast_timing": True,
         "play_beeps": False
