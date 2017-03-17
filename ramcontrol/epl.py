@@ -154,9 +154,7 @@ class PyEPLHelpers(object):
         :returns: Tuple of key pressed, timestamp of key press.
 
         """
-        if len(keys) > 1:
-            raise NotImplementedError("TODO: allow more than just SPACE key")
-        bc = ButtonChooser(Key('SPACE'))
+        bc = ButtonChooser(*[Key(key) for key in keys])
         self.video.clear('black')
         _, key, timestamp = Text(text, size=font_height).present(self.clock, bc=bc)
         return key, timestamp
