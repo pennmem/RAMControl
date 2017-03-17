@@ -312,21 +312,6 @@ class Experiment(object):
     #
     #     """
 
-    def skip_it(self, key):
-        """Checks if a section is skippable when debug mode is enabled. This is
-        determined by the value of the key in ``self.kwargs``.
-
-        :param str key: Key to check.
-
-        """
-        if not self.debug:
-            return False
-        else:
-            skip = self.kwargs.get(key, False)
-            if skip:
-                self.logger.warning("Skipping %s!", key)
-            return skip
-
     @property
     def state(self):
         """Returns the experimental state (implmented via PyEPL)."""
@@ -600,24 +585,13 @@ class WordTask(Experiment):
                                callback=self.controller.send_math_message)
 
     @skippable
-    def run_encoding(self, words, phase_type, practice=False):
+    def run_encoding(self, words, phase_type):
         """Run an encoding phase.
 
         :param pd.DataFrame words:
         :param str phase_type: Phase type (BASELINE, ...)
-        :param bool practice: This is the practice session.
 
         """
-        if practice:
-            if self.skip_it("practice"):
-                return
-
-            filename = "FIXME"  # path to instructions in the appropriate language
-            text = Text("I CAN HAZ INSTRUCT?")
-            # text = Text(codecs.open(filename, encoding='utf-8').read())
-            with self.state_context("INSTRUCT", phase_type=phase_type):
-                waitForAnyKeyWithCallback(self.clock, text)
-
         with self.state_context("ENCODING", phase_type=phase_type):
             for n, row in words.iterrows():
                 self.clock.delay(self.timings.isi, self.timings.jitter)
