@@ -787,6 +787,12 @@ if __name__ == "__main__":
     from logserver.handlers import SQLiteHandler
     from ramcontrol.util import fake_subject
 
+    os.environ["RAM_CONFIG"] = json.dumps(make_env(no_host=True, voiceserver=True))
+
+    # This is only here because PyEPL screws up the voice server if we don't
+    # instantiate this *before* the PyEPL experiment.
+    RAMControl.instance()
+
     pid = os.getpid()
     proc = psutil.Process(pid)
 
@@ -797,7 +803,6 @@ if __name__ == "__main__":
     archive_dir = osp.abspath(osp.join(here, "..", "data", exp_name))
     config_str = osp.abspath(osp.join(here, "configs", "FR", "config.py"))
     sconfig_str = osp.abspath(osp.join(here, "configs", "FR", exp_name + "_config.py"))
-    os.environ["RAM_CONFIG"] = json.dumps(make_env(no_host=True, voiceserver=True))
 
     epl_exp = exputils.Experiment(subject=subject, fullscreen=False,
                                   archive=archive_dir,
@@ -813,9 +818,9 @@ if __name__ == "__main__":
         # Uncomment things to skip stuff for development
         "skip_countdown": True,
         "skip_distraction": True,
-        # "skip_encoding": True,
-        # "skip_instructions": True,
-        "skip_mic_test": False,
+        "skip_encoding": True,
+        "skip_instructions": True,
+        "skip_mic_test": True,
         "skip_orient": True,
         "skip_practice": True,
         "skip_retrieval": True,
