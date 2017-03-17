@@ -39,7 +39,8 @@ from pyepl.convenience import waitForAnyKey, flashStimulus
 
 def skippable(func):
     """Decorator to skip a run_x method. Just add ``skip_x`` to the ``kwargs``
-    given to the :class:`Experiment` instance.
+    given to the :class:`Experiment` instance. This also requires the debug
+    flag is set.
 
     """
     if not func.__name__.startswith("run_"):
@@ -48,7 +49,7 @@ def skippable(func):
     @functools.wraps(func)
     def wrapper(self, *args, **kwargs):
         skip_key = "skip_" + '_'.join(func.__name__.split("_")[1:])
-        if not self.kwargs.get(skip_key, False):
+        if not self.kwargs.get(skip_key, False) and self.debug:
             func(self, *args, **kwargs)
     return wrapper
 
@@ -127,7 +128,7 @@ class Experiment(object):
 
     """
     def __init__(self, epl_exp, debug=False, **kwargs):
-        self._debug = debug
+        self.debug = debug
         self.kwargs = kwargs
 
         # Read environment variable config
@@ -193,15 +194,6 @@ class Experiment(object):
         # Helpers for common PyEPL routines
         self.epl_helpers = PyEPLHelpers(self.epl_exp, self.video, self.audio,
                                         self.clock)
-
-    @property
-    def debug(self):
-        """Internal flag for enabling debug/development mode."""
-        return self._debug
-
-    @debug.setter
-    def debug(self, debug):
-        self._debug = debug
 
     @property
     def session(self):
@@ -574,7 +566,7 @@ class WordTask(Experiment):
     def run_distraction(self, phase_type):
         """Distraction phase."""
         with self.state_context("DISTRACT", phase_type=phase_type):
-            problems = self.config.MATH_maxProbs if not self._debug else 1
+            problems = self.config.MATH_maxProbs if not self.debug else 1
             customMathDistract(clk=self.clock,
                                mathlog=self.mathlog,
                                numVars=self.config.MATH_numVars,
@@ -641,7 +633,7 @@ class WordTask(Experiment):
         with self.state_context("RECOGNITION"):
             for n, item in rec_list.iterrows():
                 self.display_word(item.word, item.listno, n, item.type, wait=True)
-                if self.debug and n > 0:
+                if self.debug and n > self.kwargs.get("rec_limit", len(rec_list) - 1):
                     return
 
 
@@ -736,7 +728,7 @@ class FRExperiment(WordTask):
             phase_type = words.type.iloc[0]
             assert all(words.type == phase_type)
 
-            if phase_type == "PRACTICE" and self.kwargs["skip_practice"]:
+            if phase_type != "PRACTICE" and not self.kwargs.get("skip_practice", False):
                 self.controller.send(TrialMessage(listno))
                 self.log_event("TRIAL", listno=listno, phase_type=phase_type)
 
@@ -817,13 +809,13 @@ if __name__ == "__main__":
     kwargs = {
         # Uncomment things to skip stuff for development
         "skip_countdown": True,
-        "skip_distraction": True,
-        "skip_encoding": True,
+        # "skip_distraction": True,
+        # "skip_encoding": True,
         "skip_instructions": True,
         "skip_mic_test": True,
-        "skip_orient": True,
-        "skip_practice": True,
-        "skip_retrieval": True,
+        # "skip_orient": True,
+        # "skip_practice": True,
+        # "skip_retrieval": True,
         # "skip_recognition": True,
 
         "fast_timing": True,
