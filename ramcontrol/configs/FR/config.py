@@ -29,6 +29,10 @@ Jitter = 250
 # Duration of recall in ms
 recallDuration = 30000
 
+# "yes" and "no" keys for recognition
+recognition_yes_key = "Y"
+recognition_no_key = "N"
+
 # Beep at start and end of recording (freq,dur,rise/fall)
 startBeepFreq = 800
 startBeepDur = 500

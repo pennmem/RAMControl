@@ -529,6 +529,8 @@ class WordTask(Experiment):
             set by the experimental configuration; when True, wait until a key
             is pressed.
         :param list keys: List of keys to accept when ``wait`` is True.
+        :returns: None if not waiting, otherwise the key pressed and the
+            timestamp.
 
         """
         text = Text(word, size=self.config.wordHeight)
@@ -540,7 +542,7 @@ class WordTask(Experiment):
             else:
                 key, timestamp = self.epl_helpers.show_text_and_wait_for_keyboard_input(
                     word, self.config.wordHeight, keys)
-                # TODO: send key log to host PC (PyEPL already logs it)
+                return key, timestamp
 
     @skippable
     def run_instructions(self):
@@ -631,8 +633,17 @@ class WordTask(Experiment):
         rec_list = self.all_rec_blocks[self.session]
 
         with self.state_context("RECOGNITION"):
+            keys = [self.config.recognition_yes_key,
+                    self.config.recognition_no_key]
             for n, item in rec_list.iterrows():
-                self.display_word(item.word, item.listno, n, item.type, wait=True)
+                key, timestamp = self.display_word(
+                    item.word, item.listno, n, item.type,
+                    wait=True, keys=keys)
+
+                yes = key.name == self.config.recognition_yes_key
+                no = key.name == self.config.recognition_no_key
+                self.log_event("KEYPRESS", key=key.name, yes=yes, no=no)
+
                 if self.debug and n > self.kwargs.get("rec_limit", len(rec_list) - 1):
                     return
 
@@ -729,27 +740,27 @@ class FRExperiment(WordTask):
             assert all(words.type == phase_type)
 
             if phase_type != "PRACTICE" and not self.kwargs.get("skip_practice", False):
-                self.controller.send(TrialMessage(listno))
-                self.log_event("TRIAL", listno=listno, phase_type=phase_type)
+                with self.state_context("TRIAL", listno=listno, phase_type=phase_type):
+                    self.log_event("TRIAL", listno=listno, phase_type=phase_type)
 
-                # Countdown to encoding
-                self.run_countdown()
+                    # Countdown to encoding
+                    self.run_countdown()
 
-                # Encoding
-                self.run_encoding(words, phase_type)
+                    # Encoding
+                    self.run_encoding(words, phase_type)
 
-                # Distract
-                self.run_distraction(phase_type)
-                self.run_orient(phase_type)
+                    # Distract
+                    self.run_distraction(phase_type)
+                    self.run_orient(phase_type)
 
-                # Delay before retrieval
-                self.clock.delay(self.timings.recall_delay,
-                                 jitter=self.timings.recall_jitter)
-                self.clock.wait()
+                    # Delay before retrieval
+                    self.clock.delay(self.timings.recall_delay,
+                                     jitter=self.timings.recall_jitter)
+                    self.clock.wait()
 
-                # Retrieval
-                self.run_orient(phase_type)
-                self.run_retrieval(phase_type)
+                    # Retrieval
+                    self.run_orient(phase_type)
+                    self.run_retrieval(phase_type)
 
             # Update list index stored in state
             self.list_index += 1
@@ -809,13 +820,13 @@ if __name__ == "__main__":
     kwargs = {
         # Uncomment things to skip stuff for development
         "skip_countdown": True,
-        # "skip_distraction": True,
-        # "skip_encoding": True,
+        "skip_distraction": True,
+        "skip_encoding": True,
         "skip_instructions": True,
         "skip_mic_test": True,
-        # "skip_orient": True,
+        "skip_orient": True,
         # "skip_practice": True,
-        # "skip_retrieval": True,
+        "skip_retrieval": True,
         # "skip_recognition": True,
 
         "fast_timing": True,
