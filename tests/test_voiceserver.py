@@ -1,11 +1,8 @@
 import os.path as osp
 import time
-from multiprocessing import Process
+from multiprocessing import Process, Pipe
 import pytest
 import zmq
-
-#import logging
-#logging.basicConfig(level=logging.DEBUG)
 
 from ramcontrol.voiceserver import VoiceServer
 from ramcontrol.util import data_path
@@ -15,7 +12,8 @@ from ramcontrol import exc
 @pytest.fixture
 def voice_server():
     """Return a :class:`VoiceServer` instance."""
-    server = VoiceServer(filename=osp.join(data_path(), "one-two-three.wav"))
+    _, pipe = Pipe()
+    server = VoiceServer(pipe, filename=osp.join(data_path(), "one-two-three.wav"))
     yield server
     if server.is_alive():
         server.terminate()
@@ -50,7 +48,6 @@ class TestVoiceServer:
         sock = ctx.socket(zmq.SUB)
         sock.setsockopt(zmq.SUBSCRIBE, b"")
         port = sock.bind_to_random_port("tcp://*")
-
 
         poller = zmq.Poller()
         poller.register(sock, zmq.POLLIN)

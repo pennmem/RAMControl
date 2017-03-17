@@ -6,6 +6,7 @@ import os
 from threading import Event
 import sys
 import logging
+from multiprocessing import Pipe
 
 try:
     from queue import Queue, Empty
@@ -20,7 +21,7 @@ from pyepl.locals import Text
 from pyepl.hardware import addPollCallback, removePollCallback
 
 from .zmqsocket import SocketServer
-from .exc import RamException
+from .exc import RamException, VoiceServerError
 from .messages import *
 from .voiceserver import VoiceServer
 
@@ -113,10 +114,12 @@ class RAMControl(object):
         self.socket.bind(address)
 
         if ram_env["voiceserver"]:
-            self.voice_server = VoiceServer()
+            self.voice_pipe, self._voice_child_pipe = Pipe()
+            self.voice_server = VoiceServer(self._voice_child_pipe)
             self.voice_socket = self.voice_server.make_listener_socket(self.ctx)
             self.voice_server.start()
         else:
+            self.voice_pipe, self._voice_child_pipe = None, None
             self.voice_server = None
             self.voice_socket = None
 
@@ -188,6 +191,14 @@ class RAMControl(object):
             except:
                 self.logger.error("Unknown exception when reading from the voice server",
                              exc_info=True)
+        if self.voice_pipe.poll():
+            msg = self.voice_pipe.recv()
+            if msg["type"] == "CRITICAL":
+                try:
+                    raise VoiceServerError(msg["data"]["traceback"])
+                except:
+                    self.logger.critical("VoiceServer failed", exc_info=True)
+                    raise
 
     def register_handler(self, name, func):
         """Register a message handler.

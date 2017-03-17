@@ -18,5 +18,9 @@ class ExperimentError(RamException):
     """Generic error raised in experiments."""
 
 
+class VoiceServerError(RamException):
+    """Raised when the voiceserver process had an issue."""
+
+
 class MicTestAbort(RamException):
     """Raised when we should abort because of a mic test failure."""

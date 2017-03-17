@@ -113,13 +113,7 @@ class ExitMessage(RAMMessage):
 
 
 class StateMessage(RAMMessage):
-    """Send a message about a change in the experimental state.
-
-    TODO: append phase_type attribute to meta... should be one of:
-
-      BASELINE, PS, STIM, NON-STIM
-
-    """
+    """Send a message about a change in the experimental state."""
     def __init__(self, state, value, timestamp=None, **kwargs):
         data = dict(name=state, value=value, **kwargs)
         super(StateMessage, self).__init__("STATE", data=data, timestamp=timestamp)

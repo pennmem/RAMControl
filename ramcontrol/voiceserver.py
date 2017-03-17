@@ -14,10 +14,11 @@ from __future__ import print_function, division
 import os.path as osp
 import time
 from argparse import ArgumentParser
-from multiprocessing import Process, Queue, Event, current_process
+from multiprocessing import Process, Queue, Event, Pipe, current_process
 from threading import Thread
 import logging
 import wave
+import traceback as tb
 
 from pyaudio import PyAudio, paInt16
 from webrtcvad import Vad
@@ -33,6 +34,7 @@ FRAMES_PER_BUFFER = 1024
 class VoiceServer(Process):
     """A server that monitors the microphone for voice activity.
 
+    :param Pipe pipe: A pipe for communicating with the parent process.
     :param str sock_addr: Socket to connect to to publish vocalization events
         to.
     :param int vad_level: webrtcvad VAD aggressiveness (0, 1, 2, or 3; higher is
@@ -45,18 +47,19 @@ class VoiceServer(Process):
     :param int loglevel: Logging level to use. If None, assume ``logging.INFO``.
 
     """
-    def __init__(self, sock_addr="tcp://127.0.0.1:9898", vad_level=3,
+    def __init__(self, pipe, sock_addr="tcp://127.0.0.1:9898", vad_level=3,
                  consecutive_frames=3, filename=None, loglevel=logging.INFO):
         super(VoiceServer, self).__init__()
 
+        self.pipe = pipe
         self.addr = sock_addr
         self.vad_aggressiveness = vad_level
         self.consecutive_frames = consecutive_frames
         self.filename = filename
-        self.logger = None  # to be defined once the process starts
+        self.logger = logging.getLogger()  # to be redefined once the process starts; tests fail otherwise
         self.loglevel = loglevel
 
-        self.queue = Queue()
+        self.data_queue = Queue()
         self.done = Event()
 
     def make_listener_socket(self, ctx):
@@ -95,7 +98,7 @@ class VoiceServer(Process):
         # duration = n / SAMPLE_RATE / 2.0
 
         while not self.done.is_set():
-            chunk = self.queue.get()
+            chunk = self.data_queue.get()
 
             offset = 0
             framecount = []
@@ -142,26 +145,38 @@ class VoiceServer(Process):
 
         self.logger = create_logger("voiceserver", level=self.loglevel)
 
-        # We're live
-        if self.filename is None:
-            stream = audio.open(
-                format=paInt16,
-                channels=1,
-                rate=SAMPLE_RATE,
-                input=True,
-                frames_per_buffer=FRAMES_PER_BUFFER,
-                input_device_index=None  # None uses the system default input device
-            )
+        # Attempt to open the audio stream
+        try:
+            # We're live
+            if self.filename is None:
+                stream = audio.open(
+                    format=paInt16,
+                    channels=1,
+                    rate=SAMPLE_RATE,
+                    input=True,
+                    frames_per_buffer=FRAMES_PER_BUFFER,
+                    input_device_index=None  # None uses the system default input device
+                )
 
-        # We're testing
-        else:
-            wav = wave.open(self.filename)
-            stream = audio.open(
-                format=audio.get_format_from_width(wav.getsampwidth()),
-                channels=wav.getnchannels(),
-                rate=wav.getframerate(),
-                output=True
-            )
+            # We're testing
+            else:
+                wav = wave.open(self.filename)
+                stream = audio.open(
+                    format=audio.get_format_from_width(wav.getsampwidth()),
+                    channels=wav.getnchannels(),
+                    rate=wav.getframerate(),
+                    output=True
+                )
+        except:
+            msg = {
+                "type": "CRITICAL",
+                "data": {
+                    "msg": "Failed to open audio stream",
+                    "traceback": tb.format_exc()
+                }
+            }
+            self.pipe.send(msg)
+            raise
 
         vad_thread = Thread(target=self.check_for_speech, args=(ctx,))
         vad_thread.daemon = True
@@ -177,7 +192,7 @@ class VoiceServer(Process):
                         self.quit()
                         continue
                     stream.write(data)
-                self.queue.put(data)
+                self.data_queue.put(data)
             except IOError:
                 # TODO: real error handling
                 self.logger.error("Exception in voiceserver", exc_info=True)
