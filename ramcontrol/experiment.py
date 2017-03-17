@@ -21,10 +21,11 @@ from logserver import create_logger
 from ramcontrol import listgen
 from ramcontrol.control import RAMControl
 from ramcontrol.util import make_env
-from ramcontrol.exc import LanguageError, ExperimentError
+from ramcontrol.exc import LanguageError, ExperimentError, MicTestAbort
 from ramcontrol.messages import StateMessage, TrialMessage
 from ramcontrol.extendedPyepl import (
-    CustomAudioTrack, waitForAnyKeyWithCallback, customMathDistract
+    CustomAudioTrack, waitForAnyKeyWithCallback, customMathDistract,
+    customMicTest
 )
 from ramcontrol.epl import PyEPLHelpers
 
@@ -577,12 +578,12 @@ class WordTask(Experiment):
         self.video.clear('black')
         with self.state_context("COUNTDOWN"):
             self.epl_helpers.play_movie_sync(self.config.countdownMovie)
-            # play_whole_movie(self.video, self.audio,
-            #                  self.config.countdownMovie, self.clock)
 
     @skippable
     def run_mic_test(self):
-        self.logger.warning("FIXME: no mic test yet!")
+        with self.state_context("MIC TEST"):
+            if not customMicTest(2000, 1.0):
+                raise MicTestAbort
 
     @skippable
     def run_distraction(self, phase_type):
@@ -761,27 +762,28 @@ class FRExperiment(WordTask):
             phase_type = words.type.iloc[0]
             assert all(words.type == phase_type)
 
-            self.controller.send(TrialMessage(listno))
-            self.log_event("TRIAL", listno=listno, phase_type=phase_type)
+            if phase_type == "PRACTICE" and self.kwargs["skip_practice"]:
+                self.controller.send(TrialMessage(listno))
+                self.log_event("TRIAL", listno=listno, phase_type=phase_type)
 
-            # Countdown to encoding
-            self.run_countdown()
+                # Countdown to encoding
+                self.run_countdown()
 
-            # Encoding
-            self.run_encoding(words, phase_type, practice=(listno == 0))
+                # Encoding
+                self.run_encoding(words, phase_type)
 
-            # Distract
-            self.run_distraction(phase_type)
-            self.run_orient(phase_type)
+                # Distract
+                self.run_distraction(phase_type)
+                self.run_orient(phase_type)
 
-            # Delay before retrieval
-            self.clock.delay(self.timings.recall_delay,
-                             jitter=self.timings.recall_jitter)
-            self.clock.wait()
+                # Delay before retrieval
+                self.clock.delay(self.timings.recall_delay,
+                                 jitter=self.timings.recall_jitter)
+                self.clock.wait()
 
-            # Retrieval
-            self.run_orient(phase_type)
-            self.run_retrieval(phase_type)
+                # Retrieval
+                self.run_orient(phase_type)
+                self.run_retrieval(phase_type)
 
             # Update list index stored in state
             self.list_index += 1
@@ -838,10 +840,10 @@ if __name__ == "__main__":
         "skip_countdown": True,
         "skip_distraction": True,
         # "skip_encoding": True,
-        "skip_instructions": True,
+        # "skip_instructions": True,
         "skip_mic_test": False,
         "skip_orient": True,
-        # "skip_practice": True,
+        "skip_practice": True,
         "skip_retrieval": True,
         # "skip_recognition": True,
 

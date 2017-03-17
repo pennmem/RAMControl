@@ -16,3 +16,7 @@ class LanguageError(RamException):
 
 class ExperimentError(RamException):
     """Generic error raised in experiments."""
+
+
+class MicTestAbort(RamException):
+    """Raised when we should abort because of a mic test failure."""
