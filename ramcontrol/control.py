@@ -6,6 +6,7 @@ import os
 from threading import Event
 import sys
 import logging
+from contextlib import contextmanager
 from multiprocessing import Pipe
 
 try:
@@ -178,6 +179,39 @@ class RAMControl(object):
                 sys.exit(0)
             else:
                 self._connected = True
+
+    @contextmanager
+    def voice_detector(self):
+        """Context manager to toggle voice activity detection. This will do
+        nothing if there is no voice server.
+
+        """
+        if self.voice_server is not None:
+            # Start it
+            self.voice_pipe.send({
+                "type": "START",
+                "data": None
+            })
+
+            # Wait for acknowledgment
+            self.voice_pipe.poll(1)
+            response = self.voice_pipe.recv()
+            assert response["type"] == "STARTED"
+
+            yield
+
+            # Signal a stop
+            self.voice_pipe.send({
+                "type": "STOP",
+                "data": None
+            })
+
+            # Await acknowledgment
+            self.voice_pipe.poll(1)
+            response = self.voice_pipe.recv()
+            assert response["type"] == "STOPPED"
+        else:
+            yield
 
     def check_voice_server(self):
         """Check for messages from the voice server."""

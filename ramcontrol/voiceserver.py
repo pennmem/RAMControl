@@ -27,7 +27,7 @@ import zmq
 
 from .exc import WrongProcessError
 
-SAMPLE_RATE = 16000
+SAMPLE_RATE = 32000
 FRAMES_PER_BUFFER = 1024
 
 
@@ -60,6 +60,7 @@ class VoiceServer(Process):
         self.loglevel = loglevel
 
         self.data_queue = Queue()
+        self.stop_stream = Event()
         self.done = Event()
 
     def make_listener_socket(self, ctx):
@@ -132,7 +133,7 @@ class VoiceServer(Process):
                 offset += n
 
             now = time.time() * 1000
-            if now - last_timestamp_sent >= 5000:
+            if now - last_timestamp_sent >= 1000:
                 self.pipe.send({
                     "type": "TIMESTAMP",
                     "data": {
@@ -149,15 +150,14 @@ class VoiceServer(Process):
         else:
             self.logger.error("Voice server already shut down!")
 
-    def run(self):
-        ctx = zmq.Context()
+    def open_audio_stream(self, audio):
+        """Open the audio stream.
 
-        audio = PyAudio()
+        :returns: stream, wav
+
+        """
         wav = None
 
-        self.logger = create_logger("voiceserver", level=self.loglevel)
-
-        # Attempt to open the audio stream
         try:
             # We're live
             if self.filename is None:
@@ -179,6 +179,7 @@ class VoiceServer(Process):
                     rate=wav.getframerate(),
                     output=True
                 )
+            return stream, wav
         except:
             msg = {
                 "type": "CRITICAL",
@@ -190,11 +191,14 @@ class VoiceServer(Process):
             self.pipe.send(msg)
             raise
 
-        vad_thread = Thread(target=self.check_for_speech, args=(ctx,))
-        vad_thread.daemon = True
-        vad_thread.start()
+    def read_audio_stream(self, stream, wav=None):
+        """Reads from the audio stream and queues data for VAD.
 
-        while not self.done.is_set():
+        :param stream: Audio input stream.
+        :param wav: Wave data for writing to stream (if simulating).
+
+        """
+        while not self.stop_stream.is_set():
             try:
                 if wav is None:
                     data = stream.read(FRAMES_PER_BUFFER)
@@ -215,14 +219,52 @@ class VoiceServer(Process):
                         "traceback": tb.format_exc()
                     }
                 })
-            except KeyboardInterrupt:
-                self.logger.info("Keyboard interrupt detected")
-                self.quit()
             except:
                 self.logger.error("Unknown error", exc_info=True)
 
-        if stream is not None:
-            stream.close()
+        stream.close()
+        self.stop_stream.clear()
+
+    def run(self):
+        ctx = zmq.Context()
+
+        self.logger = create_logger("voiceserver", level=self.loglevel)
+
+        audio = PyAudio()
+
+        vad_thread = Thread(target=self.check_for_speech, args=(ctx,))
+        vad_thread.daemon = True
+        vad_thread.start()
+
+        while not self.done.is_set():
+            try:
+                msg = self.pipe.recv()  # Blocks until message sent
+
+                if msg["type"] == "START":
+                    self.logger.info("Got request to start VAD")
+                    stream, wav = self.open_audio_stream(audio)
+                    self.pipe.send({
+                        "type": "STARTED",
+                        "data": None
+                    })
+                    self.read_audio_stream(stream, wav)
+
+                elif msg["type"] == "STOP":
+                    self.logger.info("Got request to stop VAD")
+                    self.stop_stream.set()
+                    self.pipe.send({
+                        "type": "STOPPED",
+                        "data": None
+                    })
+
+                else:
+                    self.logger.error("Unexpected message type received. Message: %s", msg)
+                    continue
+            except EOFError:
+                self.logger.warning("Broken pipe")
+                self.quit()
+                continue
+
         audio.terminate()
 
 
