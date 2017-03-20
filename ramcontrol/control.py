@@ -16,6 +16,7 @@ except ImportError:
 import zmq
 from logserver import create_logger
 
+from pyepl import timing
 from pyepl.locals import *
 from pyepl.locals import Text
 from pyepl.hardware import addPollCallback, removePollCallback
@@ -189,8 +190,10 @@ class RAMControl(object):
             except AssertionError:
                 self.logger.error("Received a malformed message from the voice server")
             except:
-                self.logger.error("Unknown exception when reading from the voice server",
-                             exc_info=True)
+                self.logger.error(
+                    "Unknown exception when reading from the voice server",
+                    exc_info=True)
+
         if self.voice_pipe.poll():
             msg = self.voice_pipe.recv()
             if msg["type"] == "CRITICAL":
@@ -199,6 +202,12 @@ class RAMControl(object):
                 except:
                     self.logger.critical("VoiceServer failed", exc_info=True)
                     raise
+            elif msg["type"] == "TIMESTAMP":
+                create_logger("voicetimes").info(json.dumps({
+                    "voice_time": msg["data"]["timestamp"],
+                    "main_time": time.time() * 1000,
+                    "pyepl_time": timing.now()
+                }))
 
     def register_handler(self, name, func):
         """Register a message handler.
@@ -235,7 +244,7 @@ class RAMControl(object):
     def send(self, message):
         """Send a message to the host PC."""
         if not isinstance(message, RAMMessage):
-            logger.error("Cannot send non-RamMessage: %r", message)
+            self.logger.error("Cannot send non-RamMessage: %r", message)
         else:
             self.socket.enqueue_message(message)
 

@@ -97,6 +97,8 @@ class VoiceServer(Process):
         n = int(SAMPLE_RATE * (frame_duration_ms / 1000.) * 2)
         # duration = n / SAMPLE_RATE / 2.0
 
+        last_timestamp_sent = 0
+
         while not self.done.is_set():
             chunk = self.data_queue.get()
 
@@ -128,6 +130,16 @@ class VoiceServer(Process):
                     framecount = []
 
                 offset += n
+
+            now = time.time() * 1000
+            if now - last_timestamp_sent >= 5000:
+                self.pipe.send({
+                    "type": "TIMESTAMP",
+                    "data": {
+                        "timestamp": now
+                    }
+                })
+                last_timestamp_sent = now
 
     def quit(self):
         """Terminate the process."""
@@ -195,7 +207,14 @@ class VoiceServer(Process):
                 self.data_queue.put(data)
             except IOError:
                 # TODO: real error handling
-                self.logger.error("Exception in voiceserver", exc_info=True)
+                self.logger.critical("Exception in voiceserver", exc_info=True)
+                self.pipe.send({
+                    "type": "CRITICAL",
+                    "data": {
+                        "msg": "IOError",
+                        "traceback": tb.format_exc()
+                    }
+                })
             except KeyboardInterrupt:
                 self.logger.info("Keyboard interrupt detected")
                 self.quit()

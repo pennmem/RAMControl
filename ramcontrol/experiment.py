@@ -801,7 +801,8 @@ if __name__ == "__main__":
 
     here = osp.realpath(osp.dirname(__file__))
 
-    subject = "R0000P"  # fake_subject()
+    subject = "R0000X"
+    # subject = fake_subject()
     exp_name = "FR5"
     archive_dir = osp.abspath(osp.join(here, "..", "data", exp_name))
     config_str = osp.abspath(osp.join(here, "configs", "FR", "config.py"))
@@ -821,15 +822,15 @@ if __name__ == "__main__":
         # Uncomment things to skip stuff for development
         "skip_countdown": True,
         "skip_distraction": True,
-        "skip_encoding": True,
+        # "skip_encoding": True,
         "skip_instructions": True,
         "skip_mic_test": True,
-        "skip_orient": True,
+        # "skip_orient": True,
         # "skip_practice": True,
-        "skip_retrieval": True,
-        # "skip_recognition": True,
+        # "skip_retrieval": True,
+        "skip_recognition": True,
 
-        "fast_timing": True,
+        # "fast_timing": True,
         "play_beeps": False
     }
 
