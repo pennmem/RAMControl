@@ -7,6 +7,7 @@ from threading import Event
 import sys
 import logging
 from contextlib import contextmanager
+import itertools
 from multiprocessing import Pipe
 
 try:
@@ -22,6 +23,7 @@ from pyepl.locals import *
 from pyepl.locals import Text
 from pyepl.hardware import addPollCallback, removePollCallback
 
+from . import ipc
 from .zmqsocket import SocketServer
 from .exc import RamException, VoiceServerError
 from .messages import *
@@ -188,28 +190,27 @@ class RAMControl(object):
         """
         if self.voice_server is not None:
             # Start it
-            self.voice_pipe.send({
-                "type": "START",
-                "data": None
-            })
+            self.voice_pipe.send(ipc.message("START"))
 
             # Wait for acknowledgment
-            self.voice_pipe.poll(1)
+            if not self.voice_pipe.poll(0.1):
+                raise VoiceServerError("Didn't get STARTED response")
             response = self.voice_pipe.recv()
             assert response["type"] == "STARTED"
 
             yield
 
             # Signal a stop
-            self.voice_pipe.send({
-                "type": "STOP",
-                "data": None
-            })
+            self.voice_pipe.send(ipc.message("STOP"))
 
             # Await acknowledgment
-            self.voice_pipe.poll(1)
-            response = self.voice_pipe.recv()
-            assert response["type"] == "STOPPED"
+            for _ in range(6):
+                if self.voice_pipe.poll(0.1):
+                    response = self.voice_pipe.recv()
+                    if response["type"] == "STOPPED":
+                        break
+            else:  # ran out of tries
+                raise VoiceServerError("Didn't get STOPPED response")
         else:
             yield
 

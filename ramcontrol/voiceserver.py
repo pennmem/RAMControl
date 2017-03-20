@@ -25,6 +25,7 @@ from webrtcvad import Vad
 from logserver import create_logger
 import zmq
 
+from . import ipc
 from .exc import WrongProcessError
 
 SAMPLE_RATE = 32000
@@ -134,12 +135,7 @@ class VoiceServer(Process):
 
             now = time.time() * 1000
             if now - last_timestamp_sent >= 1000:
-                self.pipe.send({
-                    "type": "TIMESTAMP",
-                    "data": {
-                        "timestamp": now
-                    }
-                })
+                self.pipe.send(ipc.message("TIMESTAMP", dict(timestamp=now)))
                 last_timestamp_sent = now
 
     def quit(self):
@@ -181,14 +177,7 @@ class VoiceServer(Process):
                 )
             return stream, wav
         except:
-            msg = {
-                "type": "CRITICAL",
-                "data": {
-                    "msg": "Failed to open audio stream",
-                    "traceback": tb.format_exc()
-                }
-            }
-            self.pipe.send(msg)
+            self.pipe.send(ipc.critical_error_message("Failed to open audio stream"))
             raise
 
     def read_audio_stream(self, stream, wav=None):
@@ -212,13 +201,7 @@ class VoiceServer(Process):
             except IOError:
                 # TODO: real error handling
                 self.logger.critical("Exception in voiceserver", exc_info=True)
-                self.pipe.send({
-                    "type": "CRITICAL",
-                    "data": {
-                        "msg": "IOError",
-                        "traceback": tb.format_exc()
-                    }
-                })
+                self.pipe.send(ipc.critical_error_message("IOError"))
             except:
                 self.logger.error("Unknown error", exc_info=True)
 
@@ -235,6 +218,7 @@ class VoiceServer(Process):
         vad_thread = Thread(target=self.check_for_speech, args=(ctx,))
         vad_thread.daemon = True
         vad_thread.start()
+        mic_thread = None  # later, the thread to read from the mic
 
         while not self.done.is_set():
             try:
@@ -243,19 +227,15 @@ class VoiceServer(Process):
                 if msg["type"] == "START":
                     self.logger.info("Got request to start VAD")
                     stream, wav = self.open_audio_stream(audio)
-                    self.pipe.send({
-                        "type": "STARTED",
-                        "data": None
-                    })
-                    self.read_audio_stream(stream, wav)
+                    mic_thread = Thread(target=self.read_audio_stream,
+                                        args=(stream, wav))
+                    mic_thread.start()
+                    self.pipe.send(ipc.message("STARTED"))
 
                 elif msg["type"] == "STOP":
                     self.logger.info("Got request to stop VAD")
                     self.stop_stream.set()
-                    self.pipe.send({
-                        "type": "STOPPED",
-                        "data": None
-                    })
+                    self.pipe.send(ipc.message("STOPPED"))
 
                 else:
                     self.logger.error("Unexpected message type received. Message: %s", msg)

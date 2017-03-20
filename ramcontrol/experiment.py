@@ -826,7 +826,7 @@ if __name__ == "__main__":
         "skip_encoding": True,
         "skip_instructions": True,
         "skip_mic_test": True,
-        # "skip_orient": True,
+        "skip_orient": True,
         # "skip_practice": True,
         # "skip_retrieval": True,
         "skip_recognition": True,
