@@ -97,6 +97,7 @@ class RAMControl(object):
 
         # Enable logging
         self.logger = create_logger("controller", level=log_level)
+        self.event_log = create_logger("events")
 
         try:
             ram_env = json.loads(os.environ["RAM_CONFIG"])
@@ -156,8 +157,9 @@ class RAMControl(object):
         return int(round(time.time() * 1000.0))
 
     @staticmethod
-    def build_message(msg_type, timestamp=None, *args, **kwargs):
+    def build_message(msg_type, *args, **kwargs):
         """Build and return a RAMMessage to be sent to control PC."""
+        timestamp = kwargs.get("timestamp", None)
         return get_message_type(msg_type)(*args, timestamp=timestamp, **kwargs)
 
     def shutdown(self):
@@ -219,9 +221,15 @@ class RAMControl(object):
         if self.voice_socket in dict(self.zpoller.poll(1)):  # blocks for 1 ms
             try:
                 msg = self.voice_socket.recv_json()
-                assert msg["state"] == "VOCALIZATION"
+                assert msg["type"] == "VOCALIZATION"
+                start = msg["data"]["speaking"]
+                log_msg = {
+                    "event": "VOCALIZATION_START" if start else "VOCALIZATION_END",
+                    "timestamp": msg["data"]["timestamp"]
+                }
+                self.event_log.info(json.dumps(log_msg))
                 self.socket.enqueue_message(
-                    self.build_message("STATE", msg["timestamp"], msg["state"], msg["value"]))
+                    self.build_message("STATE", "VOCALIZATION", start))
             except AssertionError:
                 self.logger.error("Received a malformed message from the voice server")
             except:

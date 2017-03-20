@@ -740,28 +740,27 @@ class FRExperiment(WordTask):
             phase_type = words.type.iloc[0]
             assert all(words.type == phase_type)
 
-            if phase_type != "PRACTICE" and not self.kwargs.get("skip_practice", False):
-                with self.state_context("TRIAL", listno=listno, phase_type=phase_type):
-                    self.log_event("TRIAL", listno=listno, phase_type=phase_type)
+            with self.state_context("TRIAL", listno=listno, phase_type=phase_type):
+                self.log_event("TRIAL", listno=listno, phase_type=phase_type)
 
-                    # Countdown to encoding
-                    self.run_countdown()
+                # Countdown to encoding
+                self.run_countdown()
 
-                    # Encoding
-                    self.run_encoding(words, phase_type)
+                # Encoding
+                self.run_encoding(words, phase_type)
 
-                    # Distract
-                    self.run_distraction(phase_type)
-                    self.run_orient(phase_type)
+                # Distract
+                self.run_distraction(phase_type)
+                self.run_orient(phase_type)
 
-                    # Delay before retrieval
-                    self.clock.delay(self.timings.recall_delay,
-                                     jitter=self.timings.recall_jitter)
-                    self.clock.wait()
+                # Delay before retrieval
+                self.clock.delay(self.timings.recall_delay,
+                                 jitter=self.timings.recall_jitter)
+                self.clock.wait()
 
-                    # Retrieval
-                    self.run_orient(phase_type)
-                    self.run_retrieval(phase_type)
+                # Retrieval
+                self.run_orient(phase_type)
+                self.run_retrieval(phase_type)
 
             # Update list index stored in state
             self.list_index += 1
@@ -826,7 +825,7 @@ if __name__ == "__main__":
         "skip_encoding": True,
         "skip_instructions": True,
         "skip_mic_test": True,
-        "skip_orient": True,
+        # "skip_orient": True,
         # "skip_practice": True,
         # "skip_retrieval": True,
         "skip_recognition": True,

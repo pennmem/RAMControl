@@ -29,7 +29,7 @@ from . import ipc
 from .exc import WrongProcessError
 
 SAMPLE_RATE = 32000
-FRAMES_PER_BUFFER = 1024
+FRAMES_PER_BUFFER = 4096
 
 
 class VoiceServer(Process):
@@ -114,20 +114,20 @@ class VoiceServer(Process):
 
                     if len(framecount) >= self.consecutive_frames and not speaking:
                         speaking = True
-                        socket.send_json({
-                            "state": "VOCALIZATION",
-                            "value": True,
+                        payload = {
+                            "speaking": True,
                             "timestamp": framecount[0]["timestamp"]
-                        })
+                        }
+                        socket.send_json(ipc.message("VOCALIZATION", payload))
                         self.logger.debug("Started speaking at %f", now)
                 else:
                     if speaking:
                         speaking = False
-                        socket.send_json({
-                            "state": "VOCALIZATION",
-                            "value": False,
+                        payload = {
+                            "speaking": False,
                             "timestamp": now
-                        })
+                        }
+                        socket.send_json(ipc.message("VOCALIZATION", payload))
                         self.logger.debug("Stopped speaking at %f", now)
                     framecount = []
 
