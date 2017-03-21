@@ -157,8 +157,8 @@ class Experiment(object):
         else:
             self.timings = Timings.make_from_config(self.config)
 
+        # Experiment name
         self.name = self.config.experiment
-        self.subject = self.epl_exp.getOptions().get("subject")
 
         # Session must be set before creating tracks, apparently
         self.epl_exp.setSession(self.session)
@@ -171,13 +171,6 @@ class Experiment(object):
         # Prepare the experiment if not already done
         if not self.experiment_started:
             self.prepare_experiment()
-
-        # If the session should be skipped, do a hard exit
-        if self._should_skip_session():
-            sys.exit(0)
-
-        # Finalize preparation for the session
-        self.prepare_session()
 
         # Set up the RAMControl instance
         # TODO: get rid of this monstrosity
@@ -194,6 +187,19 @@ class Experiment(object):
         # Helpers for common PyEPL routines
         self.epl_helpers = PyEPLHelpers(self.epl_exp, self.video, self.audio,
                                         self.clock)
+
+        # If the session should be skipped, we're done here
+        self._ok_to_run = not self._skip_session_dialog()
+        if self._ok_to_run:
+            return
+
+        # Finalize preparation for the session
+        self.prepare_session()
+
+    @property
+    def subject(self):
+        """Subject ID."""
+        return self.epl_exp.getOptions().get("subject")
 
     @property
     def session(self):
@@ -257,16 +263,17 @@ class Experiment(object):
     @property
     def session_started(self):
         """Has the session been started previously?"""
-        state = self.epl_exp.restoreState()
+        state = self.state
         if state is None:
             return False
         else:
             try:
                 return state.session_started
-            except AttributeError:  # a crash most likely happened last time
+            except AttributeError:  # the session_started state hasn't been set yet
+                print("AttributeError")
                 return False
 
-    def _should_skip_session(self):
+    def _skip_session_dialog(self):
         """Check if session should be skipped
 
         :return: True if session is skipped, False otherwise
@@ -282,13 +289,9 @@ class Experiment(object):
             ).present(self.clock, bc=bc)
             if 'AND' in button.name:
                 self.log_event('SESSION_SKIPPED')
-                self.state.sessionNum += 1
-                self.state.trialNum = 0
-                self.state.practiceDone = False
-                self.state.session_started = False
-                self.epl_exp.saveState(self.state)
-                waitForAnyKey(self.clock, Text('Session skipped\nRestart RAM_%s to run next session' %
-                                               self.config.experiment))
+                self.update_state(sessionNum=(self.state.sessionNum + 1),
+                                  trialNum=0, session_started=False)
+                waitForAnyKey(self.clock, Text('Session skipped\nRestart to run next session'))
                 return True
         return False
 
@@ -306,13 +309,11 @@ class Experiment(object):
 
     @property
     def state(self):
-        """Returns the experimental state (implmented via PyEPL)."""
-        return self.epl_exp.restoreState()
+        """Returns the experimental state (implmented via PyEPL). Use the
+        :meth:`update_state` method to make persisting changes to the state.
 
-    # TODO: figure out how to do this properly with PyEPL
-    # @state.setter
-    # def state(self, new_state):
-    #     self.update_state()
+        """
+        return self.epl_exp.restoreState()
 
     def update_state(self, **kwargs):
         """Update the experiment's state with keyword arguments."""
@@ -456,7 +457,11 @@ class Experiment(object):
 
     def start(self):
         """Start the experiment."""
-        self.run()
+        if self._ok_to_run:
+            if not self.session_started:
+                self.update_state(session_started=True)
+
+            self.run()
 
         # Add some buffer time to ensure queued messages get sent
         self.clock.delay(100)
