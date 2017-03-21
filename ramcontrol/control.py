@@ -160,7 +160,6 @@ class RAMControl(object):
     def shutdown(self):
         """Cleanly disconnect and close sockets and servers."""
         self.logger.info("Shutting down.")
-        self.send(ExitMessage())
         if self.voice_server is not None:
             self.voice_server.quit()
             self.voice_server.join(timeout=1)

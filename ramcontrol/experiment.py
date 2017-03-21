@@ -22,7 +22,7 @@ from ramcontrol import listgen
 from ramcontrol.control import RAMControl
 from ramcontrol.util import make_env
 from ramcontrol.exc import LanguageError, ExperimentError, MicTestAbort
-from ramcontrol.messages import StateMessage, TrialMessage
+from ramcontrol.messages import StateMessage, TrialMessage, ExitMessage
 from ramcontrol.extendedPyepl import (
     CustomAudioTrack, waitForAnyKeyWithCallback, customMathDistract,
     customMicTest
@@ -477,10 +477,12 @@ class Experiment(object):
 
             self.run()
 
+        # Closes stuff and sends EXIT message
+        self.controller.send(ExitMessage())
+
         # Add some buffer time to ensure queued messages get sent
         self.clock.delay(100)
         self.clock.wait()
-
         self.controller.shutdown()
 
 
@@ -763,6 +765,7 @@ class FRExperiment(WordTask):
 
             with self.state_context("TRIAL", listno=listno, phase_type=phase_type):
                 self.log_event("TRIAL", listno=listno, phase_type=phase_type)
+                self.controller.send(TrialMessage(listno))
 
                 # Countdown to encoding
                 self.run_countdown()
@@ -815,7 +818,7 @@ if __name__ == "__main__":
     from logserver.handlers import SQLiteHandler
     from ramcontrol.util import fake_subject
 
-    os.environ["RAM_CONFIG"] = json.dumps(make_env(no_host=True, voiceserver=True))
+    os.environ["RAM_CONFIG"] = json.dumps(make_env(no_host=False, voiceserver=True))
 
     # This is only here because PyEPL screws up the voice server if we don't
     # instantiate this *before* the PyEPL experiment.
@@ -828,7 +831,7 @@ if __name__ == "__main__":
 
     subject = "R0000X"
     # subject = fake_subject()
-    exp_name = "FR5"
+    exp_name = "FR1"
     archive_dir = osp.abspath(osp.join(here, "..", "data", exp_name))
     config_str = osp.abspath(osp.join(here, "configs", "FR", "config.py"))
     sconfig_str = osp.abspath(osp.join(here, "configs", "FR", exp_name + "_config.py"))
@@ -855,7 +858,7 @@ if __name__ == "__main__":
         # "skip_retrieval": True,
         "skip_recognition": True,
 
-        # "fast_timing": True,
+        "fast_timing": True,
         # "play_beeps": False
     }
 
