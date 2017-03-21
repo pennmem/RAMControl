@@ -121,15 +121,10 @@ class RAMControl(object):
         if ram_env["voiceserver"]:
             self.voice_pipe, self._voice_child_pipe = Pipe()
             self.voice_server = VoiceServer(self._voice_child_pipe)
-            self.voice_socket = self.voice_server.make_listener_socket(self.ctx)
             self.voice_server.start()
         else:
             self.voice_pipe, self._voice_child_pipe = None, None
             self.voice_server = None
-            self.voice_socket = None
-
-        self.zpoller = zmq.Poller()
-        self.zpoller.register(self.voice_socket, zmq.POLLIN)
 
     @classmethod
     def instance(cls, *args, **kwargs):  # FIXME: no real reason to do this...
@@ -168,7 +163,6 @@ class RAMControl(object):
         self.send(ExitMessage())
         if self.voice_server is not None:
             self.voice_server.quit()
-            self.voice_socket.close()
             self.voice_server.join(timeout=1)
         self.socket.join()
 
@@ -218,25 +212,6 @@ class RAMControl(object):
 
     def check_voice_server(self):
         """Check for messages from the voice server."""
-        if self.voice_socket in dict(self.zpoller.poll(1)):  # blocks for 1 ms
-            try:
-                msg = self.voice_socket.recv_json()
-                assert msg["type"] == "VOCALIZATION"
-                start = msg["data"]["speaking"]
-                log_msg = {
-                    "event": "VOCALIZATION_START" if start else "VOCALIZATION_END",
-                    "timestamp": msg["data"]["timestamp"]
-                }
-                self.event_log.info(json.dumps(log_msg))
-                self.socket.enqueue_message(
-                    self.build_message("STATE", "VOCALIZATION", start))
-            except AssertionError:
-                self.logger.error("Received a malformed message from the voice server")
-            except:
-                self.logger.error(
-                    "Unknown exception when reading from the voice server",
-                    exc_info=True)
-
         if self.voice_pipe.poll():
             msg = self.voice_pipe.recv()
             if msg["type"] == "CRITICAL":
@@ -251,6 +226,17 @@ class RAMControl(object):
                     "main_time": time.time() * 1000,
                     "pyepl_time": timing.now()
                 }))
+            elif msg["type"] == "VOCALIZATION":
+                start = msg["data"]["speaking"]
+                log_msg = {
+                    "event": "VOCALIZATION_START" if start else "VOCALIZATION_END",
+                    "timestamp": msg["data"]["timestamp"]
+                }
+                self.event_log.info(json.dumps(log_msg))
+                self.socket.enqueue_message(
+                    self.build_message("STATE", "VOCALIZATION", start))
+            else:
+                self.logger.error("Received malformed message: %s", msg)
 
     def register_handler(self, name, func):
         """Register a message handler.

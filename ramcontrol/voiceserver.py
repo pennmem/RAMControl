@@ -23,7 +23,6 @@ import traceback as tb
 from pyaudio import PyAudio, paInt16
 from webrtcvad import Vad
 from logserver import create_logger
-import zmq
 
 from . import ipc
 from .exc import WrongProcessError
@@ -36,8 +35,6 @@ class VoiceServer(Process):
     """A server that monitors the microphone for voice activity.
 
     :param Pipe pipe: A pipe for communicating with the parent process.
-    :param str sock_addr: Socket to connect to to publish vocalization events
-        to.
     :param int vad_level: webrtcvad VAD aggressiveness (0, 1, 2, or 3; higher is
         more aggressive at filtering out non-speech).
     :param int consecutive_frames: The number of frames in a row that register
@@ -48,12 +45,11 @@ class VoiceServer(Process):
     :param int loglevel: Logging level to use. If None, assume ``logging.INFO``.
 
     """
-    def __init__(self, pipe, sock_addr="tcp://127.0.0.1:9898", vad_level=3,
-                 consecutive_frames=3, filename=None, loglevel=logging.INFO):
+    def __init__(self, pipe, vad_level=3, consecutive_frames=3, filename=None,
+                 loglevel=logging.INFO):
         super(VoiceServer, self).__init__()
 
         self.pipe = pipe
-        self.addr = sock_addr
         self.vad_aggressiveness = vad_level
         self.consecutive_frames = consecutive_frames
         self.filename = filename
@@ -64,35 +60,12 @@ class VoiceServer(Process):
         self.stop_stream = Event()
         self.done = Event()
 
-    def make_listener_socket(self, ctx):
-        """Return a bound socket for the :class:`VoiceServer` instance to
-        connect to.
-
-        :param zmq.Context ctx:
-        :returns: socket
-        :rtype: zmq.Socket
-        :raises WrongProcessError: when calling from a subprocess.
-
-        """
-        if current_process().name != "MainProcess":
-            raise WrongProcessError("Only call make_listener_socket from the main process!")
-        protocol, _, port = self.addr.split(":")
-        socket = ctx.socket(zmq.SUB)
-        socket.setsockopt(zmq.SUBSCRIBE, b"")
-        socket.bind("{}://*:{}".format(protocol, port))
-        return socket
-
-    def check_for_speech(self, ctx, frame_duration_ms=20):
+    def check_for_speech(self, frame_duration_ms=20):
         """Checks for speech.
 
-        :param zmq.Context ctx: ZMQ context for creating a PUB socket.
         :param int frame_duration_ms: Audio frame length in ms.
 
         """
-        socket = ctx.socket(zmq.PUB)
-        socket.connect(self.addr)
-        self.logger.debug("Connecting to address %s", self.addr)
-
         vad = Vad(self.vad_aggressiveness)
         speaking = False  # to keep track of if vocalization ongoing
 
@@ -118,7 +91,7 @@ class VoiceServer(Process):
                             "speaking": True,
                             "timestamp": framecount[0]["timestamp"]
                         }
-                        socket.send_json(ipc.message("VOCALIZATION", payload))
+                        self.pipe.send(ipc.message("VOCALIZATION", payload))
                         self.logger.debug("Started speaking at %f", now)
                 else:
                     if speaking:
@@ -127,7 +100,7 @@ class VoiceServer(Process):
                             "speaking": False,
                             "timestamp": now
                         }
-                        socket.send_json(ipc.message("VOCALIZATION", payload))
+                        self.pipe.send(ipc.message("VOCALIZATION", payload))
                         self.logger.debug("Stopped speaking at %f", now)
                     framecount = []
 
@@ -209,13 +182,11 @@ class VoiceServer(Process):
         self.stop_stream.clear()
 
     def run(self):
-        ctx = zmq.Context()
-
         self.logger = create_logger("voiceserver", level=self.loglevel)
 
         audio = PyAudio()
 
-        vad_thread = Thread(target=self.check_for_speech, args=(ctx,))
+        vad_thread = Thread(target=self.check_for_speech)
         vad_thread.daemon = True
         vad_thread.start()
         mic_thread = None  # later, the thread to read from the mic
@@ -264,12 +235,21 @@ def main():
 
     args = parser.parse_args()
 
-    p = VoiceServer(filename=args.filename, loglevel=levels[args.loglevel])
+    parent, child = Pipe()
+    p = VoiceServer(child, filename=args.filename,
+                    loglevel=levels[args.loglevel])
     p.start()
+
+    parent.send(ipc.message("START"))
+    parent.recv()
     try:
-        p.join()
+        while True:
+            if parent.poll():
+                data = parent.recv()
+                if data["type"] != "TIMESTAMP":
+                    print(data)
     except KeyboardInterrupt:
-        pass
+        parent.send(ipc.message("STOP"))
 
 
 if __name__ == "__main__":
