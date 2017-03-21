@@ -614,17 +614,16 @@ class WordTask(Experiment):
     @skippable
     def run_retrieval(self, phase_type):
         """Run a retrieval (a.k.a. recall) phase."""
-        with self.controller.voice_detector():
-            with self.state_context("RETRIEVAL", phase_type=phase_type):
-                label = str(self.list_index)
+        with self.state_context("RETRIEVAL", phase_type=phase_type):
+            label = str(self.list_index)
 
-                # Record responses
-                rec, timestamp = self.audio.record(
-                    self.timings.recall_duration, label, t=self.clock)
+            # Record responses
+            rec, timestamp = self.audio.record(
+                self.timings.recall_duration, label, t=self.clock)
 
-                # Ending beep
-                if self.kwargs.get("play_beeps", True):
-                    end_timestamp = self.epl_helpers.play_stop_beep()
+            # Ending beep
+            if self.kwargs.get("play_beeps", True):
+                end_timestamp = self.epl_helpers.play_stop_beep()
 
     @skippable
     def run_recognition(self):
@@ -760,7 +759,8 @@ class FRExperiment(WordTask):
 
                 # Retrieval
                 self.run_orient(phase_type)
-                self.run_retrieval(phase_type)
+                with self.controller.voice_detector():
+                    self.run_retrieval(phase_type)
 
             # Update list index stored in state
             self.list_index += 1
@@ -822,16 +822,16 @@ if __name__ == "__main__":
         # Uncomment things to skip stuff for development
         "skip_countdown": True,
         "skip_distraction": True,
-        "skip_encoding": True,
+        # "skip_encoding": True,
         "skip_instructions": True,
-        "skip_mic_test": True,
-        # "skip_orient": True,
+        # "skip_mic_test": True,
+        "skip_orient": True,
         # "skip_practice": True,
         # "skip_retrieval": True,
         "skip_recognition": True,
 
         # "fast_timing": True,
-        "play_beeps": False
+        # "play_beeps": False
     }
 
     exp = FRExperiment(epl_exp, debug=True, **kwargs)

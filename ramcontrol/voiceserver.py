@@ -230,10 +230,16 @@ def main():
     parser = ArgumentParser(description=__doc__)
     parser.add_argument("-f", "--filename", default=None, type=str,
                         help="Path to wav file as input")
+    parser.add_argument("-o", "--output", default=None, type=str,
+                        help="File to write VAD events to (overwrites existing)")
     parser.add_argument("-l", "--loglevel", choices=levels, default="info",
                         help="Log level")
 
     args = parser.parse_args()
+
+    if args.output:
+        with open(args.output, "w") as f:
+            f.write("#timestamp\tstate\n")
 
     parent, child = Pipe()
     p = VoiceServer(child, filename=args.filename,
@@ -245,9 +251,14 @@ def main():
     try:
         while True:
             if parent.poll():
-                data = parent.recv()
-                if data["type"] != "TIMESTAMP":
-                    print(data)
+                msg = parent.recv()
+                if msg["type"] == "VOCALIZATION":
+                    timestamp = msg["data"]["timestamp"]
+                    state = "start" if msg["data"]["speaking"] else "stop"
+                    if args.output is not None:
+                        with open(args.output, "a") as f:
+                            f.write("{:f}\t{:s}\n".format(timestamp, state))
+                    print(state + " speaking at " + str(timestamp))
     except KeyboardInterrupt:
         parent.send(ipc.message("STOP"))
 

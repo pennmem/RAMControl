@@ -6,6 +6,7 @@ data/
 logs/*.log
 .checkSVN
 .idea/
+vocalization.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
