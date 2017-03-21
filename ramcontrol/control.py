@@ -362,7 +362,8 @@ class RAMControl(object):
         # Send experiment info to host
         self.send(ExperimentNameMessage(self.experiment))
         self.send(VersionMessage(self.version))
-        self.send(SessionMessage(self.session_num, ''))
+        self.send(SessionMessage(self.experiment, self.version, self.subject,
+                                 self.session_num))
         self.send(SubjectIdMessage(self.subject))
         self.start_heartbeat()
 
@@ -433,7 +434,8 @@ class RAMControl(object):
     def connected_handler(self, msg):
         """Indicate that we've made a connection."""
         self._connected = True
-        self.socket.enqueue_message(ConnectedMessage())
+        # Host PC has never actually used this...
+        # self.socket.enqueue_message(ConnectedMessage())
 
     def heartbeat_handler(self, msg):
         """Received echoed heartbeat message from host."""

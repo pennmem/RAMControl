@@ -470,6 +470,10 @@ class Experiment(object):
 
     def start(self):
         """Start the experiment."""
+        if not self.ram_config_env["no_host"]:
+            self.logger.info("Awaiting connection from host PC")
+            self.controller.initiate_connection()
+
         if self._ok_to_run:
             if not self.session_started:
                 self.update_state(session_started=True)
@@ -811,7 +815,7 @@ if __name__ == "__main__":
     from logserver.handlers import SQLiteHandler
     from ramcontrol.util import fake_subject
 
-    os.environ["RAM_CONFIG"] = json.dumps(make_env(no_host=True, voiceserver=True))
+    os.environ["RAM_CONFIG"] = json.dumps(make_env(no_host=False, voiceserver=True))
 
     # This is only here because PyEPL screws up the voice server if we don't
     # instantiate this *before* the PyEPL experiment.

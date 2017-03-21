@@ -42,7 +42,7 @@ class SocketServer(object):
 
     def join(self):
         """Block until all outgoing messages have been processed."""
-        self.logger.warning("This doesn't work yet...")
+        self.logger.warning("Joining doesn't work yet; doing nothing...")
         # self._out_queue.join()
 
     def bind(self, address="tcp://*:8889"):
