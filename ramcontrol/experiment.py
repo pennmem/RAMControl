@@ -349,13 +349,11 @@ class Experiment(object):
 
         """
         self.log.logMessage(event + " " + json.dumps(kwargs), self.clock)
-        with open(self.log_filename, "a") as logfile:
-            kwargs.update({
-                "event": event, "timestamp": timing.now()
-            })
-            msg = json.dumps(kwargs)
-            logfile.write("{:s}\n".format(msg))
-            self.event_logger.info(msg)
+        kwargs.update({
+            "event": event, "timestamp": timing.now()
+        })
+        msg = json.dumps(kwargs)
+        self.event_logger.info(msg)
 
     @contextmanager
     def state_context(self, state, **kwargs):
@@ -859,7 +857,7 @@ if __name__ == "__main__":
 
     exp = FRExperiment(epl_exp, debug=True, **kwargs)
 
-    log_path = osp.join(exp.session_data_dir, "logs.sqlite")
+    log_path = osp.join(exp.session_data_dir, "session.sqlite")
     log_args = ([SQLiteHandler(log_path)],)
     log_process = Process(target=logserver.run_server, args=log_args,
                           name="log_process")
