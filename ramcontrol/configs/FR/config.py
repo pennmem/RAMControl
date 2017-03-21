@@ -6,6 +6,9 @@ numSessions = 10
 # Default number of PS lists
 n_ps = 0
 
+# Do we need the VAD server during retrieval?
+vad_during_retrieval = False
+
 # Include recognition subtask REC1
 recognition_enabled = False
 

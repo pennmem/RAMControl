@@ -13,5 +13,8 @@ n_nonstim = 0
 # Number of PS lists
 n_ps = 6
 
+# Enable VAD
+vad_during_retrieval = True
+
 # Don't use REC1
 recognition_enabled = False

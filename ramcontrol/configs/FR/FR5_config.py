@@ -11,5 +11,8 @@ n_stim = 16
 # Number of non-stim lists
 n_nonstim = 6
 
+# Enable VAD
+vad_during_retrieval = True
+
 # Use REC1
 recognition_enabled = True

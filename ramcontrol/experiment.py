@@ -192,7 +192,7 @@ class Experiment(object):
         self._ok_to_run = not self._skip_session_dialog()
         if not self._ok_to_run:
             self.log_event('SESSION_SKIPPED')
-            self.update_state(sessionNum=(self.state.sessionNum) + 1,
+            self.update_state(session_number=(self.session + 1),
                               session_started=False)
             self.reset_state()
             return
@@ -209,7 +209,7 @@ class Experiment(object):
     def session(self):
         """The session number."""
         try:
-            session = self.state.sessionNum
+            session = self.state.session_number
         except AttributeError:
             session = 0
         return session
@@ -217,7 +217,7 @@ class Experiment(object):
     @session.setter
     def session(self, session):
         self.epl_exp.setSession(session)
-        self.update_state(sessionNum=session)
+        self.update_state(session_number=session)
 
     @property
     def data_root(self):
@@ -417,8 +417,6 @@ class Experiment(object):
     def connect_to_control_pc(self):
         """Wait for a connection with the host PC."""
         if not self.ram_config_env["no_host"]:
-            if not self.config.control_pc:
-                return
             video = VideoTrack.lastInstance()
             video.clear('black')
 
@@ -428,7 +426,7 @@ class Experiment(object):
                                   "CANNOT SYNC TO CONTROL PC\n"
                                   "Check connections and restart the experiment",
                                   size=.05))
-                sys.exit(1)
+                sys.exit(1)  # FIXME
 
             self.controller.wait_for_start_message(
                 poll_callback=lambda: flashStimulus(Text("Waiting for start from control PC...")))
@@ -470,13 +468,12 @@ class Experiment(object):
 
     def start(self):
         """Start the experiment."""
-        if not self.ram_config_env["no_host"]:
-            self.logger.info("Awaiting connection from host PC")
-            self.controller.initiate_connection()
-
         if self._ok_to_run:
             if not self.session_started:
                 self.update_state(session_started=True)
+
+            if not self.ram_config_env["no_host"]:
+                self.connect_to_control_pc()
 
             self.run()
 
@@ -784,7 +781,10 @@ class FRExperiment(WordTask):
 
                 # Retrieval
                 self.run_orient(phase_type)
-                with self.controller.voice_detector():
+                if self.config.vad_during_retrieval:
+                    with self.controller.voice_detector():
+                        self.run_retrieval(phase_type)
+                else:
                     self.run_retrieval(phase_type)
 
             # Update list index stored in state
@@ -815,7 +815,7 @@ if __name__ == "__main__":
     from logserver.handlers import SQLiteHandler
     from ramcontrol.util import fake_subject
 
-    os.environ["RAM_CONFIG"] = json.dumps(make_env(no_host=False, voiceserver=True))
+    os.environ["RAM_CONFIG"] = json.dumps(make_env(no_host=True, voiceserver=True))
 
     # This is only here because PyEPL screws up the voice server if we don't
     # instantiate this *before* the PyEPL experiment.
@@ -849,7 +849,7 @@ if __name__ == "__main__":
         "skip_distraction": True,
         # "skip_encoding": True,
         "skip_instructions": True,
-        # "skip_mic_test": True,
+        "skip_mic_test": True,
         "skip_orient": True,
         # "skip_practice": True,
         # "skip_retrieval": True,
