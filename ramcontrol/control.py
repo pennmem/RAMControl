@@ -221,7 +221,7 @@ class RAMControl(object):
                     self.logger.critical("VoiceServer failed", exc_info=True)
                     raise
             elif msg["type"] == "TIMESTAMP":
-                create_logger("voicetimes").info(json.dumps({
+                create_logger("voicetimes", level=logging.DEBUG).info(json.dumps({
                     "voice_time": msg["data"]["timestamp"],
                     "main_time": time.time() * 1000,
                     "pyepl_time": timing.now()
