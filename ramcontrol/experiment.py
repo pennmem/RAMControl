@@ -190,7 +190,11 @@ class Experiment(object):
 
         # If the session should be skipped, we're done here
         self._ok_to_run = not self._skip_session_dialog()
-        if self._ok_to_run:
+        if not self._ok_to_run:
+            self.log_event('SESSION_SKIPPED')
+            self.update_state(sessionNum=(self.state.sessionNum) + 1,
+                              session_started=False)
+            self.reset_state()
             return
 
         # Finalize preparation for the session
@@ -279,18 +283,21 @@ class Experiment(object):
         :return: True if session is skipped, False otherwise
 
         """
+        try:
+            session_number = self.state.session_number
+        except AttributeError:
+            self.update_state(session_number=0)
+            return False
+
         if self.session_started:
             bc = ButtonChooser(Key('SPACE') & Key('RETURN'), Key('ESCAPE'))
             self.video.clear('black')
             _, button, timestamp = Text(
-                'Session %d was previously started\n' % (self.state.sessionNum + 1) +
+                'Session %d was previously started\n' % session_number +
                 'Press SPACE + RETURN to skip session\n' +
                 'Press ESCAPE to continue'
             ).present(self.clock, bc=bc)
             if 'AND' in button.name:
-                self.log_event('SESSION_SKIPPED')
-                self.update_state(sessionNum=(self.state.sessionNum + 1),
-                                  trialNum=0, session_started=False)
                 waitForAnyKey(self.clock, Text('Session skipped\nRestart to run next session'))
                 return True
         return False
@@ -319,6 +326,14 @@ class Experiment(object):
         """Update the experiment's state with keyword arguments."""
         state = self.epl_exp.restoreState()
         self.epl_exp.saveState(state, **kwargs)
+
+    def reset_state(self):
+        """Override this method to reset state appropriately for beginning a
+        new session. This is called automatically when skipping a session that
+        has already been started *after first incrementing the session number
+        and the ``session_started`` flag*.
+
+        """
 
     def log_event(self, event, **kwargs):
         """Log an event. Logs are currently stored both by PyEPL and in a more
@@ -520,6 +535,9 @@ class WordTask(Experiment):
     def all_rec_blocks(self, new_blocks):
         assert isinstance(new_blocks, list)
         self.update_state(all_rec_blocks=new_blocks)
+
+    def reset_state(self):
+        self.list_index = 0
 
     def display_word(self, word, listno, serialpos, phase, wait=False,
                      keys=["SPACE"]):
