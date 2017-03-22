@@ -4,23 +4,28 @@ from abc import ABCMeta, abstractmethod
 import os
 import os.path as osp
 import sys
+import time
 import json
 import codecs
+from multiprocessing import Process
 from contextlib import contextmanager
-import itertools
 import functools
 import logging
+import atexit
 
 import six
 import psutil
 
 from wordpool import WordList
 import wordpool.data
+
+import logserver
 from logserver import create_logger
+from logserver.handlers import SQLiteHandler
 
 from ramcontrol import listgen
 from ramcontrol.control import RAMControl
-from ramcontrol.util import make_env
+from ramcontrol.util import make_env, absjoin
 from ramcontrol.exc import LanguageError, ExperimentError, MicTestAbort
 from ramcontrol.messages import StateMessage, TrialMessage, ExitMessage
 from ramcontrol.extendedPyepl import (
@@ -130,12 +135,6 @@ class Experiment(object):
     def __init__(self, epl_exp, debug=False, **kwargs):
         self.debug = debug
         self.kwargs = kwargs
-
-        # Read environment variable config
-        try:
-            self.ram_config_env = json.loads(os.environ["RAM_CONFIG"])
-        except KeyError:
-            self.ram_config_env = make_env()
 
         assert isinstance(epl_exp, exputils.Experiment)
         self.epl_exp = epl_exp
@@ -415,7 +414,9 @@ class Experiment(object):
 
     def connect_to_control_pc(self):
         """Wait for a connection with the host PC."""
-        if self.kwargs["no_host"] and not self.debug:
+        if self.debug and self.kwargs.get("no_host", False):
+            self.logger.warning("***** PROCEEDING WITHOUT CONNECTING TO HOST PC! *****")
+        else:
             video = VideoTrack.lastInstance()
             video.clear('black')
 
@@ -429,8 +430,6 @@ class Experiment(object):
 
             self.controller.wait_for_start_message(
                 poll_callback=lambda: flashStimulus(Text("Waiting for start from control PC...")))
-        else:
-            self.logger.warning("***** PROCEEDING WITHOUT CONNECTING TO HOST PC! *****")
 
     @abstractmethod
     def define_state_variables(self):
@@ -471,7 +470,7 @@ class Experiment(object):
             if not self.session_started:
                 self.update_state(session_started=True)
 
-            if not self.ram_config_env["no_host"]:
+            if not self.kwargs.get("no_host", False):
                 self.connect_to_control_pc()
 
             self.run()
@@ -571,15 +570,18 @@ class WordTask(Experiment):
     def run_instructions(self):
         """Instruction period to explain the task to the subject."""
         with self.state_context("INSTRUCT"):
-            self.epl_helpers.play_intro_movie(
-                self.config.introMovie.format(language=self.config.LANGUAGE))
+            filename = absjoin(osp.expanduser(self.kwargs["video_path"]),
+                               self.config.introMovie.format(language=self.config.LANGUAGE))
+            self.epl_helpers.play_intro_movie(filename)
 
     @skippable
     def run_countdown(self):
         """Display the countdown movie."""
         self.video.clear('black')
         with self.state_context("COUNTDOWN"):
-            self.epl_helpers.play_movie_sync(self.config.countdownMovie)
+            filename = absjoin(osp.expanduser(self.kwargs["video_path"]),
+                               self.config.countdownMovie)
+            self.epl_helpers.play_movie_sync(filename)
 
     @skippable
     def run_mic_test(self):
@@ -800,26 +802,23 @@ class FRExperiment(WordTask):
 
 
 def run():
-    """Run an experiment. This is the main entry point and has to be run as a
-    subprocess from the main run script. This is because PyEPL is a worthless
-    piece of garbage that prevents using both command-line arguments and PyQt
-    without crashing.
+    """Entry point for running experiments. This must be run with
+    subprocess.Popen because PyEPL is total garbage and hijacks things like
+    command line parsing.
 
     """
+    config = json.loads(os.environ["RAM_CONFIG"])
 
+    subject = config["subject"]
+    experiment = config["experiment"]
+    family = config["experiment_family"]
+    debug = config["debug"]
+    fullscreen = not debug
 
-if __name__ == "__main__":
-    import os
-    import os.path as osp
-    import time
-    from multiprocessing import Process
-    import atexit
-
-    import logserver
-    from logserver.handlers import SQLiteHandler
-    from ramcontrol.util import fake_subject
-
-    os.environ["RAM_CONFIG"] = json.dumps(make_env(no_host=False, voiceserver=True))
+    here = config["ramcontrol_path"]
+    archive_dir = absjoin(config["data_path"], experiment)
+    config_file = absjoin(here, "configs", family, "config.py")
+    sconfig_file = absjoin(here, "configs", family, experiment + "_config.py")
 
     # This is only here because PyEPL screws up the voice server if we don't
     # instantiate this *before* the PyEPL experiment.
@@ -828,42 +827,25 @@ if __name__ == "__main__":
     pid = os.getpid()
     proc = psutil.Process(pid)
 
-    here = osp.realpath(osp.dirname(__file__))
-
-    subject = "R0000X"
-    # subject = fake_subject()
-    exp_name = "FR1"
-    archive_dir = osp.abspath(osp.join(here, "..", "data", exp_name))
-    config_str = osp.abspath(osp.join(here, "configs", "FR", "config.py"))
-    sconfig_str = osp.abspath(osp.join(here, "configs", "FR", exp_name + "_config.py"))
-
-    epl_exp = exputils.Experiment(subject=subject, fullscreen=False,
+    epl_exp = exputils.Experiment(subject=subject,
+                                  fullscreen=fullscreen, resolution="1440x900",
+                                  use_eeg=False,
                                   archive=archive_dir,
-                                  use_eeg=False, config=config_str,
-                                  sconfig=sconfig_str,
-                                  resolution="1440x900")
-
-    # epl_exp.parseArgs()
-    epl_exp.setup()
-    epl_exp.setBreak()  # quit with Esc-F1
+                                  config=config_file,
+                                  sconfig=sconfig_file)
 
     kwargs = {
-        # Uncomment things to skip stuff for development
-        "skip_countdown": True,
-        "skip_distraction": True,
-        # "skip_encoding": True,
-        "skip_instructions": True,
-        "skip_mic_test": True,
-        "skip_orient": True,
-        # "skip_practice": True,
-        # "skip_retrieval": True,
-        "skip_recognition": True,
-
-        "fast_timing": True,
-        # "play_beeps": False
+        "video_path": config["video_path"]
     }
+    if debug:
+        kwargs.update(config["debug_options"])
 
-    exp = FRExperiment(epl_exp, debug=True, **kwargs)
+    # epl_exp.parseArgs()
+    # epl_exp.setup()
+    epl_exp.setBreak()  # quit with Esc-F1
+
+    ExperimentClass = getattr(sys.modules[__name__], config["experiment_class"])
+    exp = ExperimentClass(epl_exp, debug=debug, **kwargs)
 
     log_path = osp.join(exp.session_data_dir, "session.sqlite")
     log_args = ([SQLiteHandler(log_path)],)
@@ -879,3 +861,7 @@ if __name__ == "__main__":
 
     log_process.start()
     exp.start()
+
+
+if __name__ == "__main__":
+    run()

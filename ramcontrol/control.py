@@ -99,30 +99,15 @@ class RAMControl(object):
         self.logger = create_logger("controller", level=log_level)
         self.event_log = create_logger("events")
 
-        try:
-            ram_env = json.loads(os.environ["RAM_CONFIG"])
-
-            # Change address if we aren't connecting to the host PC (otherwise
-            # there can be ZMQ errors if the network cable is unplugged).
-            if ram_env["no_host"]:
-                address = "tcp://*:8889"
-        except KeyError:
-            self.logger.error(
-                "No RAM_CONFIG environment variable defined. Proceed with caution."
-                " voiceserver assumed to *not* be required!")
-            ram_env = {"voiceserver": False}
-
         self.ctx = zmq.Context()
-
         self.socket = SocketServer(ctx=self.ctx)
         self.socket.register_handler(self.dispatch)
         self.socket.bind(address)
 
-        if ram_env["voiceserver"]:
-            self.voice_pipe, self._voice_child_pipe = Pipe()
-            self.voice_server = VoiceServer(self._voice_child_pipe)
-            self.voice_server.start()
-        else:
+        self.voice_pipe, self._voice_child_pipe = Pipe()
+        self.voice_server = VoiceServer(self._voice_child_pipe)
+        self.voice_server.start()
+        if False:  # FIXME: make voiceserver optional
             self.voice_pipe, self._voice_child_pipe = None, None
             self.voice_server = None
 

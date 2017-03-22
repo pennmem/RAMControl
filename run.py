@@ -3,29 +3,18 @@
 from __future__ import print_function
 
 import os
-import time
-from multiprocessing import Process
 import json
 from configparser import ConfigParser
-import atexit
+from argparse import ArgumentParser
 import re
+import subprocess
 
 from prompt_toolkit import prompt
 from prompt_toolkit.history import InMemoryHistory
 from prompt_toolkit.contrib.completers import WordCompleter
 
-import psutil
-import logserver
-from logserver.handlers import SQLiteHandler
-
-import pyepl.exputils
-from ramcontrol.control import RAMControl
-from ramcontrol.experiment import FRExperiment
-
-
-def absjoin(*paths):
-    """Join some paths and make it an absolute path."""
-    return os.path.abspath(os.path.join(*paths))
+import ramcontrol
+from ramcontrol.util import absjoin
 
 
 def get_subject(subject=""):
@@ -71,85 +60,45 @@ def main():
     config = ConfigParser()
     config.read("ramcontrol.ini")
 
+    parser = ArgumentParser()
+    parser.add_argument("-s", "--subject", help="Subject ID", default=None)
+    parser.add_argument("-e", "--experiment", default=None, help="Experiment to run")
+    parser.add_argument("-d", "--debug", action="store_true", default=False,
+                        help="Enable debug mode")
+    args = parser.parse_args()
+
     experiments = config["general"]["experiments"].split()
-    debug = config["general"]["debug"]
-    if debug:
+
+    if args.debug:
         print("!"*80)
-        print("DEBUG MODE ENABLED!")
-        print("Change this in ramulator.ini NOW if this is a real experiment!")
+        print("{:^80}".format("DEBUG MODE ENABLED!"))
+        print("{:^80}".format("Restart NOW if this is a real experiment!!!"))
         print("!"*80)
 
-    pid = os.getpid()
-    main_proc = psutil.Process(pid)
-    here = os.path.realpath(os.path.dirname(__file__))
-    last_settings_file = os.path.expanduser(config["startup"]["last_settings"])
+    if args.subject is None:
+        raise RuntimeError("Need a subject")
+    if args.experiment is None:
+        raise RuntimeError("Need an experiment")
 
-    # Read last inputs
-    try:
-        with open(last_settings_file, "r") as f:
-            last_settings = json.load(f)
-    except IOError:
-        last_settings = {
-            "subject": "",
-            "experiment": ""
-        }
+    env = {
+        "subject": args.subject,
+        "experiment": args.experiment,
+        "experiment_family": config.get(args.experiment, "family"),
+        "experiment_class": config.get(args.experiment, "class"),
 
-    # Get runtime options
-    settings = {
-        "subject": get_subject(last_settings["subject"]),
-        "experiment": get_experiment(experiments, last_settings["experiment"])
-    }
-    fullscreen = False if debug else True
+        "video_path": os.path.expanduser(config["videos"]["path"]),
+        "data_path": absjoin("./data"),
+        "ramcontrol_path": os.path.dirname(ramcontrol.__file__),
 
-    # Store last settings for convenience next time
-    with open(last_settings_file, "w") as f:
-        json.dump(settings, f)
-
-    # Setup arguments to pass to PyEPL
-    pyepl_kwargs = {
-        "use_eeg": False,
-        "archive": absjoin(here, "data", settings["experiment"]),
-        "subject": settings["subject"],
-        "fullscreen": fullscreen,
-        "resolution": "1440x900",
-
-        # FIXME for more experiments
-        "config": absjoin(here, "ramcontrol", "configs", "FR", "config.py"),
-        "sconfig": absjoin(here, "ramcontrol", "configs", "FR", settings["experiment"] + "_config.py"),
+        "debug": args.debug,
+        "debug_options": config["debug"].items()
     }
 
-    # This is only here because PyEPL screws up the voice server if we don't
-    # instantiate this *before* the PyEPL experiment.
-    RAMControl.instance()
-
-    # Setup PyEPL
-    epl_exp = pyepl.exputils.Experiment(**pyepl_kwargs)
-    epl_exp.setBreak()  # quit with Esc-F1
-
-    # Setup the main experiment
-    kwargs = {
-        "video_path": os.path.expanduser(config["videos"]["path"])
-    }
-    if debug:
-        kwargs.update(dict(config["debug"].items()))
-    exp = FRExperiment(epl_exp, debug=debug, **kwargs)
-
-    # Some funny business seems to be happening with PyEPL...
-    @atexit.register
-    def cleanup():
-        time.sleep(0.25)
-        for p in main_proc.children():
-            p.kill()
-
-    # Configure and start the logging server
-    log_path = os.path.join(exp.session_data_dir, "session.sqlite")
-    log_args = ([SQLiteHandler(log_path)],)
-    log_process = Process(target=logserver.run_server, args=log_args,
-                          name="log_process")
-    log_process.start()
-
-    # Finally, we are ready!
-    exp.start()
+    penv = os.environ.copy()
+    penv["RAM_CONFIG"] = json.dumps(env)
+    p = subprocess.Popen(["python", "-m", "ramcontrol.experiment"],
+                         cwd=absjoin("."), env=penv)
+    p.wait()
 
 
 if __name__ == "__main__":
