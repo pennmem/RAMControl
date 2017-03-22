@@ -1,4 +1,6 @@
+configparser==3.5.0
 pandas==0.19.2
+prompt_toolkit==1.0.9
 pytest==3.0.6
 pytest-cov==2.4.0
 pyzmq==16.0.2

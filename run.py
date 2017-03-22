@@ -1,11 +1,26 @@
 """Script to start RAM experiments."""
 
 from __future__ import print_function
-import json
-import subprocess
+
 import os
-import argparse
-from ramcontrol.launcher import Launcher
+import time
+from multiprocessing import Process
+import json
+from configparser import ConfigParser
+import atexit
+import re
+
+from prompt_toolkit import prompt
+from prompt_toolkit.history import InMemoryHistory
+from prompt_toolkit.contrib.completers import WordCompleter
+
+import psutil
+import logserver
+from logserver.handlers import SQLiteHandler
+
+import pyepl.exputils
+from ramcontrol.control import RAMControl
+from ramcontrol.experiment import FRExperiment
 
 
 def absjoin(*paths):
@@ -13,84 +28,129 @@ def absjoin(*paths):
     return os.path.abspath(os.path.join(*paths))
 
 
-def run_experiment(exp_config):
-    """Run the experiment.
+def get_subject(subject=""):
+    """Prompt for the subject ID.
 
-    :param dict exp_config:
+    :param str subject: Default option.
 
     """
-    exp_dir = absjoin(exp_config['experiment_dir'], exp_config['subdir'])
-
-    pyepl_config_file = absjoin(exp_dir, exp_config['config_file'])
-    pyepl_sconfig_file = absjoin(exp_dir, exp_config['sconfig_file'])
-
-    archive_dir = absjoin(exp_config['archive_dir'], exp_config['experiment'])
-
-    options = [
-        '--subject', exp_config['subject'],
-        '--config', pyepl_config_file,
-        '--sconfig', pyepl_sconfig_file,  # secondary config (e.g., differences between FR1 and FR3)
-        '--resolution', exp_config['resolution'],
-        '--archive', archive_dir,
-    ]
-    if exp_config['no_fs']:
-        options.append('--no-fs')
-
-    exp_file = absjoin(exp_dir, exp_config['exp_py'])
-
-    args = ['python', exp_file] + options
-
-    # FIXME: rework experiments to not need path manipulation
-    env = os.environ.copy()
-    env["PYTHONPATH"] = absjoin(".")
-
-    # Additional config options to signal via env vars
-    # TODO: populate from ramcontrol.util.DEFAULT_ENV first
-    env["RAM_CONFIG"] = json.dumps({
-        "no_host": exp_config.pop("no_host"),
-        "voiceserver": exp_config["experiment"] is "FR5",  # TODO: make switchable
-        "ps4": exp_config["ps4"]
-    })
-
-    p = subprocess.Popen(args, env=env, cwd=exp_dir)
-    p.wait()
+    history = InMemoryHistory()
+    validate = lambda s: len(re.findall(r"R\d{4}[A-Z]", s)) == 1
+    while True:
+        response = prompt(u"Subject [{}]: ".format(subject), history=history)
+        if len(response) == 0 and validate(subject):
+            return subject
+        elif validate(response):
+            return response
+        else:
+            subject = response
+            print("Invalid subject ID")
 
 
-def parse_args():
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--subject', '-s', default=None, help='Subject Code')
-    parser.add_argument('--experiment', '-x', default=None, help='Experiment name')
-    parser.add_argument('--resolution', '-r', default=None, help='Screen resolution')
-    parser.add_argument('--archive', '-a', default=None, help='Data storage directory')
-    parser.add_argument("--ps4", default=False, action="store_true",
-                        help="Run as a PS4 session (only some experiments support this)")
-    parser.add_argument('--no-fs', dest="no_fs", default=False, action='store_true',
-                        help='Turn off fullscreen')
-    parser.add_argument("--no-host", default=False, action="store_true",
-                        help="Run without connecting to the host PC (for development only)")
-    parser.add_argument("--experiment-dir", "-e", help="Directory containing experiments")
-    return {k: v for k, v in vars(parser.parse_args()).items() if v is not None}
+def get_experiment(available, experiment=""):
+    """Prompt for the experiment to run.
+
+    :param list available: Available experiments.
+    :param str experiment: Default choice.
+
+    """
+    completer = WordCompleter(available)
+    while True:
+        response = prompt(u"Experiment (press tab to see available) [{}]: ".format(experiment),
+                          completer=completer, complete_while_typing=True)
+        if len(response) == 0 and experiment in available:
+            return experiment
+        elif response in available:
+            return response
+        else:
+            experiment = ""
+            print("Invalid experiment")
 
 
-if __name__ == '__main__':
-    config = json.load(open("ramcontrol.json", 'r'))
-    args = parse_args()
+def main():
+    config = ConfigParser()
+    config.read("ramcontrol.ini")
 
-    if "experiment" not in args or "subject" not in args:
-        args = Launcher.get_updated_args(sorted(config["experiments"].keys()),
-                                         args, config["ps4able"])
+    experiments = config["general"]["experiments"].split()
+    debug = config["general"]["debug"]
+    if debug:
+        print("!"*80)
+        print("DEBUG MODE ENABLED!")
+        print("Change this in ramulator.ini NOW if this is a real experiment!")
+        print("!"*80)
 
-    if args is not None:
-        # Override default experiment dir
-        if "experiment_dir" in args:
-            config["experiment_dir"] = args["experiment_dir"]
+    pid = os.getpid()
+    main_proc = psutil.Process(pid)
+    here = os.path.realpath(os.path.dirname(__file__))
+    last_settings_file = os.path.expanduser(config["startup"]["last_settings"])
 
-        config.update(config["experiments"][args["experiment"]])
-        config.update(args)
-        config["experiment"] = args["experiment"]
+    # Read last inputs
+    try:
+        with open(last_settings_file, "r") as f:
+            last_settings = json.load(f)
+    except IOError:
+        last_settings = {
+            "subject": "",
+            "experiment": ""
+        }
 
-        print("Using configuration\n\n",
-              json.dumps(config, indent=2, sort_keys=True))
-        run_experiment(config)
-    else:
-        print("Canceled!")
+    # Get runtime options
+    settings = {
+        "subject": get_subject(last_settings["subject"]),
+        "experiment": get_experiment(experiments, last_settings["experiment"])
+    }
+    fullscreen = False if debug else True
+
+    # Store last settings for convenience next time
+    with open(last_settings_file, "w") as f:
+        json.dump(settings, f)
+
+    # Setup arguments to pass to PyEPL
+    pyepl_kwargs = {
+        "use_eeg": False,
+        "archive": absjoin(here, "data", settings["experiment"]),
+        "subject": settings["subject"],
+        "fullscreen": fullscreen,
+        "resolution": "1440x900",
+
+        # FIXME for more experiments
+        "config": absjoin(here, "ramcontrol", "configs", "FR", "config.py"),
+        "sconfig": absjoin(here, "ramcontrol", "configs", "FR", settings["experiment"] + "_config.py"),
+    }
+
+    # This is only here because PyEPL screws up the voice server if we don't
+    # instantiate this *before* the PyEPL experiment.
+    RAMControl.instance()
+
+    # Setup PyEPL
+    epl_exp = pyepl.exputils.Experiment(**pyepl_kwargs)
+    epl_exp.setBreak()  # quit with Esc-F1
+
+    # Setup the main experiment
+    kwargs = {
+        "video_path": os.path.expanduser(config["videos"]["path"])
+    }
+    if debug:
+        kwargs.update(dict(config["debug"].items()))
+    exp = FRExperiment(epl_exp, debug=debug, **kwargs)
+
+    # Some funny business seems to be happening with PyEPL...
+    @atexit.register
+    def cleanup():
+        time.sleep(0.25)
+        for p in main_proc.children():
+            p.kill()
+
+    # Configure and start the logging server
+    log_path = os.path.join(exp.session_data_dir, "session.sqlite")
+    log_args = ([SQLiteHandler(log_path)],)
+    log_process = Process(target=logserver.run_server, args=log_args,
+                          name="log_process")
+    log_process.start()
+
+    # Finally, we are ready!
+    exp.start()
+
+
+if __name__ == "__main__":
+    main()

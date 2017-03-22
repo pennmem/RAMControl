@@ -274,7 +274,6 @@ class Experiment(object):
             try:
                 return state.session_started
             except AttributeError:  # the session_started state hasn't been set yet
-                print("AttributeError")
                 return False
 
     def _skip_session_dialog(self):
@@ -416,7 +415,7 @@ class Experiment(object):
 
     def connect_to_control_pc(self):
         """Wait for a connection with the host PC."""
-        if not self.ram_config_env["no_host"]:
+        if self.kwargs["no_host"] and not self.debug:
             video = VideoTrack.lastInstance()
             video.clear('black')
 
@@ -799,12 +798,14 @@ class FRExperiment(WordTask):
         # Update session number stored in state and reset list index
         self.session += 1
 
-# class CatFRExperiment(FRExperiment):
-#     """Base for CatFR tasks."""
-#
-#
-# class PALExperiment(WordTask):
-#     """Base for PAL tasks."""
+
+def run():
+    """Run an experiment. This is the main entry point and has to be run as a
+    subprocess from the main run script. This is because PyEPL is a worthless
+    piece of garbage that prevents using both command-line arguments and PyQt
+    without crashing.
+
+    """
 
 
 if __name__ == "__main__":
