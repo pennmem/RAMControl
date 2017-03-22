@@ -11,21 +11,18 @@ PyAudio relies on portaudio. To install on mac::
 
 from __future__ import print_function, division
 
-import os.path as osp
 import time
 from argparse import ArgumentParser
-from multiprocessing import Process, Queue, Event, Pipe, current_process
+from multiprocessing import Process, Queue, Event, Pipe
 from threading import Thread
 import logging
 import wave
-import traceback as tb
 
 from pyaudio import PyAudio, paInt16
 from webrtcvad import Vad
 from logserver import create_logger
 
 from . import ipc
-from .exc import WrongProcessError
 
 SAMPLE_RATE = 32000
 FRAMES_PER_BUFFER = 4096
@@ -212,9 +209,8 @@ class VoiceServer(Process):
                     self.logger.error("Unexpected message type received. Message: %s", msg)
                     continue
             except EOFError:
-                self.logger.warning("Broken pipe")
+                self.logger.error("Broken pipe", exc_info=True)
                 self.quit()
-                continue
 
         audio.terminate()
 
@@ -239,7 +235,7 @@ def main():
 
     if args.output:
         with open(args.output, "w") as f:
-            f.write("#timestamp\tstate\n")
+            f.write("timestamp\tstate\n")
 
     parent, child = Pipe()
     p = VoiceServer(child, filename=args.filename,
@@ -249,7 +245,7 @@ def main():
     parent.send(ipc.message("START"))
     parent.recv()
     try:
-        while True:
+        while not p.done.is_set():
             if parent.poll():
                 msg = parent.recv()
                 if msg["type"] == "VOCALIZATION":
