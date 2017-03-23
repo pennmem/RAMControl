@@ -82,23 +82,24 @@ class PyEPLHelpers(object):
         :param ButtonChooser bc: When given, allows for cancelling the movie.
 
         """
+        clock = PresentationClock()
         movie = Movie(filename)
         movie_shown = self.video.showCentered(movie)
-        self.video.playMovie(movie, self.clock)
+        self.video.playMovie(movie)
 
         # Stop on button press if BC passed in, otherwise wait until the movie
         # is finished.
         if bc is None:
-            # self.clock.delay(movie.getTotalTime())
-            self.clock.wait()
+            clock.delay(movie.getTotalTime())
+            clock.wait()
         else:
-            self.clock.wait()
+            clock.wait()
             bc.wait()
         self.video.stopMovie(movie)
         movie.unload()
         self.video.unshow(movie_shown)
 
-    def play_intro_movie(self, filename, allow_skip=True):
+    def play_intro_movie(self, filename, allow_skip):
         """Play an intro movie, allowing cancellation.
 
         :param str filename: Path to movie file.
@@ -107,40 +108,38 @@ class PyEPLHelpers(object):
         """
         self.video.clear('black')
 
+        yes_or_no_chooser = ButtonChooser(Key('Y'), Key('N'))
+
         # if the first list has been completed, allow them to skip playing the movie
         if not allow_skip:
             waitForAnyKey(self.clock, Text('Press any key to play movie'))
             shown = self.video.showAnchored(
                 Text('Hit SPACE at any time to continue'), SOUTH,
                 self.video.propToPixel(.5, 1))
-            self.play_movie_sync(filename, ButtonChooser(Key('SPACE')))
+            self.play_movie_sync(filename, bc=ButtonChooser(Key("SPACE")))
             self.video.unshow(shown)
             seen_once = True
         else:
-            bc = ButtonChooser(Key('Y'), Key('N'))
             _, button, _ = Text(
                 'Press Y to play instructional video \n Press N to continue to practice list') \
-                .present(bc=bc)
+                .present(bc=yes_or_no_chooser)
             if button == Key('N'):
                 return
             seen_once = False
-
-        bc = ButtonChooser(Key('Y'), Key('N'))
 
         # Allowed to skip the movie the second time that it has been watched
         while True:
             if seen_once:
                 _, button, _ = Text(
                     'Press Y to continue to practice list, \n Press N to replay instructional video') \
-                    .present(bc=bc)
+                    .present(bc=yes_or_no_chooser)
                 if button == Key('Y'):
                     break
             shown = self.video.showAnchored(
                 Text('Hit SPACE at any time to continue'), SOUTH,
                 self.video.propToPixel(.5, 1))
 
-            stop_bc = ButtonChooser(Key('SPACE'))
-            self.play_movie_sync(filename, stop_bc)
+            self.play_movie_sync(filename, bc=ButtonChooser(Key("SPACE")))
             seen_once = True
             self.video.unshow(shown)
 

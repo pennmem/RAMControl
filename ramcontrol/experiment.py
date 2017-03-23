@@ -545,12 +545,16 @@ class WordTask(Experiment):
                 return key, timestamp
 
     @skippable
-    def run_instructions(self):
-        """Instruction period to explain the task to the subject."""
+    def run_instructions(self, allow_skip):
+        """Instruction period to explain the task to the subject.
+
+        :param bool allow_skip: True if allowed to skip the video.
+
+        """
         with self.state_context("INSTRUCT"):
             filename = absjoin(osp.expanduser(self.kwargs["video_path"]),
                                self.config.introMovie.format(language=self.config.LANGUAGE))
-            self.epl_helpers.play_intro_movie(filename)
+            self.epl_helpers.play_intro_movie(filename, allow_skip=allow_skip)
 
     @skippable
     def run_confirm(self, text):
@@ -626,12 +630,12 @@ class WordTask(Experiment):
         with self.state_context("ORIENT", phase_type=phase_type):
             text = Text(orient_text)
 
+            if self.kwargs.get("play_beeps", True):
+                self.epl_helpers.play_start_beep()
+
             # FIXME: should I be using encoding timings here?
             text.present(self.clock, self.timings.encoding_delay,
                          jitter=self.timings.encoding_jitter)
-
-            if self.kwargs.get("play_beeps", True):
-                self.epl_helpers.play_start_beep()
 
             self.video.unshow(text)
 
@@ -743,9 +747,6 @@ class FRExperiment(WordTask):
         self.controller.send_experiment_info(self.name, self.config.version,
                                              self.subject, self.session)
 
-        self.run_instructions()
-        self.run_mic_test()
-
         # Get the current list
         try:
             idx = self.list_index
@@ -756,6 +757,9 @@ class FRExperiment(WordTask):
         if self.list_index > len(self.all_lists):  # reset required
             self.list_index = 0
         wordlist = self.all_lists[self.list_index].to_dataframe()
+
+        self.run_instructions(allow_skip=(self.list_index > 0))
+        self.run_mic_test()
 
         for listno in range(self.list_index, len(wordlist.listno.unique())):
             words = wordlist[wordlist.listno == listno]
@@ -775,11 +779,12 @@ class FRExperiment(WordTask):
                 self.controller.send(TrialMessage(listno))
 
                 # Countdown to encoding
+                num = "practice trial" if listno is 0 else "trial {:d}".format(
+                    listno)
+                self.run_wait_for_keypress("Press any key for {:s}".format(num))
                 self.run_countdown()
 
                 # Encoding
-                num = "practice trial" if listno is 0 else "trial {:d}".format(listno)
-                self.run_wait_for_keypress("Press any key for {:s}".format(num))
                 self.run_encoding(words, phase_type)
 
                 # Distract
