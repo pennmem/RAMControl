@@ -144,6 +144,18 @@ class PyEPLHelpers(object):
             seen_once = True
             self.video.unshow(shown)
 
+    def confirm(self, text):
+        """Display text and wait for a keypress to indicate yes or no.
+
+        :param str text: Text to display.
+        :returns: True if yes, False if no.
+
+        """
+        bc = ButtonChooser(Key('Y'), Key('N'))
+        _, button, _ = Text(text).present(bc=bc)
+        print("PYEPL SUCKS")
+        return button == Key('Y')
+
     def show_text_and_wait_for_keyboard_input(self, text, font_height,
                                               keys=["SPACE"]):
         """Display text and wait for the user to hit a key.

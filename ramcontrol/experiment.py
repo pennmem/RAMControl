@@ -55,7 +55,7 @@ def skippable(func):
     def wrapper(self, *args, **kwargs):
         skip_key = "skip_" + '_'.join(func.__name__.split("_")[1:])
         if not self.kwargs.get(skip_key, False) and self.debug:
-            func(self, *args, **kwargs)
+            return func(self, *args, **kwargs)
     return wrapper
 
 
@@ -553,6 +553,16 @@ class WordTask(Experiment):
             self.epl_helpers.play_intro_movie(filename)
 
     @skippable
+    def run_confirm(self, text):
+        """Display text and wait for confirmation.
+
+        :param str text: Text to display.
+        :returns: True if yes, False if no.
+
+        """
+        return self.epl_helpers.confirm(text)
+
+    @skippable
     def run_countdown(self):
         """Display the countdown movie."""
         self.video.clear('black')
@@ -560,6 +570,16 @@ class WordTask(Experiment):
             filename = absjoin(osp.expanduser(self.kwargs["video_path"]),
                                self.config.countdownMovie)
             self.epl_helpers.play_movie_sync(filename)
+
+    @skippable
+    def run_wait_for_keypress(self, text):
+        """Display text and wait for a keypress before continuing.
+
+        :param str text: Text to display.
+
+        """
+        with self.state_context("WAITING"):
+            waitForAnyKey(self.clock, Text(text))
 
     @skippable
     def run_mic_test(self):
@@ -596,10 +616,15 @@ class WordTask(Experiment):
                 self.display_word(row.word, row.listno, n, row.type)
 
     @skippable
-    def run_orient(self, phase_type):
-        """Run an orient phase."""
+    def run_orient(self, phase_type, orient_text):
+        """Run an orient phase.
+
+        :param str phase_type:
+        :param str orient_text: The text to display.
+
+        """
         with self.state_context("ORIENT", phase_type=phase_type):
-            text = Text(self.config.recallStartText)
+            text = Text(orient_text)
 
             # FIXME: should I be using encoding timings here?
             text.present(self.clock, self.timings.encoding_delay,
@@ -607,10 +632,6 @@ class WordTask(Experiment):
 
             if self.kwargs.get("play_beeps", True):
                 self.epl_helpers.play_start_beep()
-
-            #self.clock.delay(self.timings.encoding_delay,
-            #                 jitter=self.timings.encoding_jitter)
-            #self.clock.wait()
 
             self.video.unshow(text)
 
@@ -741,19 +762,29 @@ class FRExperiment(WordTask):
             phase_type = words.type.iloc[0]
             assert all(words.type == phase_type)
 
+            # Confirm that we should proceed
+            if not self.run_confirm(
+                "Running {:s} in session {:d} of {:s}\n({:s}).\n".format(
+                    self.subject, self.session, self.name, self.config.LANGUAGE) + \
+                            "Press Y to continue, N to quit"):
+                self.logger.info("Quitting because reasons")
+                return
+
             with self.state_context("TRIAL", listno=listno, phase_type=phase_type):
-                self.log_event("TRIAL", listno=listno, phase_type=phase_type)
+                self.log_event("TRIAL", listno=listno, phase_type=phase_type)  # FIXME: host should get this with state message
                 self.controller.send(TrialMessage(listno))
 
                 # Countdown to encoding
                 self.run_countdown()
 
                 # Encoding
+                num = "practice trial" if listno is 0 else "trial {:d}".format(listno)
+                self.run_wait_for_keypress("Press any key for {:s}".format(num))
                 self.run_encoding(words, phase_type)
 
                 # Distract
                 self.run_distraction(phase_type)
-                self.run_orient(phase_type)
+                self.run_orient(phase_type, self.config.orientText)
 
                 # Delay before retrieval
                 self.clock.delay(self.timings.recall_delay,
@@ -761,7 +792,7 @@ class FRExperiment(WordTask):
                 self.clock.wait()
 
                 # Retrieval
-                self.run_orient(phase_type)
+                self.run_orient(phase_type, self.config.recallStartText)
                 if self.config.vad_during_retrieval:
                     with self.controller.voice_detector():
                         self.run_retrieval(phase_type)
@@ -773,6 +804,8 @@ class FRExperiment(WordTask):
 
         if self.config.recognition_enabled:
             self.run_recognition()
+
+        self.run_wait_for_keypress("Thank you!\nYou have completed the session.")
 
         # Update session number stored in state and reset list index
         self.session += 1
