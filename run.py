@@ -29,9 +29,9 @@ def get_subject(subject=""):
     while True:
         response = prompt(u"Subject [{}]: ".format(subject), history=history)
         if len(response) == 0 and validate(subject):
-            return subject
+            return subject.encode()
         elif validate(response):
-            return response
+            return response.encode()
         else:
             subject = response
             print("Invalid subject ID")
@@ -49,9 +49,9 @@ def get_experiment(available, experiment=""):
         response = prompt(u"Experiment (press tab to see available) [{}]: ".format(experiment),
                           completer=completer, complete_while_typing=True)
         if len(response) == 0 and experiment in available:
-            return experiment
+            return experiment.encode()
         elif response in available:
-            return response
+            return response.encode()
         else:
             experiment = ""
             print("Invalid experiment")
@@ -77,9 +77,9 @@ def main():
         print("!"*80)
 
     if args.subject is None:
-        raise RuntimeError("Need a subject")
+        args.subject = get_subject()
     if args.experiment is None:
-        raise RuntimeError("Need an experiment")
+        args.experiment = get_experiment(experiments)
 
     env = {
         "subject": args.subject,
