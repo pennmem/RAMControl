@@ -290,18 +290,6 @@ class Experiment(object):
                 return True
         return False
 
-    # TODO: this would be good to add, probably
-    # @abstractmethod
-    # def validate_config(self, config):
-    #     """Implement this method to validate passed configuration before
-    #     running an experiment. This is to avoid crashes during run time due to
-    #     misconfiguration.
-    #
-    #     This should raise :class:`AssertionError`s when something is
-    #     misconfigured.
-    #
-    #     """
-
     @property
     def state(self):
         """Returns the experimental state (implmented via PyEPL). Use the
