@@ -6,6 +6,7 @@ import os.path as osp
 import sys
 import time
 import json
+import pickle
 import codecs
 from multiprocessing import Process
 from contextlib import contextmanager
@@ -25,12 +26,11 @@ from logserver.handlers import SQLiteHandler
 
 from ramcontrol import listgen
 from ramcontrol.control import RAMControl
-from ramcontrol.util import make_env, absjoin
+from ramcontrol.util import absjoin
 from ramcontrol.exc import LanguageError, ExperimentError, MicTestAbort
 from ramcontrol.messages import StateMessage, TrialMessage, ExitMessage
 from ramcontrol.extendedPyepl import (
-    CustomAudioTrack, waitForAnyKeyWithCallback, customMathDistract,
-    customMicTest
+    CustomAudioTrack, customMathDistract, customMicTest
 )
 from ramcontrol.epl import PyEPLHelpers
 
@@ -643,12 +643,11 @@ class WordTask(Experiment):
             label = str(self.list_index)
 
             # Record responses
-            rec, timestamp = self.audio.record(
-                self.timings.recall_duration, label, t=self.clock)
+            self.audio.record(self.timings.recall_duration, label, t=self.clock)
 
             # Ending beep
             if self.kwargs.get("play_beeps", True):
-                end_timestamp = self.epl_helpers.play_stop_beep()
+                self.epl_helpers.play_stop_beep()
 
     @skippable
     def run_recognition(self):
@@ -807,7 +806,7 @@ def run():
     command line parsing.
 
     """
-    config = json.loads(os.environ["RAM_CONFIG"])
+    config = pickle.loads(os.environ["RAM_CONFIG"])
 
     subject = config["subject"]
     experiment = config["experiment"]
@@ -840,9 +839,12 @@ def run():
     if debug:
         kwargs.update(config["debug_options"])
 
-    # epl_exp.parseArgs()
-    epl_exp.setup()
+    # epl_exp.setup()
     epl_exp.setBreak()  # quit with Esc-F1
+
+    if debug:
+        print(json.dumps(epl_exp.getConfig().config1.config, indent=2, sort_keys=True))
+        print(json.dumps(epl_exp.getConfig().config2.config, indent=2, sort_keys=True))
 
     ExperimentClass = getattr(sys.modules[__name__], config["experiment_class"])
     exp = ExperimentClass(epl_exp, debug=debug, **kwargs)
@@ -852,7 +854,7 @@ def run():
     log_process = Process(target=logserver.run_server, args=log_args,
                           name="log_process")
 
-    # Some funny business seems to be happening with PyEPL...
+    # Some funny business seems to be happening with PyEPL... Shocking, I know.
     @atexit.register
     def cleanup():
         time.sleep(0.25)

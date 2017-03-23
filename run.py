@@ -4,6 +4,7 @@ from __future__ import print_function
 
 import os
 import json
+import pickle
 from configparser import ConfigParser
 from argparse import ArgumentParser
 import re
@@ -97,7 +98,8 @@ def main():
     }
 
     penv = os.environ.copy()
-    penv["RAM_CONFIG"] = json.dumps(env)
+    penv["RAM_CONFIG"] = pickle.dumps(env)
+
     p = subprocess.Popen(["python", "-m", "ramcontrol.experiment"],
                          cwd=absjoin("."), env=penv)
     p.wait()
