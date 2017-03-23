@@ -249,16 +249,6 @@ class Experiment(object):
                         "session_{:d}".format(self.session))
 
     @property
-    def log_filename(self):
-        """Return the JSON (for now) log filename.
-
-        This appends a new JSON object on each line, so newlines are not
-        supported within the log.
-
-        """
-        return osp.join(self.session_data_dir, "sessionlog.log")
-
-    @property
     def experiment_started(self):
         """Has the experiment been started previously?"""
         return True if self.epl_exp.restoreState() is not None else False
