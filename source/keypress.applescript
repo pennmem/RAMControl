@@ -1,6 +1,10 @@
+set choiceKeys to {"Y", "N"}
+set dt to 0.7
 repeat 20000 times
-    tell application "System Events" to keystroke "1"
-    delay 1
+    tell application "System Events" to keystroke (random number from 1 to 9)
+    delay dt
     tell application "System Events" to keystroke Return
-    delay 1
+    delay dt
+    tell application "System Events" to keystroke item (random number from 1 to 2) of choiceKeys
+    delay dt
 end repeat
