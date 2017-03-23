@@ -822,7 +822,7 @@ def run():
 
     # This is only here because PyEPL screws up the voice server if we don't
     # instantiate this *before* the PyEPL experiment.
-    RAMControl.instance()
+    RAMControl.instance(voiceserver=config["voiceserver"])
 
     pid = os.getpid()
     proc = psutil.Process(pid)
@@ -841,7 +841,7 @@ def run():
         kwargs.update(config["debug_options"])
 
     # epl_exp.parseArgs()
-    # epl_exp.setup()
+    epl_exp.setup()
     epl_exp.setBreak()  # quit with Esc-F1
 
     ExperimentClass = getattr(sys.modules[__name__], config["experiment_class"])

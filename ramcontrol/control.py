@@ -7,7 +7,6 @@ from threading import Event
 import sys
 import logging
 from contextlib import contextmanager
-import itertools
 from multiprocessing import Pipe
 
 try:
@@ -53,6 +52,7 @@ class RAMControl(object):
     """Main controller for running RAM task laptop tasks.
 
     :param str address: ZMQ address string to bind socket.
+    :param bool voiceserver: Enable the voice server for VAD.
     :param int connection_timeout: Network timeout limit in seconds.
     :param int log_level: Log level to use.
 
@@ -64,7 +64,7 @@ class RAMControl(object):
     MAX_QUEUE_SIZE = 32
     _instance = None
 
-    def __init__(self, address="tcp://192.168.137.200:8889",
+    def __init__(self, address="tcp://192.168.137.200:8889", voiceserver=False,
                  connection_timeout=10, log_level=logging.INFO):
         if self._instance is not None:
             raise Exception("Multiple RAM instances requested!")
@@ -104,10 +104,13 @@ class RAMControl(object):
         self.socket.register_handler(self.dispatch)
         self.socket.bind(address)
 
-        self.voice_pipe, self._voice_child_pipe = Pipe()
-        self.voice_server = VoiceServer(self._voice_child_pipe)
-        self.voice_server.start()
-        if False:  # FIXME: make voiceserver optional
+        if voiceserver:
+            print("yes voiceserver")
+            self.voice_pipe, self._voice_child_pipe = Pipe()
+            self.voice_server = VoiceServer(self._voice_child_pipe)
+            self.voice_server.start()
+        else:
+            print("no voiceserver")
             self.voice_pipe, self._voice_child_pipe = None, None
             self.voice_server = None
 

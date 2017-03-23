@@ -1,5 +1,6 @@
 src/
 data/
+!data/.keepme
 !tests/data
 *~
 .DS_Store

@@ -17,6 +17,7 @@ from multiprocessing import Process, Queue, Event, Pipe
 from threading import Thread
 import logging
 import wave
+import traceback
 
 from pyaudio import PyAudio, paInt16
 from webrtcvad import Vad
@@ -114,6 +115,7 @@ class VoiceServer(Process):
             self.logger.info("Shutting down voice server...")
             self.done.set()
         else:
+            self.logger.error(traceback.format_stack())
             self.logger.error("Voice server already shut down!")
 
     def open_audio_stream(self, audio):
@@ -164,7 +166,6 @@ class VoiceServer(Process):
                 else:
                     data = wav.readframes(FRAMES_PER_BUFFER)
                     if len(data) is 0:
-                        self.quit()
                         continue
                     stream.write(data)
                 self.data_queue.put(data)
@@ -190,7 +191,10 @@ class VoiceServer(Process):
 
         while not self.done.is_set():
             try:
-                msg = self.pipe.recv()  # Blocks until message sent
+                if self.pipe.poll(1):
+                    msg = self.pipe.recv()
+                else:
+                    continue
 
                 if msg["type"] == "START":
                     self.logger.info("Got request to start VAD")
