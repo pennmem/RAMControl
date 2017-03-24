@@ -146,11 +146,6 @@ class Experiment(object):
             "experiment", level=(logging.DEBUG if debug else logging.INFO))
         self.event_logger = create_logger("events")
 
-        # print("config1:\n%s",
-        #       json.dumps(self.config.config1.config, indent=2, sort_keys=True))
-        # print("config2:\n%s",
-        #       json.dumps(self.config.config2.config, indent=2, sort_keys=True))
-
         if self.debug and self.kwargs.get("fast_timing", False):
             self.timings = Timings.make_debug()
         else:
@@ -594,14 +589,19 @@ class WordTask(Experiment):
     @skippable
     def run_distraction(self, phase_type):
         """Distraction phase."""
+        if self.debug:
+            min_duration = self.kwargs.get("min_distraction_duration", self.config.MATH_minDuration)
+        else:
+            min_duration = self.config.MATH_minDuration
+
+        num_problems = 1 if self.debug and self.kwargs.get("one_math_problem", False) else self.config.MATH_maxProbs
         with self.state_context("DISTRACT", phase_type=phase_type):
-            problems = self.config.MATH_maxProbs if not self.debug else 1
             customMathDistract(clk=self.clock,
                                mathlog=self.mathlog,
                                numVars=self.config.MATH_numVars,
-                               maxProbs=problems,
+                               maxProbs=num_problems,
                                plusAndMinus=self.config.MATH_plusAndMinus,
-                               minDuration=self.config.MATH_minDuration,
+                               minDuration=min_duration,
                                textSize=self.config.MATH_textSize,
                                callback=self.controller.send_math_message)
 
@@ -817,6 +817,12 @@ class FRExperiment(WordTask):
         self.session += 1
 
 
+# Maps experiment "families" to the class that should be used
+class_map = {
+    "FR": FRExperiment
+}
+
+
 def run():
     """Entry point for running experiments. This must be run with
     subprocess.Popen because PyEPL is total garbage and hijacks things like
@@ -863,7 +869,7 @@ def run():
         print(json.dumps(epl_exp.getConfig().config1.config, indent=2, sort_keys=True))
         print(json.dumps(epl_exp.getConfig().config2.config, indent=2, sort_keys=True))
 
-    ExperimentClass = getattr(sys.modules[__name__], config["experiment_class"])
+    ExperimentClass = class_map[family]
     exp = ExperimentClass(epl_exp, debug=debug, **kwargs)
 
     log_path = osp.join(exp.session_data_dir, "session.sqlite")

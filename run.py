@@ -85,7 +85,6 @@ def main():
         "subject": args.subject,
         "experiment": args.experiment,
         "experiment_family": config.get(args.experiment, "family"),
-        "experiment_class": config.get(args.experiment, "class"),
 
         "voiceserver": config[args.experiment].get("voiceserver", False),
 
