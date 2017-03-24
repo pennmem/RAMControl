@@ -788,7 +788,7 @@ class FRExperiment(WordTask):
             "Running {:s} in session {:d} of {:s}\n({:s}).\n".format(
                 self.subject, self.session, self.name,
                 self.config.LANGUAGE) + "Press Y to continue, N to quit"):
-            self.logger.info("Quitting because reasons")
+            self.logger.info("Quitting due to negative confirmation.")
             return
 
         self.run_mic_test()
@@ -863,7 +863,7 @@ def run():
     experiment = config["experiment"]
     family = config["experiment_family"]
     debug = config["debug"]
-    fullscreen = not debug
+    fullscreen = config["fullscreen"]
 
     here = config["ramcontrol_path"]
     archive_dir = absjoin(config["data_path"], experiment)
