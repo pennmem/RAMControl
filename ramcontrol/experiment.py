@@ -633,7 +633,6 @@ class WordTask(Experiment):
             if self.kwargs.get("play_beeps", True) and beep:
                 self.epl_helpers.play_start_beep()
 
-            # FIXME: should I be using encoding timings here?
             text.present(self.clock, self.timings.encoding_delay,
                          jitter=self.timings.encoding_jitter)
 
@@ -642,6 +641,19 @@ class WordTask(Experiment):
     @skippable
     def run_retrieval(self, phase_type):
         """Run a retrieval (a.k.a. recall) phase."""
+        self.clock.delay(self.config.PauseBeforeRecall, jitter=self.config.JitterBeforeRecall)
+
+        with self.state_context("RETRIEVAL_ORIENT"):
+            start_text = self.video.showCentered(
+                Text(self.config.recallStartText,
+                     size=self.config.wordHeight))
+            self.video.updateScreen(self.clock)
+            self.epl_helpers.play_start_beep()
+            self.clock.delay(self.config.PauseBeforeRecall)
+            self.clock.wait()
+            self.video.unshow(start_text)
+            self.video.updateScreen(self.clock)
+
         with self.controller.voice_detector():  # this should do nothing if VAD is disabled
             with self.state_context("RETRIEVAL", phase_type=phase_type):
                 label = str(self.list_index)
@@ -809,7 +821,7 @@ class FRExperiment(WordTask):
                 self.clock.wait()
 
                 # Retrieval
-                self.run_orient(phase_type, self.config.recallStartText, beep=True)
+                # self.run_orient(phase_type, self.config.recallStartText, beep=True)
                 self.run_retrieval(phase_type)
 
             # Update list index stored in state
