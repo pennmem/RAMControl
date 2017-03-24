@@ -1,0 +1,15 @@
+In this part of the session, you will see words
+one at a time on the computer screen.
+Some words will be 'OLD' words that you saw during
+the lists you studied earlier.
+Some words will be 'NEW' words that you did not see
+during the previous study lists.
+Your job is to press a button to indicate if the word
+is OLD or NEW.
+
+Press {recognition_yes_key:s} if the word is OLD.
+Press {recognition_no_key:s} if the word is NEW.
+
+Please ask the experimenter if you have any questions.
+
+Press any key to begin.

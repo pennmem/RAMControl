@@ -26,7 +26,7 @@ from logserver.handlers import SQLiteHandler
 
 from ramcontrol import listgen
 from ramcontrol.control import RAMControl
-from ramcontrol.util import absjoin
+from ramcontrol.util import absjoin, instructions_path
 from ramcontrol.exc import LanguageError, ExperimentError, MicTestAbort
 from ramcontrol.messages import StateMessage, TrialMessage, ExitMessage
 from ramcontrol.extendedPyepl import (
@@ -642,22 +642,33 @@ class WordTask(Experiment):
     @skippable
     def run_retrieval(self, phase_type):
         """Run a retrieval (a.k.a. recall) phase."""
-        with self.state_context("RETRIEVAL", phase_type=phase_type):
-            label = str(self.list_index)
+        with self.controller.voice_detector():  # this should do nothing if VAD is disabled
+            with self.state_context("RETRIEVAL", phase_type=phase_type):
+                label = str(self.list_index)
 
-            # Record responses
-            self.audio.record(self.timings.recall_duration, label, t=self.clock)
+                # Record responses
+                self.audio.record(self.timings.recall_duration, label, t=self.clock)
 
-            # Ending beep
-            if self.kwargs.get("play_beeps", True):
-                self.epl_helpers.play_stop_beep()
+                # Ending beep
+                if self.kwargs.get("play_beeps", True):
+                    self.epl_helpers.play_stop_beep()
 
     @skippable
     def run_recognition(self):
         """Run a recognition phase."""
         if not self.config.recognition_enabled:
             raise ExperimentError("Recognition subtask not enabled!")
+
         rec_list = self.all_rec_blocks[self.session]
+
+        with self.state_context("RECOGNITION_INSTRUCT"):
+            with open(osp.join(instructions_path(), "rec1.txt")) as f:
+                instructions = f.read()
+            text = instructions.format(
+                recognition_no_key=self.config.recognition_no_key,
+                recognition_yes_key=self.config.recognition_yes_key
+            )
+            self.epl_helpers.show_text_and_wait(text, 0.05)
 
         with self.state_context("RECOGNITION"):
             keys = [self.config.recognition_yes_key,
@@ -799,11 +810,7 @@ class FRExperiment(WordTask):
 
                 # Retrieval
                 self.run_orient(phase_type, self.config.recallStartText, beep=True)
-                if self.config.vad_during_retrieval:
-                    with self.controller.voice_detector():
-                        self.run_retrieval(phase_type)
-                else:
-                    self.run_retrieval(phase_type)
+                self.run_retrieval(phase_type)
 
             # Update list index stored in state
             self.list_index += 1
@@ -814,7 +821,9 @@ class FRExperiment(WordTask):
         self.run_wait_for_keypress("Thank you!\nYou have completed the session.")
 
         # Update session number stored in state and reset list index
+        print("old session:", self.session)
         self.session += 1
+        print("new session:", self.session)
 
 
 # Maps experiment "families" to the class that should be used

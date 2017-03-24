@@ -18,6 +18,11 @@ def data_path():
     return osp.join(git_root(), "tests", "data")
 
 
+def instructions_path():
+    """Return the path containing task instruction text files."""
+    return osp.join(git_root(), "ramcontrol", "instructions")
+
+
 def absjoin(*paths):
     """Join a list of paths and return the absolute path."""
     return osp.abspath(osp.join(*paths))

@@ -137,3 +137,13 @@ class PyEPLHelpers(object):
         self.video.clear('black')
         _, key, timestamp = Text(text, size=font_height).present(self.clock, bc=bc)
         return key, timestamp
+
+    def show_text_and_wait(self, text, size=None):
+        """Same as :meth:`show_text_and_wait_for_keyboard_input` but waits for
+        any keypress.
+
+        :param str text: Text to display.
+        :param float size: Font height.
+
+        """
+        waitForAnyKey(self.clock, Text(text, size=size))
