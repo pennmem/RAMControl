@@ -94,7 +94,7 @@ def main():
         "data_path": absjoin("./data"),
         "ramcontrol_path": os.path.dirname(ramcontrol.__file__),
 
-        "fullscreen": args.debug or args.no_fs,
+        "fullscreen": not (args.debug or args.no_fs),
         "debug": args.debug,
         "debug_options": config["debug"].items()
     }
