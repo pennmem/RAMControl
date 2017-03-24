@@ -90,7 +90,7 @@ def main():
 
         "voiceserver": config[args.experiment].get("voiceserver", False),
 
-        "video_path": os.path.expanduser(config["videos"]["path"]),
+        "video_path": os.path.abspath(os.path.expanduser(config["videos"]["path"])),
         "data_path": absjoin("./data"),
         "ramcontrol_path": os.path.dirname(ramcontrol.__file__),
 

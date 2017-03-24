@@ -9,6 +9,7 @@ logs/*.log
 .idea/
 vocalization.csv
 *.sqlite
+videos/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
