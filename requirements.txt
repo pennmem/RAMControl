@@ -1,13 +1,13 @@
-configparser==3.5.0
-pandas==0.19.2
-prompt_toolkit==1.0.9
-pytest==3.0.6
-pytest-cov==2.4.0
-pyzmq==16.0.2
-six==1.10.0
-tornado==4.4.2
-webrtcvad==2.0.10
-SQLAlchemy==1.1.6
-psutil==5.2.0
+configparser
+pandas
+prompt_toolkit
+pytest
+pytest-cov
+pyzmq
+six
+tornado
+webrtcvad
+SQLAlchemy
+psutil
 -e git+https://github.com/pennmem/wordpool.git#egg=wordpool
 -e git+https://github.com/mivade/logserver.git#egg=logserver
