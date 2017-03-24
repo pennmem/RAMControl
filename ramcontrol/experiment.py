@@ -56,6 +56,8 @@ def skippable(func):
         skip_key = "skip_" + '_'.join(func.__name__.split("_")[1:])
         if not self.kwargs.get(skip_key, False) and self.debug:
             return func(self, *args, **kwargs)
+        else:
+            print(skip_key)
     return wrapper
 
 
