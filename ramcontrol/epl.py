@@ -5,41 +5,9 @@ This module will be removed when migrating away from PyEPL is complete.
 """
 
 from pyepl.locals import (
-    VideoTrack, AudioTrack, LogTrack, KeyTrack, Key, Text, ButtonChooser,
-    PresentationClock, SOUTH, waitForAnyKey, Movie
+    Key, Text, ButtonChooser, PresentationClock, SOUTH, waitForAnyKey, Movie
 )
 from ramcontrol.extendedPyepl import CustomBeep
-
-
-# From RAM_FR, but seemingly not used
-def skip_session(exp):
-    state = exp.restoreState()
-    exp.setSession(state.sessionNum)
-
-    video = VideoTrack("video")
-    keyboard = KeyTrack("keyboard")
-    log = LogTrack("session")
-    mathlog = LogTrack("math")
-
-    continueKey = Key('SPACE') & Key('RETURN')
-    breakKey = Key('ESCAPE')
-
-    message = Text(
-        "Press SPACE and RETURN \n" +
-        "to skip session %d.\n" % state.sessionNum +
-        "Press esc to exit without skipping." % state.sessionNum)
-    bc = ButtonChooser(continueKey, breakKey)
-
-    video.showCentered(message)
-    video.updateScreen()
-    b = bc.wait()
-
-    if b == continueKey:
-        print('skipping session...')
-        state.sessionNum += 1
-        state.trialNum = 0
-        exp.saveState(state)
-        log.logMessage('SESSION_SKIPPED', PresentationClock().get())
 
 
 class PyEPLHelpers(object):
