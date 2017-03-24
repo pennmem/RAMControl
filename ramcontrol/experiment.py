@@ -620,7 +620,7 @@ class WordTask(Experiment):
                 self.display_word(row.word, row.listno, n, row.type)
 
     @skippable
-    def run_orient(self, phase_type, orient_text):
+    def run_orient(self, phase_type, orient_text, beep=False):
         """Run an orient phase.
 
         :param str phase_type:
@@ -630,7 +630,7 @@ class WordTask(Experiment):
         with self.state_context("ORIENT", phase_type=phase_type):
             text = Text(orient_text)
 
-            if self.kwargs.get("play_beeps", True):
+            if self.kwargs.get("play_beeps", True) and beep:
                 self.epl_helpers.play_start_beep()
 
             # FIXME: should I be using encoding timings here?
@@ -759,20 +759,21 @@ class FRExperiment(WordTask):
         wordlist = self.all_lists[self.list_index].to_dataframe()
 
         self.run_instructions(allow_skip=(self.list_index > 0))
+
+        # Confirm that we should proceed
+        if not self.run_confirm(
+            "Running {:s} in session {:d} of {:s}\n({:s}).\n".format(
+                self.subject, self.session, self.name,
+                self.config.LANGUAGE) + "Press Y to continue, N to quit"):
+            self.logger.info("Quitting because reasons")
+            return
+
         self.run_mic_test()
 
         for listno in range(self.list_index, len(wordlist.listno.unique())):
             words = wordlist[wordlist.listno == listno]
             phase_type = words.type.iloc[0]
             assert all(words.type == phase_type)
-
-            # Confirm that we should proceed
-            if not self.run_confirm(
-                "Running {:s} in session {:d} of {:s}\n({:s}).\n".format(
-                    self.subject, self.session, self.name, self.config.LANGUAGE) + \
-                            "Press Y to continue, N to quit"):
-                self.logger.info("Quitting because reasons")
-                return
 
             with self.state_context("TRIAL", listno=listno, phase_type=phase_type):
                 self.log_event("TRIAL", listno=listno, phase_type=phase_type)  # FIXME: host should get this with state message
@@ -783,13 +784,13 @@ class FRExperiment(WordTask):
                     listno)
                 self.run_wait_for_keypress("Press any key for {:s}".format(num))
                 self.run_countdown()
+                self.run_orient(phase_type, self.config.orientText)
 
                 # Encoding
                 self.run_encoding(words, phase_type)
 
                 # Distract
                 self.run_distraction(phase_type)
-                self.run_orient(phase_type, self.config.orientText)
 
                 # Delay before retrieval
                 self.clock.delay(self.timings.recall_delay,
@@ -797,7 +798,7 @@ class FRExperiment(WordTask):
                 self.clock.wait()
 
                 # Retrieval
-                self.run_orient(phase_type, self.config.recallStartText)
+                self.run_orient(phase_type, self.config.recallStartText, beep=True)
                 if self.config.vad_during_retrieval:
                     with self.controller.voice_detector():
                         self.run_retrieval(phase_type)
