@@ -782,7 +782,7 @@ class FRExperiment(WordTask):
             self.list_index = 0
         wordlist = self.all_lists[self.list_index].to_dataframe()
 
-        self.run_instructions(allow_skip=(self.list_index > 0))
+        self.run_instructions(allow_skip=(self.session > 0))
 
         # Confirm that we should proceed
         if not self.run_confirm(
