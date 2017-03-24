@@ -643,16 +643,17 @@ class WordTask(Experiment):
         """Run a retrieval (a.k.a. recall) phase."""
         self.clock.delay(self.config.PauseBeforeRecall, jitter=self.config.JitterBeforeRecall)
 
-        with self.state_context("RETRIEVAL_ORIENT"):
-            start_text = self.video.showCentered(
-                Text(self.config.recallStartText,
-                     size=self.config.wordHeight))
-            self.video.updateScreen(self.clock)
-            self.epl_helpers.play_start_beep()
-            self.clock.delay(self.config.PauseBeforeRecall)
-            self.clock.wait()
-            self.video.unshow(start_text)
-            self.video.updateScreen(self.clock)
+        if not (self.debug and self.kwargs.get("skip_orient", False)):
+            with self.state_context("RETRIEVAL_ORIENT"):
+                start_text = self.video.showCentered(
+                    Text(self.config.recallStartText,
+                         size=self.config.wordHeight))
+                self.video.updateScreen(self.clock)
+                self.epl_helpers.play_start_beep()
+                self.clock.delay(self.config.PauseBeforeRecall)
+                self.clock.wait()
+                self.video.unshow(start_text)
+                self.video.updateScreen(self.clock)
 
         with self.controller.voice_detector():  # this should do nothing if VAD is disabled
             with self.state_context("RETRIEVAL", phase_type=phase_type):
@@ -833,9 +834,10 @@ class FRExperiment(WordTask):
         self.run_wait_for_keypress("Thank you!\nYou have completed the session.")
 
         # Update session number stored in state and reset list index
-        print("old session:", self.session)
-        self.session += 1
-        print("new session:", self.session)
+        self.update_state(
+            session=self.session + 1,
+            session_started=False
+        )
 
 
 # Maps experiment "families" to the class that should be used
