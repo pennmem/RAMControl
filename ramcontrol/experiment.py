@@ -26,7 +26,7 @@ from logserver.handlers import SQLiteHandler
 
 from ramcontrol import listgen
 from ramcontrol.control import RAMControl
-from ramcontrol.util import absjoin, instructions_path
+from ramcontrol.util import absjoin, get_instructions
 from ramcontrol.exc import LanguageError, ExperimentError, MicTestAbort
 from ramcontrol.messages import StateMessage, TrialMessage, ExitMessage
 from ramcontrol.extendedPyepl import (
@@ -675,9 +675,8 @@ class WordTask(Experiment):
         rec_list = self.all_rec_blocks[self.session]
 
         with self.state_context("RECOGNITION_INSTRUCT"):
-            with open(osp.join(instructions_path(), "rec1.txt")) as f:
-                instructions = f.read()
-            text = instructions.format(
+            # FIXME: allow Spanish
+            text = get_instructions("rec1_en.txt").format(
                 recognition_no_key=self.config.recognition_no_key,
                 recognition_yes_key=self.config.recognition_yes_key
             )
@@ -824,6 +823,12 @@ class FRExperiment(WordTask):
                 # Retrieval
                 # self.run_orient(phase_type, self.config.recallStartText, beep=True)
                 self.run_retrieval(phase_type)
+
+                if phase_type == "PRACTICE":
+                    with self.state_context("PRACTICE_POST_INSTRUCT"):
+                        text = get_instructions("fr_post_practice_{:s}.txt".format(
+                            self.config.LANGUAGE.lower()))
+                        self.epl_helpers.show_text_and_wait(text, 0.05)
 
             # Update list index stored in state
             self.list_index += 1

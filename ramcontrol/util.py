@@ -18,9 +18,14 @@ def data_path():
     return osp.join(git_root(), "tests", "data")
 
 
-def instructions_path():
-    """Return the path containing task instruction text files."""
-    return osp.join(git_root(), "ramcontrol", "instructions")
+def get_instructions(filename):
+    """Returns instructions stored in a text file.
+
+    :param str filename: Filename to load.
+
+    """
+    with open(osp.join(git_root(), "ramcontrol", "instructions", filename)) as f:
+        return f.read()
 
 
 def absjoin(*paths):
