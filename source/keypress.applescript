@@ -1,4 +1,4 @@
-set choiceKeys to {"Y", "N"}
+set choiceKeys to {"J", "K"}
 set dt to 0.7
 repeat 20000 times
     tell application "System Events" to keystroke (random number from 1 to 9)

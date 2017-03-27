@@ -33,8 +33,8 @@ Jitter = 250
 recallDuration = 30000
 
 # "yes" and "no" keys for recognition
-recognition_yes_key = "Y"
-recognition_no_key = "N"
+recognition_yes_key = "J"
+recognition_no_key = "K"
 
 # Beep at start and end of recording (freq,dur,rise/fall)
 startBeepFreq = 800
