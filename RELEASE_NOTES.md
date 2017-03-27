@@ -2,11 +2,10 @@
 
 ## Version 3.1.0
 
-**Soon**
+**2017-03-27**
 
 * Supported experiments: FR1, FR3, FR5, PS4_FR5
-* Ramulator version required: 3.x.y
-* ENSGateway version required: 3.x.y
+* Ramulator version required: 3.1.
 * Introduces voice activity detection (VAD) during retrieval
 
 ### Notes

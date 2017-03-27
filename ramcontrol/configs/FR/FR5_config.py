@@ -1,6 +1,6 @@
 # THIS IS THE RIGHT FILE
 experiment = "FR5"
-version = "5.0.0-dev"
+version = "5.0.0"
 
 # Number of baseline lists (excluding practice)
 n_baseline = 3

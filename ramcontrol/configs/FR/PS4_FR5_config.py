@@ -1,5 +1,5 @@
 experiment = "PS4_FR5"
-version = "5.0.0-dev"
+version = "5.0.0"
 
 # Number of baseline lists (excluding practice)
 n_baseline = 3
