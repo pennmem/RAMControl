@@ -7,6 +7,18 @@
 * Supported experiments: FR1, FR3, FR5, PS4_FR5
 * Ramulator version required: 3.x.y
 * ENSGateway version required: 3.x.y
+* Introduces voice activity detection (VAD) during retrieval
+
+### Notes
+
+VAD can be enabled during retrieval by modifying the configuration file variable
+`vad_during_retrieval`. By default, this is `False` in all FR experiments, but
+enabled in FR5 and PS4_FR5.
+
+Setting the microphone input volume too high results in many VAD false positives
+from ambient noises. The input volume on the laptop should be set somewhere in
+the middle (more precise recommendations will be made later based on comparisons
+between annotations and recorded VAD events).
 
 ### Upgrading from version 3.0
 
