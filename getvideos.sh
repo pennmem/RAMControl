@@ -1,10 +1,3 @@
 #!/usr/bin/env bash
-
-for experiment in `ls experiments`; do
-    echo "Extracting $experiment videos..."
-    cd experiments/$experiment
-    tar -xf videos.tar.xz
-    cd -
-done
-
-echo "done!"
+read -p "rhino username: " username
+scp -Cr $username@rhino2.psych.upenn.edu:/home/depalati/videos .
