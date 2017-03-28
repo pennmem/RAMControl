@@ -2,7 +2,7 @@
 
 ## Upgrading
 
-Please see [CHANGELOG.md]() for upgrade instructions.
+Please see the [CHANGELOG](CHANGELOG.md) for upgrade instructions.
 
 ## Supported experiments
 
