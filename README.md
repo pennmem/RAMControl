@@ -1,36 +1,17 @@
-# RAM System 3 Task Laptop code
+# RAM System 3.1 Task Laptop code
 
-## Basic setup
+## Upgrading
 
-**Note**: These instructions assume PyEPL is already installed.
+Please see [RELEASE_NOTES.md]() for upgrade instructions.
 
-Clone this repository and checkout the stable version 3.0 branch:
+## Supported experiments
 
-```
-$ git clone -b v3.0 https://github.com/ramdarpaprojectorg/RAMControl.git
-```
+As of 2017-03-28, the following experiments are supported:
 
-Experiments are included in this repository via git submodules. To obtain:
-
-```
-$ git submodule init
-$ git submodule update
-```
-
-Next, videos must be extracted or else the tasks will crash whenever
-encountering a video:
-
-```
-$ ./vidextract.sh
-```
-
-
-## Updating
-
-```
-$ git pull
-$ git submodule update
-```
+* FR1
+* FR3
+* PS4/FR5
+* FR5/REC1
 
 ## Debugger
 

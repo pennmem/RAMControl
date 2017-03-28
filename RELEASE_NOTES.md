@@ -1,5 +1,12 @@
 # Release notes
 
+## Version 3.1.1
+
+**2017-03-28**
+
+Point release to add video downloading script. See the notes for
+[v3.1.0](#version-310) below for upgrade instructions.
+
 ## Version 3.1.0
 
 **2017-03-27**
@@ -45,7 +52,7 @@ conda install -y numpy pandas
 ```
 
 * Install other Python requirements: `pip install -r requirements.txt`
-* Copy videos to `./videos` (TODO: make available more robustly)
+* Copy videos to `./videos`: `./getvideos.sh`
 
 [PyAudio]: https://people.csail.mit.edu/hubert/pyaudio/
 
