@@ -2,7 +2,7 @@
 
 ## Upgrading
 
-Please see [RELEASE_NOTES.md]() for upgrade instructions.
+Please see [CHANGELOG.md]() for upgrade instructions.
 
 ## Supported experiments
 
