@@ -63,7 +63,7 @@ def main():
 
     parser = ArgumentParser()
     parser.add_argument("-s", "--subject", help="Subject ID", default=None)
-    parser.add_argument("-e", "--experiment", default=None, help="Experiment to run")
+    parser.add_argument("-x", "--experiment", default=None, help="Experiment to run")
     parser.add_argument("-d", "--debug", action="store_true", default=False,
                         help="Enable debug mode")
     parser.add_argument("--no-fs", action="store_true", default=False,
