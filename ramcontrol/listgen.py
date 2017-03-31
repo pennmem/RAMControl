@@ -2,7 +2,6 @@
 
 import random
 import os.path as osp
-import numpy as np
 import numpy.random as npr
 import pandas as pd
 import wordpool

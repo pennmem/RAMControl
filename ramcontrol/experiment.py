@@ -374,23 +374,7 @@ class Experiment(object):
             if lang == "sp":
                 raise LanguageError("Spanish lures are not yet available.")
 
-        # Copy wordpool used in experiment...
-        pool = wordpool.load("ram_wordpool_{:s}.txt".format(lang))
-        # FIXME
-
-
-
-        with codecs.open(osp.join(data_root, "RAM_wordpool.txt"),
-                         "w", encoding="utf-8") as wordfile:
-            filename = "ram_wordpool_{:s}.txt".format(lang)
-            wordfile.write("\n".join(wordpool.data.read_list(filename)))
-
-        # ... and lures if required
-        if include_lures:
-            with codecs.open(osp.join(data_root, "RAM_lurepool.txt"),
-                             "w", encoding="utf-8") as lurefile:
-                filename = "REC1_lures_{:s}.txt".format(lang)
-                lurefile.write("\n".join(wordpool.data.read_list(filename)))
+        listgen.write_wordpool_txt(data_root, include_lure_words=include_lures)
 
     def connect_to_control_pc(self):
         """Wait for a connection with the host PC."""
