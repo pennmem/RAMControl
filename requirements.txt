@@ -9,5 +9,5 @@ tornado
 webrtcvad
 SQLAlchemy
 psutil
--e git+https://github.com/pennmem/wordpool.git#egg=wordpool
+-e git+https://github.com/pennmem/wordpool.git@v0.1#egg=wordpool
 -e git+https://github.com/mivade/logserver.git#egg=logserver
