@@ -49,9 +49,9 @@ def get_experiment(available, experiment=""):
         response = prompt(u"Experiment (press tab to see available) [{}]: ".format(experiment),
                           completer=completer, complete_while_typing=True)
         if len(response) == 0 and experiment in available:
-            return experiment.encode()
+            return experiment
         elif response in available:
-            return response.encode()
+            return response
         else:
             experiment = ""
             print("Invalid experiment")
