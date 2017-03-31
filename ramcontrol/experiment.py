@@ -17,8 +17,7 @@ import atexit
 import six
 import psutil
 
-from wordpool import WordList
-import wordpool.data
+import wordpool
 
 import logserver
 from logserver import create_logger
@@ -376,6 +375,11 @@ class Experiment(object):
                 raise LanguageError("Spanish lures are not yet available.")
 
         # Copy wordpool used in experiment...
+        pool = wordpool.load("ram_wordpool_{:s}.txt".format(lang))
+        # FIXME
+
+
+
         with codecs.open(osp.join(data_root, "RAM_wordpool.txt"),
                          "w", encoding="utf-8") as wordfile:
             filename = "ram_wordpool_{:s}.txt".format(lang)
