@@ -9,16 +9,21 @@ from .. import exc
 
 
 def assign_word_numbers(pool):
-    """Assign a serial number to each word in a category."""
+    """Assign a serial number to each word in a category. Also assigns category
+    numbers (alphabetical sequence).
+
+    """
     pool["wordno"] = -1
 
     word_count = pool.groupby("category").count().word
     n_words = word_count[0]
     assert all([n_words == word_count[n] for n in range(1, len(word_count))])
 
-    # Assign word numbers
-    for cat in pool.category.unique():
+    # Assign word and category numbers
+    pool["category_num"] = -999
+    for n, cat in enumerate(pool.category.unique()):
         pool.loc[pool.category == cat, "wordno"] = range(n_words)
+        pool.loc[pool.category == cat, "category_num"] = n
 
     return pool
 

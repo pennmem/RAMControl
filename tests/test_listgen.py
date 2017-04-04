@@ -148,13 +148,16 @@ class TestCatFR:
         pool = listgen.catfr.assign_word_numbers(self.catpool)
         assert len(pool.word.unique()) == 300
         assert "category" in pool.columns
+        assert "category_num" in pool.columns
         assert "word" in pool.columns
         assert "wordno" in pool.columns
 
-        # check word numbers assigned correctly
+        # check word, category numbers assigned correctly
         for cat in pool.category:
             for n, row in pool[pool.category == cat].reset_index().iterrows():
                 assert n == row.wordno
+        assert [(pool.category_num[pool.category == cat] == n).all()
+                for n, cat in enumerate(sorted(pool.category.unique()))]
 
     def test_assign_list_numbers(self):
         # must assign word numbers first
