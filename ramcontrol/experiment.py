@@ -7,7 +7,6 @@ import sys
 import time
 import json
 import pickle
-import codecs
 from multiprocessing import Process
 from contextlib import contextmanager
 import functools
@@ -16,8 +15,6 @@ import atexit
 
 import six
 import psutil
-
-import wordpool
 
 import logserver
 from logserver import create_logger
@@ -738,7 +735,7 @@ class FRExperiment(WordTask):
 
                 # Load lures
                 # TODO: update when Spanish allowed
-                lures = WordList(wordpool.data.read_list("REC1_lures_en.txt"))
+                lures = listgen.LURES_LIST_EN
                 rec_blocks = listgen.generate_rec1_blocks(pool, lures)
 
                 # Save to session folder
