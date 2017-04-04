@@ -706,7 +706,7 @@ class FRExperiment(WordTask):
         for session in range(self.config.numSessions):
             self.logger.info("Pre-generating word lists for session %d",
                              session)
-            pool = listgen.generate_session_pool(language=self.config.LANGUAGE)
+            pool = listgen.fr.generate_session_pool(language=self.config.LANGUAGE)
             n_baseline = self.config.n_baseline
             n_nonstim = self.config.n_nonstim
             n_stim = self.config.n_stim
