@@ -129,3 +129,82 @@ def test_generate_rec1_blocks():
         if blocks.word.iloc[0] != blocks2.word.iloc[0]:
             break
     assert n < len(blocks.word)
+
+
+class TestCatFR:
+    @property
+    def catpool(self):
+        return wordpool.load("ram_categorized_en.txt")
+
+    def test_assign_word_numbers(self):
+        # categories are balanced
+        with pytest.raises(AssertionError):
+            df = pd.DataFrame({
+                "word": ["a", "b", "c"],
+                "category": ["cat1", "cat1", "cat2"]
+            })
+            listgen.catfr.assign_word_numbers(df)
+
+        pool = listgen.catfr.assign_word_numbers(self.catpool)
+        assert len(pool.word.unique()) == 300
+        assert "category" in pool.columns
+        assert "word" in pool.columns
+        assert "wordno" in pool.columns
+
+        # check word numbers assigned correctly
+        for cat in pool.category:
+            for n, row in pool[pool.category == cat].reset_index().iterrows():
+                assert n == row.wordno
+
+    def test_assign_list_numbers(self):
+        # must assign word numbers first
+        with pytest.raises(AssertionError):
+            listgen.catfr.assign_list_numbers(self.catpool)
+
+        pool = listgen.catfr.assign_word_numbers(self.catpool)
+        assigned = listgen.catfr.assign_list_numbers(pool)
+
+        assert len(assigned) == 300
+        assert len(assigned.word.unique()) == 300
+        assert "listno" in assigned.columns
+        assert len(assigned[assigned.listno < 0]) == 0
+        counts = assigned.groupby("listno").listno.count()
+        for count in counts:
+            assert counts[count] == 12
+
+    def test_sort_pairs(self):
+        pool = self.catpool.copy()
+        with pytest.raises(AssertionError):
+            listgen.catfr.sort_pairs(pool)
+            listgen.catfr.sort_pairs(listgen.catfr.assign_word_numbers(pool))
+
+        pool = listgen.catfr.sort_pairs(listgen.catfr.assign_list_numbers(
+            listgen.catfr.assign_word_numbers(pool)))
+
+        # check uniqueness and that all words/categories are used
+        assert len(pool.word.unique()) == 300
+        assert len(pool.category.unique()) == 25
+
+        # check that words come in pairs
+        for n in pool.index[::2]:
+            assert pool.category[n] == pool.category[n + 1]
+
+        # check that last middle categories don't repeat
+        for n in range(5, len(pool), 12):
+            assert pool.category[n] != pool.category[n + 1]
+
+    def test_generate_cat_session_pool(self):
+        with pytest.raises(exc.LanguageError):
+            listgen.catfr.generate_session_pool(language="DA")
+
+        pool = listgen.catfr.generate_session_pool()
+        assert len(pool) == 312
+        assert "listno" in pool
+        assert "category" in pool
+        assert not any(pool.category.isnull())
+
+        # no repeated words and all words used
+        assert len(pool.word.unique()) == 312
+
+        # all categories used
+        assert len(pool.category.unique()) == 26
