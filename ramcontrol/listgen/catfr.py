@@ -119,6 +119,7 @@ def generate_session_pool(language="EN"):
 
     all_words = wordpool.load('practice_cat_{:s}.txt'.format(language.lower()))
     all_words['listno'] = 0
+    all_words['type'] = "PRACTICE"
     all_words['wordno'] = range(12)
     all_words['category'] = "X"
     all_words['category_num'] = -999

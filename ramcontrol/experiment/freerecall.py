@@ -44,6 +44,9 @@ class FRExperiment(WordTask):
             assigned = listgen.assign_list_types(pool, n_baseline, n_nonstim,
                                                  n_stim, n_ps)
 
+            if self.debug:
+                print(assigned)
+
             # Create session directory if it doesn't yet exist
             session_dir = osp.join(self.data_root, self.subject,
                                    "session_{:d}".format(session))
@@ -115,6 +118,8 @@ class FRExperiment(WordTask):
 
         for listno in range(self.list_index, len(wordlist.listno.unique())):
             words = wordlist[wordlist.listno == listno]
+
+            # check that phase type assignments are correct
             phase_type = words.type.iloc[0]
             assert all(words.type == phase_type)
 
