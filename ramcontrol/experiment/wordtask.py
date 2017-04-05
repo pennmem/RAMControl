@@ -63,15 +63,11 @@ class WordTask(Experiment):
     def reset_state(self):
         self.list_index = 0
 
-    def display_word(self, word, listno, serialpos, phase, wait=False,
-                     keys=["SPACE"]):
+    def display_word(self, word_info, serialpos, wait=False, keys=["SPACE"]):
         """Displays a single word in the list.
 
-        :param str word: Word to display.
-        :param int listno: List number.
+        :param pd.Series word_info: Word to display and metadata.
         :param int serialpos: Serial position in the list of the word.
-        :param str phase: Experiment "phase": PS, STIM, NON-STIM, BASELINE, or
-            PRACTICE.
         :param bool wait: When False, display the word for an amount of time
             set by the experimental configuration; when True, wait until a key
             is pressed.
@@ -80,15 +76,25 @@ class WordTask(Experiment):
             timestamp.
 
         """
-        text = Text(word, size=self.config.wordHeight)
+        text = Text(word_info.word, size=self.config.wordHeight)
 
-        with self.state_context("WORD", word=word, listno=listno, serialpos=serialpos,
-                                phase_type=phase):
+        kwargs = {
+            "word": word_info.word,
+            "listno": word_info.listno,
+            "serialpos": serialpos,
+            "phase_type": word_info.type
+        }
+        kwargs.update({
+            key: word_info[key]
+            for key in word_info.index
+            if key not in ["word", "listno", "type"]
+        })
+        with self.state_context("WORD", **kwargs):
             if not wait:
                 text.present(self.clock, self.timings.word_duration)
             else:
                 key, timestamp = self.epl_helpers.show_text_and_wait_for_keyboard_input(
-                    word, self.config.wordHeight, keys)
+                    word_info.word, self.config.wordHeight, keys)
                 return key, timestamp
 
     @skippable
@@ -169,7 +175,7 @@ class WordTask(Experiment):
             for n, row in words.iterrows():
                 self.clock.delay(self.timings.isi, self.timings.jitter)
                 self.clock.wait()
-                self.display_word(row.word, row.listno, n, row.type)
+                self.display_word(row, n)
 
     @skippable
     def run_orient(self, phase_type, orient_text, beep=False):
@@ -239,9 +245,7 @@ class WordTask(Experiment):
             keys = [self.config.recognition_yes_key,
                     self.config.recognition_no_key]
             for n, item in rec_list.iterrows():
-                key, timestamp = self.display_word(
-                    item.word, item.listno, n, item.type,
-                    wait=True, keys=keys)
+                key, timestamp = self.display_word(item, n, wait=True, keys=keys)
 
                 yes = key.name == self.config.recognition_yes_key
                 no = key.name == self.config.recognition_no_key
