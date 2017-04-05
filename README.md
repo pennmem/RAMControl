@@ -1,26 +1,28 @@
 # RAM System 3.1 Task Laptop code
 
-## Getting started
+## Upgrading from version 3.0
 
-Clone this repository and check out the `v3.1` branch:
+### As the `admin` user
+
+* Ensure permissions are correct: `sudo chown -R exp /Users/exp/miniconda2/lib`
+* Check if Xcode needs to be updated (you'll need Xcode version 8.x) by opening
+  the App Store.
+* If [homebrew](https://brew.sh/) is not installed, install it
+* Install portaudio: `brew install portaudio`
+
+### As the `exp` user
+
+Clone the `v3.1` branch of RAMControl:
 
 ```
-$ git clone https://github.com/ramdarpaprojectorg/RAMControl.git ~/RAM_3.1
-$ git checkout v3.1
+$ git clone https://github.com/ramdarpaprojectorg/RAMControl.git -b v3.1 ~/RAM_3.1
 ```
 
-Download video files:
+Then `cd ~/RAM_3.1` and run:
 
 ```
-$ ./getvideos.sh
+./install.sh
 ```
-
-Run an experiment by double clicking `run_experiment` (or if you know what
-you're doing, activate the right conda environment and do `python run.py`).
-
-## Upgrading
-
-Please see the [CHANGELOG](CHANGELOG.md) for upgrade instructions.
 
 ## Supported experiments
 
