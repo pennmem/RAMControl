@@ -1,5 +1,23 @@
 # RAM System 3.1 Task Laptop code
 
+## Getting started
+
+Clone this repository and check out the `v3.1` branch:
+
+```
+$ git clone https://github.com/ramdarpaprojectorg/RAMControl.git
+$ git checkout v3.1
+```
+
+Download video files:
+
+```
+$ ./getvideos.sh
+```
+
+Run an experiment by double clicking `run_experiment` (or if you know what
+you're doing, activate the right conda environment and do `python run.py`).
+
 ## Upgrading
 
 Please see the [CHANGELOG](CHANGELOG.md) for upgrade instructions.
