@@ -163,9 +163,3 @@ class FRExperiment(WordTask):
             session=self.session + 1,
             session_started=False
         )
-
-
-class CatFRExperiment(FRExperiment):
-    """Categorized FR experiments."""
-    def prepare_experiment(self):
-        pass

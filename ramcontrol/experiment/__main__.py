@@ -17,14 +17,14 @@ from logserver.handlers import SQLiteHandler
 
 from ..control import RAMControl
 from ..util import absjoin
-from .freerecall import FRExperiment, CatFRExperiment
+from .freerecall import FRExperiment
 
 from pyepl import exputils
 
 # Maps experiment "families" to the class that should be used
 class_map = {
     "FR": FRExperiment,
-    "catFR": CatFRExperiment,
+    "catFR": FRExperiment,
 }
 
 config = pickle.loads(os.environ["RAM_CONFIG"])
@@ -37,8 +37,14 @@ fullscreen = config["fullscreen"]
 
 here = config["ramcontrol_path"]
 archive_dir = absjoin(config["data_path"], experiment)
-config_file = absjoin(here, "configs", family, "config.py")
-sconfig_file = absjoin(here, "configs", family, experiment + "_config.py")
+
+if family in ["FR", "catFR"]:
+    config_dir = "FR"
+else:
+    config_dir = family
+
+config_file = absjoin(here, "configs", config_dir, "config.py")
+sconfig_file = absjoin(here, "configs", config_dir, experiment + "_config.py")
 
 # This is only here because PyEPL screws up the voice server if we don't
 # instantiate this *before* the PyEPL experiment.
