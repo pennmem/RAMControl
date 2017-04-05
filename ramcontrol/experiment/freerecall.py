@@ -3,6 +3,7 @@ import os.path as osp
 
 from .. import listgen
 from ..messages import TrialMessage
+from ..exc import ExperimentError
 from ..util import get_instructions
 from .wordtask import WordTask
 
@@ -27,7 +28,15 @@ class FRExperiment(WordTask):
         for session in range(self.config.numSessions):
             self.logger.info("Pre-generating word lists for session %d",
                              session)
-            pool = listgen.fr.generate_session_pool(language=self.config.LANGUAGE)
+            if self.family == "FR":
+                gen_pool = listgen.fr.generate_session_pool
+            elif self.family == "catFR":
+                gen_pool = listgen.catfr.generate_session_pool
+            else:
+                raise ExperimentError(
+                    "Unexpected experiment family encountered: " + self.name)
+
+            pool = gen_pool(language=self.config.LANGUAGE)
             n_baseline = self.config.n_baseline
             n_nonstim = self.config.n_nonstim
             n_stim = self.config.n_stim
@@ -70,6 +79,8 @@ class FRExperiment(WordTask):
         self.all_rec_blocks = all_rec_blocks
 
     def prepare_session(self):
+        # Nothing to do here, but this is an abstract method so must be
+        # implemented.
         pass
 
     def run(self):

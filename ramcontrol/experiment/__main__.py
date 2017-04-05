@@ -68,7 +68,7 @@ if debug:
     print(json.dumps(epl_exp.getConfig().config2.config, indent=2, sort_keys=True))
 
 ExperimentClass = class_map[family]
-exp = ExperimentClass(epl_exp, debug=debug, **kwargs)
+exp = ExperimentClass(epl_exp, family=family, debug=debug, **kwargs)
 
 log_path = osp.join(exp.session_data_dir, "session.sqlite")
 log_args = ([SQLiteHandler(log_path)],)

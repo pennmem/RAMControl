@@ -116,12 +116,14 @@ class Experiment(object):
     4. Run session.
 
     :param exputils.Experiment epl_exp: PyEPL experiment instance.
+    :param str family: Experiment family (e.g., FR, catFR, ...)
     :param bool debug: Enables debug mode.
     :param dict kwargs: Additional keyword arguments used primarily for debug
          settings.
 
     """
-    def __init__(self, epl_exp, debug=False, **kwargs):
+    def __init__(self, epl_exp, family, debug=False, **kwargs):
+        self.family = family
         self.debug = debug
         self.kwargs = kwargs
 
