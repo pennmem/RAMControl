@@ -5,7 +5,7 @@
 Clone this repository and check out the `v3.1` branch:
 
 ```
-$ git clone https://github.com/ramdarpaprojectorg/RAMControl.git
+$ git clone https://github.com/ramdarpaprojectorg/RAMControl.git ~/RAM_3.1
 $ git checkout v3.1
 ```
 
