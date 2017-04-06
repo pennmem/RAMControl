@@ -35,7 +35,26 @@ As of 2017-03-28, the following experiments are supported:
 
 ## Troubleshooting
 
-* ZMQerror: check network cable; unplug/replug network cable; kill zombie processes
+Tasks can be started in debug mode to diagnose problems. This requires opening
+a terminal, navigating to the directory with the task code, and running with:
+
+```
+$ python run.py -d
+```
+
+(see also `--help` to see other options). This will start PyEPL in windowed
+mode and allow you to check output in the terminal.
+
+### ZMQ errors
+
+This happens when the ethernet cable is unplugged from either the task laptop,
+the host PC, or both.
+
+1. Check that the cable is plugged into both computers. Try starting the
+   experiment again.
+2. Unplug and replug the cables and try again.
+3. See if a zombie process is hogging the TCP port and kill by PID if so:
+   `lsof -i tcp:8889`
 
 ## Notes for developers
 
