@@ -129,6 +129,11 @@ def generate_rec1_blocks(pool, lures):
     lures["type"] = "LURE"
     lures["listno"] = npr.choice(targets.listno.unique(), len(lures))
 
+    # Set default category values if this is catFR
+    if "category" in pool.columns:
+        lures["category"] = "X"
+        lures["category_num"] = -999
+
     # Combine lures and targets
     combined = pd.concat([targets, lures]).sort_values(by="listno")
     listnos = combined.listno.unique()
