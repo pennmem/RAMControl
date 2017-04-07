@@ -72,7 +72,8 @@ class FRExperiment(WordTask):
                 rec_blocks = listgen.generate_rec1_blocks(pool, lures)
 
                 # Save to session folder
-                rec_blocks.to_json(osp.join(session_dir, "rec_blocks.json"))
+                rec_blocks.to_json(osp.join(session_dir, "rec_blocks.json"),
+                                   orient="records")
 
                 all_rec_blocks.append(rec_blocks)
 
