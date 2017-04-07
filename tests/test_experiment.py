@@ -57,4 +57,4 @@ def test_copy_word_pool(tempdir):
 
     with pytest.raises(LanguageError):
         doit(language="danish")
-        doit(language="spanish", include_lures=True)
+        doit(language="sp", include_lures=True)

@@ -1,4 +1,4 @@
-experiment = 'FR3'
+experiment = 'catFR3'
 version = '3.0.0'
 
 # Number of baseline lists (excluding practice)

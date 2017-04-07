@@ -105,12 +105,10 @@ class RAMControl(object):
         self.socket.bind(address)
 
         if voiceserver:
-            print("yes voiceserver")
             self.voice_pipe, self._voice_child_pipe = Pipe()
             self.voice_server = VoiceServer(self._voice_child_pipe)
             self.voice_server.start()
         else:
-            print("no voiceserver")
             self.voice_pipe, self._voice_child_pipe = None, None
             self.voice_server = None
 

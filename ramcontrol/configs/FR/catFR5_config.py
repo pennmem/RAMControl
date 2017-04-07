@@ -1,4 +1,4 @@
-experiment = "FR5"
+experiment = "catFR5"
 version = "5.0.0"
 
 # Number of baseline lists (excluding practice)

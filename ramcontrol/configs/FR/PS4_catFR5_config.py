@@ -1,4 +1,4 @@
-experiment = "FR5"
+experiment = "PS4_catFR5"
 version = "5.0.0"
 
 # Number of baseline lists (excluding practice)
@@ -8,10 +8,13 @@ n_baseline = 3
 n_stim = 16
 
 # Number of non-stim lists
-n_nonstim = 6
+n_nonstim = 0
+
+# Number of PS lists
+n_ps = 6
 
 # Enable VAD
 vad_during_retrieval = True
 
-# Use REC1
-recognition_enabled = True
+# Don't use REC1
+recognition_enabled = False
