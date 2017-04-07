@@ -172,7 +172,7 @@ class WordTask(Experiment):
 
         """
         with self.state_context("ENCODING", phase_type=phase_type):
-            for n, row in words.iterrows():
+            for n, (_, row) in enumerate(words.iterrows()):
                 self.clock.delay(self.timings.isi, self.timings.jitter)
                 self.clock.wait()
                 self.display_word(row, n)
