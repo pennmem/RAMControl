@@ -6,6 +6,18 @@
 
 * Added support for catFR1, catFR3, catFR5, and PS4_catFR5
 
+### Upgrade instructions
+
+To upgrade from previous 3.1.x versions, checkout the v3.1 branch (this should
+already be the case if the installation instructions were followed correctly),
+do a git pull, and checkout the v3.1.1 tag:
+
+```
+git checkout v3.1
+git pull
+git checkout v3.1.1
+```
+
 ## Version 3.1.1
 
 **2017-03-28**

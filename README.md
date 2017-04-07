@@ -24,6 +24,10 @@ Then `cd ~/RAM_3.1` and run:
 ./install.sh
 ```
 
+## Upgrading from previous 3.1.x versions
+
+Please see the `CHANGELOG.md` file for instructions.
+
 ## Supported experiments
 
 As of 2017-03-28, the following experiments are supported:
