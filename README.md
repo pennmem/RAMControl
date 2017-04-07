@@ -1,5 +1,18 @@
 # RAM System 3.1 Task Laptop code
 
+## Supported experiments
+
+As of 2017-04-07, the following experiments are supported:
+
+* FR1
+* catFR1
+* FR3
+* catFR3
+* PS4/FR5
+* PS4/catFR5
+* FR5/REC1
+* catFR5/REC1
+
 ## Upgrading from version 3.0
 
 ### As the `admin` user
@@ -27,19 +40,6 @@ Then `cd ~/RAM_3.1` and run:
 ## Upgrading from previous 3.1.x versions
 
 Please see the `CHANGELOG.md` file for instructions.
-
-## Supported experiments
-
-As of 2017-03-28, the following experiments are supported:
-
-* FR1
-* catFR1
-* FR3
-* catFR3
-* PS4/FR5
-* PS4/catFR5
-* FR5/REC1
-* catFR5/REC1
 
 ## Troubleshooting
 
