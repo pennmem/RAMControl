@@ -1,5 +1,11 @@
 # Changes
 
+## Version 3.1.2
+
+**2017-MM-DD**
+
+* Added support for catFR1, catFR3, catFR5, and PS4_catFR5
+
 ## Version 3.1.1
 
 **2017-03-28**

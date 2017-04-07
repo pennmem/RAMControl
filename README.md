@@ -9,9 +9,13 @@ Please see the [CHANGELOG](CHANGELOG.md) for upgrade instructions.
 As of 2017-03-28, the following experiments are supported:
 
 * FR1
+* catFR1
 * FR3
+* catFR3
 * PS4/FR5
+* PS4/catFR5
 * FR5/REC1
+* catFR5/REC1
 
 ## Debugger
 
