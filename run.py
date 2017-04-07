@@ -27,7 +27,8 @@ def get_subject(subject=""):
     history = InMemoryHistory()
     validate = lambda s: len(re.findall(r"R\d{4}[A-Z]", s)) == 1
     while True:
-        response = prompt(u"Subject [{}]: ".format(subject), history=history)
+        # response = prompt(u"Subject [{}]: ".format(subject), history=history)
+        response = prompt(u"Subject: ")
         if len(response) == 0 and validate(subject):
             return subject.encode()
         elif validate(response):
@@ -46,12 +47,14 @@ def get_experiment(available, experiment=""):
     """
     completer = WordCompleter(available)
     while True:
-        response = prompt(u"Experiment (press tab to see available) [{}]: ".format(experiment),
+        # response = prompt(u"Experiment (press tab to see available) [{}]: ".format(experiment),
+        #                   completer=completer, complete_while_typing=True)
+        response = prompt(u"Experiment (press tab to see available): ",
                           completer=completer, complete_while_typing=True)
         if len(response) == 0 and experiment in available:
-            return experiment
+            return experiment.encode()
         elif response in available:
-            return response
+            return response.encode()
         else:
             experiment = ""
             print("Invalid experiment")
