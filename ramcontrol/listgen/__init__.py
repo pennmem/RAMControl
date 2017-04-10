@@ -141,4 +141,4 @@ def generate_rec1_blocks(pool, lures):
     # Break into two blocks and shuffle
     block_listnos = [listnos[:int(len(listnos)/2)], listnos[int(len(listnos)/2):]]
     blocks = [combined[combined.listno.isin(idx)].sample(frac=1) for idx in block_listnos]
-    return pd.concat(blocks)
+    return pd.concat(blocks).reset_index()

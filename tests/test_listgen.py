@@ -129,6 +129,9 @@ class TestFR:
                 break
         assert n < len(blocks.word)
 
+        # this should be the original index before being reset
+        assert "index" in blocks.columns
+
 
 class TestCatFR:
     @property
