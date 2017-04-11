@@ -1,5 +1,19 @@
 # Changes
 
+## Version 3.1.3
+
+**2017-04-11**
+
+* Fixed bug preventing the session number from automatically incrementing upon
+  session completion.
+  
+To upgrade from previous 3.1.x versions:
+
+```
+git pull
+git checkout v3.1.3
+```
+
 ## Version 3.1.2
 
 **2017-04-07**
