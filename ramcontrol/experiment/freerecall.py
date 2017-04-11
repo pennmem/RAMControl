@@ -165,6 +165,6 @@ class FRExperiment(WordTask):
 
         # Update session number stored in state and reset list index
         self.update_state(
-            session=self.session + 1,
+            session_number=self.session + 1,
             session_started=False
         )
