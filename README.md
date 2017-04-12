@@ -41,6 +41,12 @@ Then `cd ~/RAM_3.1` and run:
 
 Please see the `CHANGELOG.md` file for instructions.
 
+## Practice lists
+
+The catFR practice list differs from that of FR to avoid reuse of some of the
+words. This change was initially made in System 2 revision 165 and has been used
+in System 3 since version 3.0.0.
+
 ## Troubleshooting
 
 Tasks can be started in debug mode to diagnose problems. This requires opening

@@ -1,5 +1,21 @@
 # Changes
 
+## Version 3.1.4
+
+**2017-04-12**
+
+* Fixed issue with wrong word list being written to catFR data directories.
+* Re-added writing of `*.lst` files. These had been removed because it was
+  incorrectly thought that they were not used in post-processing, but in reality
+  they are used during annotation.
+* System version numbers are now explicitly logged in the SQLite session log.
+  
+To upgrade from previous 3.1.x versions:
+
+```
+git pull && git checkout v3.1.4
+```
+
 ## Version 3.1.3
 
 **2017-04-11**
