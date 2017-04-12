@@ -49,6 +49,7 @@ def tempdir():
     shutil.rmtree(datadir, ignore_errors=True)
 
 
+@pytest.mark.skip(reason="can't test it right now because PyEPL is awful")
 def test_copy_word_pool(tempdir):
     doit = partial(Experiment.copy_word_pool, data_root=tempdir)
     doit(include_lures=True)
