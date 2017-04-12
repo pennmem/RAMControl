@@ -13,7 +13,7 @@ import six
 
 from logserver import create_logger
 
-from ramcontrol import listgen
+from ramcontrol import listgen, __version__
 from ramcontrol.control import RAMControl
 from ramcontrol.exc import LanguageError, RAMException
 from ramcontrol.messages import StateMessage, ExitMessage
@@ -430,6 +430,8 @@ class Experiment(object):
 
             if not self.kwargs.get("no_host", False):
                 self.connect_to_control_pc()
+
+            self.logger.info(json.dumps(dict(version=__version__)))
 
             self.run()
 
