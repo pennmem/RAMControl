@@ -13,19 +13,24 @@ from . import catfr
 RAM_LIST_EN = wordpool.load("ram_wordpool_en.txt")
 RAM_LIST_SP = wordpool.load("ram_wordpool_sp.txt")
 
+CAT_LIST_EN = wordpool.load("ram_categorized_en.txt")
+CAT_LIST_SP = wordpool.load("ram_categorized_sp.txt")
+
 PRACTICE_LIST_EN = wordpool.load("practice_en.txt")
 PRACTICE_LIST_SP = wordpool.load("practice_sp.txt")
 
 LURES_LIST_EN = wordpool.load("REC1_lures_en.txt")
 
 
-def write_wordpool_txt(path, language="EN", include_lure_words=False):
-    """Write `RAM_wordpool.txt` to a file. This is used in event
-    post-processing.
+def write_wordpool_txt(path, language="EN", include_lure_words=False,
+                       categorized=False):
+    """Write `RAM_wordpool.txt` or `CatFR_WORDS.txt` to a file (why the naming
+    is so inconsistent is beyond me). This is used in event post-processing.
 
     :param str path: Directory to write file to.
     :param str language: Language to use ("EN" or "SP").
     :param bool include_lure_words: Also write lure words to ``path``.
+    :param bool categorized: When True, write the categorized word pool.
     :returns: list of filenames written
 
     """
@@ -40,8 +45,12 @@ def write_wordpool_txt(path, language="EN", include_lure_words=False):
         "encoding": "utf8"
     }
 
-    words = RAM_LIST_EN if language == "EN" else RAM_LIST_SP
-    filename = osp.join(path, "RAM_wordpool.txt")
+    if categorized:
+        words = CAT_LIST_EN if language == "EN" else CAT_LIST_SP
+        filename = osp.join(path, "CatFR_WORDS.txt")
+    else:
+        words = RAM_LIST_EN if language == "EN" else RAM_LIST_SP
+        filename = osp.join(path, "RAM_wordpool.txt")
     ret = [filename]
     words.word.to_csv(filename, **kwargs)
 

@@ -15,7 +15,7 @@ from logserver import create_logger
 
 from ramcontrol import listgen
 from ramcontrol.control import RAMControl
-from ramcontrol.exc import LanguageError
+from ramcontrol.exc import LanguageError, RAMException
 from ramcontrol.messages import StateMessage, ExitMessage
 from ramcontrol.extendedPyepl import CustomAudioTrack
 from ramcontrol.epl import PyEPLHelpers
@@ -337,14 +337,12 @@ class Experiment(object):
                                           **kwargs))
         self.log_event(state + "_END", **kwargs)
 
-    @staticmethod
-    def copy_word_pool(data_root, language="en", include_lures=False):
+    def copy_word_pool(self, data_root, language="en", include_lures=False):
         """Copy word pools to the subject's data root directory. This method
         only needs to be called the first time an experiment is run with a
         given subject.
 
-        This is only a static method because PyEPL makes it nearly impossible
-        to test otherwise.
+        FIXME: this should probably be a member of WordTask
 
         :param str data_root: Path to data root directory.
         :param str language: Language to use for the pools (English or Spanish).
@@ -363,7 +361,14 @@ class Experiment(object):
             if lang == "sp":
                 raise LanguageError("Spanish lures are not yet available.")
 
-        listgen.write_wordpool_txt(data_root, include_lure_words=include_lures)
+        if self.family == "FR":
+            cat = False
+        elif self.family == "catFR":
+            cat = True
+        else:
+            raise RAMException("Invalid family: ", self.family)
+        listgen.write_wordpool_txt(data_root, include_lure_words=include_lures,
+                                   categorized=cat)
 
     def connect_to_control_pc(self):
         """Wait for a connection with the host PC."""
