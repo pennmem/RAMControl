@@ -1,5 +1,18 @@
 # Changes
 
+## Version 3.1.5
+
+**2017-04-12**
+
+* We don't need to use a dumb naming convention for `*.lst` files after all.
+  They are now named `0.lst`, `1.lst`, etc.
+   
+To upgrade:
+
+```
+git checkout v3.1 && git pull
+``
+
 ## Version 3.1.4
 
 **2017-04-12**
@@ -13,7 +26,7 @@
 To upgrade from previous 3.1.x versions:
 
 ```
-git pull && git checkout v3.1.4
+git checkout v3.1 && git pull
 ```
 
 ## Version 3.1.3
