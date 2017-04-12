@@ -58,6 +58,19 @@ class FRExperiment(WordTask):
             # Write assigned list to session folders
             assigned.to_json(osp.join(session_dir, "pool.json"))
 
+            # Write .lst files to session folders (used in TotalRecall
+            # during annotation).
+            for listno in assigned.listno.unique():
+                # Using the ridiculous naming convention used previously...
+                if listno == 0:
+                    name = "p.lst"
+                else:
+                    name = "{:d}.lst".format(listno - 1)
+                assigned[assigned.listno == listno].word.to_csv(
+                    osp.join(session_dir, name),
+                    index=False, header=False, encoding="utf8"
+                )
+
             all_lists.append(assigned)
 
             # Generate recognition phase lists if this experiment supports it
