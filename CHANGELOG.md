@@ -11,7 +11,7 @@ To upgrade:
 
 ```
 git checkout v3.1 && git pull
-``
+```
 
 ## Version 3.1.4
 
