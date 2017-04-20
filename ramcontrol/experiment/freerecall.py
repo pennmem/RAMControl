@@ -62,10 +62,9 @@ class FRExperiment(WordTask):
             # during annotation).
             for listno in assigned.listno.unique():
                 name = "{:d}.lst".format(listno)
-                assigned[assigned.listno == listno].word.to_csv(
-                    osp.join(session_dir, name),
-                    index=False, header=False, encoding="utf8"
-                )
+                entries = assigned[assigned.listno == listno]
+                with open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
+                    f.writelines(row.word for _, row in entries.iterrows())
 
             all_lists.append(assigned)
 
