@@ -1,5 +1,6 @@
 import os
 import os.path as osp
+import codecs
 
 from .. import listgen
 from ..messages import TrialMessage
@@ -63,8 +64,8 @@ class FRExperiment(WordTask):
             for listno in assigned.listno.unique():
                 name = "{:d}.lst".format(listno)
                 entries = assigned[assigned.listno == listno]
-                with open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
-                    f.writelines(row.word for _, row in entries.iterrows())
+                with codecs.open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
+                    f.writelines(row.word + "\n" for _, row in entries.iterrows())
 
             all_lists.append(assigned)
 
