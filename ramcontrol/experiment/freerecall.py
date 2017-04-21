@@ -61,7 +61,7 @@ class FRExperiment(WordTask):
 
             # Write .lst files to session folders (used in TotalRecall
             # during annotation).
-            for listno in assigned.listno.unique():
+            for listno in sorted(assigned.listno.unique()):
                 name = "{:d}.lst".format(listno)
                 entries = assigned[assigned.listno == listno]
                 with codecs.open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
