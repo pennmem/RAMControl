@@ -57,7 +57,7 @@ class FRExperiment(WordTask):
                 self.logger.warning("Session %d already created", session)
 
             # Write assigned list to session folders
-            assigned.to_json(osp.join(session_dir, "pool.json"))
+            assigned.to_csv(osp.join(session_dir, "pool.tsv"), sep='\t')
 
             # Write .lst files to session folders (used in TotalRecall
             # during annotation).
