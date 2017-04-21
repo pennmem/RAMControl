@@ -1,5 +1,22 @@
 # Changes
 
+## Version 3.1.6
+
+**2017-04-21**
+
+* Two views now exist on the SQLite session logs: `events` and `word_onsets`.
+  These can be used to select the JSON messages for all events and all word
+  onsets, respectively.
+* Fixed issue where `*.lst` files didn't always contain the correct words.
+* Word pools written to session folders are in a more human-friendly format (a
+  tab-separated table instead of JSON).
+  
+To upgrade:
+
+```
+git checkout v3.1 && git pull
+```
+
 ## Version 3.1.5
 
 **2017-04-12**

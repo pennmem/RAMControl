@@ -2,7 +2,7 @@
 
 ## Supported experiments
 
-As of 2017-04-07, the following experiments are supported:
+As of 2017-04-21, the following experiments are supported:
 
 * FR1
 * catFR1
