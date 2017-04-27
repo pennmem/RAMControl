@@ -59,6 +59,20 @@ $ python run.py -d
 (see also `--help` to see other options). This will start PyEPL in windowed
 mode and allow you to check output in the terminal.
 
+### AttributeErrors
+
+If running in debug mode you see an error such as:
+
+```
+AttributeError: 'module' objet has no attribute 'load'
+```
+
+try forcing a reinstall of dependencies:
+
+```
+pip install --force-reinstall -U -r requirements.txt
+```
+
 ### ZMQ errors
 
 This happens when the ethernet cable is unplugged from either the task laptop,
