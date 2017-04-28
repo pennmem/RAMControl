@@ -1,5 +1,18 @@
 # Changes
 
+## Version 3.1.7
+
+**2017-04-28**
+
+* Critical bug fix: ensure that lists displayed are unique to each session.
+* Updated defaults in the upload tool.
+
+To upgrade:
+
+```
+git checkout v3.1 && git pull
+```
+
 ## Version 3.1.6
 
 **2017-04-21**
