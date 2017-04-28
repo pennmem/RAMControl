@@ -213,3 +213,40 @@ class TestCatFR:
 
         # all categories used
         assert len(pool.category.unique()) == 26
+
+
+class TestPAL:
+    def test_generate_session_pool(self):
+        import numpy as np
+        with pytest.raises(AssertionError):
+            listgen.pal.generate_session_pool(8)
+            listgen.pal.generate_session_pool(num_lists=20)
+            listgen.pal.generate_session_pool(language='HE')
+
+        pool = listgen.pal.generate_session_pool()
+
+        for field in ['word1','word2','listno','type']:
+            assert field in pool.columns
+
+        practice_pairs = pool.loc[pool.type=='PRACTICE']
+        assert len(practice_pairs)*2 == len(np.unique(practice_pairs[['word1','word2']]))
+
+        assert len(pool)*2 == len(np.unique(pool[['word1','word2']]))
+
+        for _,list_pairs in pool.groupby('listno'):
+            assert len(list_pairs)==6
+
+    def test_session_pool_uniqueness(self):
+        """
+        Check if some large number of pools can generate the same pair of words
+        """
+        pools = [listgen.pal.generate_session_pool().sort_values(by='word1') for _ in range(5)]
+        for pool1 in pools:
+            for pool2 in pools:
+                if pool2 is not pool1:
+                    assert not ((pool1['word2'].values==pool2['word2'].values).any())
+
+
+
+
+

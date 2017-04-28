@@ -22,11 +22,11 @@ def pre_install_tasks():
 
     print("All done!")
 
-# with open("requirements.txt") as f:
-#     requirements = f.read()
+with open("requirements.txt") as f:
+    requirements = f.read()
 
-# setup(
-#     name="ramcontrol",
-#     packages=["ramcontrol"],
-#     install_requires=requirements
-# )
+setup(
+    name="ramcontrol",
+    packages=["ramcontrol"],
+    # install_requires=requirements
+)

@@ -9,6 +9,7 @@ import wordpool
 from .. import exc
 from . import fr
 from . import catfr
+from . import pal
 
 RAM_LIST_EN = wordpool.load("ram_wordpool_en.txt")
 RAM_LIST_SP = wordpool.load("ram_wordpool_sp.txt")
