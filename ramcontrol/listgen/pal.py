@@ -37,6 +37,8 @@ def generate_session_pool(pairs_per_list = 6, num_lists=25,language='EN'):
     word_lists = pd.DataFrame(words.reshape((-1,2)),columns=['word1','word2'])
     word_lists = wordpool.assign_list_numbers(word_lists,num_lists,start=1)
     full_list = pd.concat([practice_list,word_lists],ignore_index=True)
+    cue_positions_by_list = [assign_cues(words) for _,words in full_list.groupby('listno')]
+    full_list['cue_pos'] = np.concatenate(cue_positions_by_list)
     # if any(old_lists):
     #     matching_pairs = [(full_list['word1']==lst['word1']) & (full_list['word2']==lst['word2']) for lst in old_lists]
     #     all_matches_together = reduce(lambda x,y: x | y, matching_pairs,initial=np.zeros(len(full_list)).astype(np.bool))
@@ -45,6 +47,11 @@ def generate_session_pool(pairs_per_list = 6, num_lists=25,language='EN'):
     # old_lists.append(full_list)
     return full_list
 
+
+def assign_cues(words):
+    cues = ['word1' if i%2 else 'word2' for i in range(len(words))]
+    shuffle(cues)
+    return cues
 
 
 

@@ -7,6 +7,7 @@ from ..messages import TrialMessage
 from ..exc import ExperimentError
 from ..util import get_instructions
 from .wordtask import WordTask
+from random import shuffle
 
 from pyepl.display import Text
 from pyepl.convenience import waitForAnyKey
@@ -172,7 +173,7 @@ class PALExperiment(WordTask):
                 self.clock.wait()
 
                 # Retrieval
-                # self.run_orient(phase_type, self.config.recallStartText, beep=True)
+                self.run_orient(phase_type, self.config.recallStartText, beep=True)
                 # self.run_retrieval(phase_type) # TODO: IMPLEMENT PAL RETRIEVAL PHASE
 
                 if phase_type == "PRACTICE":
@@ -194,3 +195,25 @@ class PALExperiment(WordTask):
             session_number=self.session + 1,
             session_started=False
         )
+
+
+    def run_cued_retrieval(self,words,phase_type):
+        with self.state_context("RETRIEVAL",phase_type=phase_type):
+            for _,row in words.iterrows():
+                self.clock.delay(self.config.pre_cue,self.config.pre_cue_jitter)
+                self.clock.wait()
+                self.display_cue(row)
+
+    def display_cue(self,word_info,**kwargs):
+
+        text = Text(word_info[word_info.cue_pos],size=self.config.WordHeight)
+        with self.state_context('REC', **kwargs):
+            with self.state_context('PROBE',**kwargs):
+                text.present(self.clock,self.config.cue_duration)
+
+            self.clock.delay(self.config.post_cue)
+            self.clock.wait()
+
+
+
+
