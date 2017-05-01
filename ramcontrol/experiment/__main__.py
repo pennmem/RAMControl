@@ -80,14 +80,15 @@ exp = ExperimentClass(epl_exp, family=family, debug=debug, **kwargs)
 # Path to SQLite session log
 log_path = osp.join(exp.session_data_dir, "session.sqlite")
 
-# Create some helpful views for querying the logs
-with sqlite3.connect(log_path) as conn:
-    views = {
-        "events": 'SELECT msg FROM logs WHERE name = "events"',
-        "word_onsets": """SELECT msg FROM events WHERE msg GLOB '*"event": "WORD_START"*'"""
-    }
-    for view in views:
-        conn.execute('CREATE VIEW IF NOT EXISTS {:s} AS {:s}'.format(view, views[view]))
+# FIXME Create some helpful views for querying the logs
+if False:
+    with sqlite3.connect(log_path) as conn:
+        views = {
+            "events": 'SELECT msg FROM logs WHERE name = "events"',
+            "word_onsets": """SELECT msg FROM events WHERE msg GLOB '*"event": "WORD_START"*'"""
+        }
+        for view in views:
+            conn.execute('CREATE VIEW IF NOT EXISTS {:s} AS {:s}'.format(view, views[view]))
 
 # Start log server process
 log_args = ([SQLiteHandler(log_path)],)

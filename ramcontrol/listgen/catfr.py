@@ -123,4 +123,6 @@ def generate_session_pool(language="EN"):
     all_words['wordno'] = range(12)
     all_words['category'] = "X"
     all_words['category_num'] = -999
+    all_words = wordpool.shuffle_words(all_words)
+
     return all_words.append(words).reset_index(drop=True)

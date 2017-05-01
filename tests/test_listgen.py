@@ -83,11 +83,7 @@ class TestFR:
         for n in session1.listno.unique():
             first = session1[session1.listno == n]
             second = session2[session2.listno == n]
-            if n == 0:
-                # practice lists always the same
-                assert (first.word == second.word).all()
-            else:
-                assert not (first.word == second.word).all()
+            assert not (first.word == second.word).all()  # practice lists should be shuffled, too!
 
     def test_assign_list_types(self):
         session = listgen.fr.generate_session_pool()
@@ -213,6 +209,13 @@ class TestCatFR:
 
         # all categories used
         assert len(pool.category.unique()) == 26
+
+        # uniqueness
+        pool2 = listgen.catfr.generate_session_pool()
+        for n in pool.listno.unique():
+            first = pool[pool.listno == n]
+            second = pool2[pool2.listno == n]
+            assert not (first.word == second.word).all()
 
 
 class TestPAL:
