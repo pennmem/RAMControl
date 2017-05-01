@@ -12,6 +12,7 @@ from pyepl.display import Text
 from pyepl.convenience import waitForAnyKey
 
 class PALExperiment(WordTask):
+
     def display_word(self, word_info, serialpos, wait=False, keys=["SPACE"]):
         text = Text('{}\n\n{}'.format(word_info.word1, word_info.word2))
 
