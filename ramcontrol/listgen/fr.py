@@ -28,6 +28,7 @@ def generate_session_pool(words_per_list=12, num_lists=25,
     practice = PRACTICE_LIST_EN if language == "EN" else PRACTICE_LIST_SP
     practice["type"] = "PRACTICE"
     practice["listno"] = 0
+    practice = wordpool.shuffle_words(practice).reset_index(drop=True)
 
     words = RAM_LIST_EN if language == "EN" else RAM_LIST_SP
     assert len(words) == words_per_list * num_lists
