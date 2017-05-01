@@ -13,8 +13,8 @@ vad_during_retrieval = False
 recognition_enabled = False
 
 # Pause+Jitter after orienting stim before first word
-PauseBeforeWords = 1000
-JitterBeforeWords = 400
+PauseBeforeWords = 500
+JitterBeforeWords = 250
 
 PauseBeforeRecall = 500
 JitterBeforeRecall = 200
@@ -22,15 +22,23 @@ JitterBeforeRecall = 200
 # Word Font size (percentage of vertical screen)
 wordHeight = .1
 
-# Duration word is on the screen
-wordDuration = 1600
+# Duration word pair is on the screen
+wordDuration = 4000
+post_encoding = 1000
 
-# ISI+Jitter after word is cleared from the screen
-ISI = 750
+# TODO: make this unnecessary
+recallDuration = -999
+
+# ISI+Jitter after word pair is cleared from the screen
+ISI = 500
 Jitter = 250
 
-# Duration of recall in ms
-recallDuration = 30000
+#RETRIEVAL
+cue_orientation = 250
+pre_cue = 500
+pre_cue_jitter = 250
+cue_duration = 4000
+post_cue = 1000
 
 # "yes" and "no" keys for recognition
 recognition_yes_key = "J"

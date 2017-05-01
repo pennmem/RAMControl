@@ -82,7 +82,7 @@ class PALExperiment(WordTask):
                 name = "{:d}.lst".format(listno)
                 entries = assigned[assigned.listno == listno]
                 with codecs.open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
-                    f.writelines(row.word + "\n" for _, row in entries.iterrows())
+                    f.writelines(row.word1 + "\t" +row.word2 + "\n" for _, row in entries.iterrows())
 
             all_lists.append(assigned)
 

@@ -19,6 +19,7 @@ from logserver.handlers import SQLiteHandler
 from ..control import RAMControl
 from ..util import absjoin
 from .freerecall import FRExperiment
+from .paired_associates import PALExperiment
 
 from pyepl import exputils
 
@@ -26,6 +27,7 @@ from pyepl import exputils
 class_map = {
     "FR": FRExperiment,
     "catFR": FRExperiment,
+    "PAL": PALExperiment
 }
 
 config = pickle.loads(os.environ["RAM_CONFIG"])
