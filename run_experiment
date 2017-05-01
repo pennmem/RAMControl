@@ -8,3 +8,6 @@ cd "$DIR"
 
 # Run, passing command line options
 python run.py "$@"
+
+read -p "Press enter to close terminal"
+
