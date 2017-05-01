@@ -173,7 +173,7 @@ class PALExperiment(WordTask):
 
                 # Retrieval
                 # self.run_orient(phase_type, self.config.recallStartText, beep=True)
-                self.run_retrieval(phase_type)
+                # self.run_retrieval(phase_type) # TODO: IMPLEMENT PAL RETRIEVAL PHASE
 
                 if phase_type == "PRACTICE":
                     with self.state_context("PRACTICE_POST_INSTRUCT"):
