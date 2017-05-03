@@ -4,18 +4,16 @@ import codecs
 
 from .. import listgen
 from ..messages import TrialMessage
-from ..exc import ExperimentError
 from ..util import get_instructions
 from .wordtask import WordTask
 from .experiment import skippable
 from random import shuffle
 
 from pyepl.display import Text
-from pyepl.convenience import waitForAnyKey
+
 
 class PALExperiment(WordTask):
-
-
+    """Paired associates learning tasks."""
     def make_test_order(self):
         evens = range(0,self.config.n_pairs,2)
         odds = range(1,self.config.n_pairs,2)
@@ -25,7 +23,6 @@ class PALExperiment(WordTask):
         for i in range(self.config.n_pairs):
             order.append(odds.pop() if i%2 else evens.pop())
         return order
-
 
     def run_cued_retrieval(self, words, phase_type):
         order = self.make_test_order()
@@ -119,10 +116,11 @@ class PALExperiment(WordTask):
                 print(pool)
 
             if self.config.experiment=="PAL3":
-                assigned = listgen.assign_balanced_list_types(pool,n_baseline,n_nonstim,n_stim,n_ps,num_groups=2)
+                assigned = listgen.assign_balanced_list_types(
+                    pool, n_baseline, n_nonstim, n_stim, n_ps, num_groups=2)
             else:
-                assigned = listgen.assign_list_types(pool, n_baseline, n_nonstim,
-                                                 n_stim, n_ps)
+                assigned = listgen.assign_list_types(
+                    pool, n_baseline, n_nonstim, n_stim, n_ps)
 
             if self.debug:
                 print(assigned)
@@ -255,9 +253,3 @@ class PALExperiment(WordTask):
             session_number=self.session + 1,
             session_started=False
         )
-
-
-
-
-
-
