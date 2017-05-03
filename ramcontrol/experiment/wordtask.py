@@ -97,6 +97,8 @@ class WordTask(Experiment):
                     word_info.word, self.config.wordHeight, keys)
                 return key, timestamp
 
+
+
     @skippable
     def run_instructions(self, allow_skip):
         """Instruction period to explain the task to the subject.

@@ -361,7 +361,7 @@ class Experiment(object):
             if lang == "sp":
                 raise LanguageError("Spanish lures are not yet available.")
 
-        if self.family == "FR":
+        if self.family == "FR" or self.family =="PAL":
             cat = False
         elif self.family == "catFR":
             cat = True
