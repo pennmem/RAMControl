@@ -7,12 +7,67 @@ from ..messages import TrialMessage
 from ..exc import ExperimentError
 from ..util import get_instructions
 from .wordtask import WordTask
+from .experiment import skippable
 from random import shuffle
 
 from pyepl.display import Text
 from pyepl.convenience import waitForAnyKey
 
 class PALExperiment(WordTask):
+
+
+    def make_test_order(self):
+        evens = range(0,self.config.n_pairs,2)
+        odds = range(1,self.config.n_pairs,2)
+        shuffle(odds)
+        shuffle(evens)
+        order = []
+        for i in range(self.config.n_pairs):
+            order.append(odds.pop() if i%2 else evens.pop())
+        return order
+
+
+    def run_cued_retrieval(self, words, phase_type):
+        order = self.make_test_order()
+        with self.state_context("RETRIEVAL", phase_type=phase_type):
+            for row_ind in order:
+                row = words.iloc[row_ind]
+                self.clock.delay(self.config.pre_cue, self.config.pre_cue_jitter)
+                self.clock.wait()
+                self.display_cue(row,row_ind)
+
+    def display_cue(self, word_info,serialpos):
+        direction = (word_info['cue_pos'] == 'word2')
+        kwargs = {
+            'probe': word_info[word_info['cue_pos']],
+            'expecting': word_info['word1' if direction else 'word2'],
+            'direction': int(direction),
+            'serialpos':serialpos
+        }
+
+        text = Text(word_info[word_info.cue_pos], size=self.config.wordHeight)
+
+        with self.state_context('REC', **kwargs):
+            with self.state_context('PROBE', **kwargs):
+                text.present(self.clock, self.config.cue_duration)
+
+            self.clock.delay(self.config.post_cue)
+            self.clock.wait()
+
+    @skippable
+    def run_encoding(self, words, phase_type):
+        """Run an encoding phase.
+
+        :param pd.DataFrame words:
+        :param str phase_type: Phase type (BASELINE, ...)
+
+        """
+        with self.state_context("ENCODING", phase_type=phase_type):
+            for n, (_, row) in enumerate(words.iterrows()):
+                self.run_orient(phase_type, self.config.orientText, beep=True)
+                self.clock.delay(self.timings.isi, self.timings.jitter)
+                self.clock.wait()
+                self.display_word(row, n)
 
     def display_word(self, word_info, serialpos, wait=False, keys=["SPACE"]):
         text = Text('{}\n\n{}'.format(word_info.word1, word_info.word2))
@@ -60,7 +115,13 @@ class PALExperiment(WordTask):
             n_nonstim = self.config.n_nonstim
             n_stim = self.config.n_stim
             n_ps = self.config.n_ps
-            assigned = listgen.assign_list_types(pool, n_baseline, n_nonstim,
+            if self.debug:
+                print(pool)
+
+            if self.config.experiment=="PAL3":
+                assigned = listgen.assign_balanced_list_types(pool,n_baseline,n_nonstim,n_stim,n_ps,num_groups=2)
+            else:
+                assigned = listgen.assign_list_types(pool, n_baseline, n_nonstim,
                                                  n_stim, n_ps)
 
             if self.debug:
@@ -159,7 +220,6 @@ class PALExperiment(WordTask):
                     listno)
                 self.run_wait_for_keypress("Press any key for {:s}".format(num))
                 self.run_countdown()
-                self.run_orient(phase_type, self.config.orientText)
 
                 # Encoding
                 self.run_encoding(words, phase_type)
@@ -173,8 +233,8 @@ class PALExperiment(WordTask):
                 self.clock.wait()
 
                 # Retrieval
-                self.run_orient(phase_type, self.config.recallStartText, beep=True)
-                # self.run_retrieval(phase_type) # TODO: IMPLEMENT PAL RETRIEVAL PHASE
+                self.run_orient(phase_type,self.config.recallStartText,beep=True)
+                self.run_cued_retrieval(words,phase_type)
 
                 if phase_type == "PRACTICE":
                     with self.state_context("PRACTICE_POST_INSTRUCT"):
@@ -197,22 +257,6 @@ class PALExperiment(WordTask):
         )
 
 
-    def run_cued_retrieval(self,words,phase_type):
-        with self.state_context("RETRIEVAL",phase_type=phase_type):
-            for _,row in words.iterrows():
-                self.clock.delay(self.config.pre_cue,self.config.pre_cue_jitter)
-                self.clock.wait()
-                self.display_cue(row)
-
-    def display_cue(self,word_info,**kwargs):
-
-        text = Text(word_info[word_info.cue_pos],size=self.config.WordHeight)
-        with self.state_context('REC', **kwargs):
-            with self.state_context('PROBE',**kwargs):
-                text.present(self.clock,self.config.cue_duration)
-
-            self.clock.delay(self.config.post_cue)
-            self.clock.wait()
 
 
 

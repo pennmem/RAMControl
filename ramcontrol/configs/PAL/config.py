@@ -3,6 +3,11 @@ LANGUAGE = 'EN'
 # Number of sessions per subject
 numSessions = 10
 
+
+n_pairs = 6
+
+n_lists = 25
+
 # Default number of PS lists
 n_ps = 0
 
@@ -115,3 +120,6 @@ if fastConfig:
 
     MATH_minDuration_Practice = 10
     MATH_minDuration = 10
+
+    cue_duration = 20
+    post_cue = 5

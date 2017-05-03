@@ -263,6 +263,16 @@ class TestPAL:
             assert (words_by_list['cue_pos']=='word1').sum()==len(words_by_list)/2
             assert (words_by_list['cue_pos']=='word2').sum()==len(words_by_list)/2
 
+    def test_assign_balanced_list_types(self):
+        pool = listgen.pal.generate_session_pool()
+        pool = listgen.assign_balanced_list_types(pool,3,11,11,0,2)
+        stim_period = pool.loc[(pool.type=="STIM") | (pool.type=="NON-STIM")]
+        first_half = stim_period.iloc[:len(stim_period)/2]
+        second_half = stim_period.iloc[len(stim_period)/2:]
+        assert (stim_period.listno.values>3).all()
+        assert abs((first_half.type=="STIM").sum()-(first_half.type=="NON-STIM").sum())<2*6
+        assert abs((second_half.type=="STIM").sum() == (second_half.type=="NON-STIM").sum())<2*6
+
 
 
 

@@ -110,6 +110,43 @@ def assign_list_types(pool, num_baseline, num_nonstim, num_stim, num_ps=0):
     return pool
 
 
+def assign_balanced_list_types(pool,num_baseline,num_nonstim,num_stim,num_ps=0,n_pairs=6,num_groups = 2):
+    """
+    Assign list types to a pool, preserving the ratio of stim to non-stim lists across each quantile.
+    We assume that the number of quantiles divides the number of stim and non-stim lists with a remainder much smaller
+    than the number of either stim or non-stim lists in each quantile.
+    The types are: 
+     
+    * ``PRACTICE``
+    * ``BASELINE``
+    * ``PS``
+    * ``STIM``
+    * ``NON-STIM``
+
+    :param pd.DataFrame pool: Input word pool
+    :param int num_baseline: Number of baseline trials *excluding* the practice
+        list.
+    :param int num_nonstim: Number of non-stim trials.
+    :param int num_stim: Number of stim trials.
+    :param int num_ps: Number of parameter search trials.
+    :returns: pool with assigned types
+    :rtype: WordPool
+    """
+    stim_halves = tuple(i*num_stim/num_groups for i in range(num_groups+1))
+    nonstim_halves = tuple(i*num_nonstim/num_groups for i in range(num_groups+1))
+    
+    phases = ["BASELINE"]*num_baseline + ["PS"] * num_ps
+    for i in range(num_groups):
+        half_stims = ["STIM"]*(stim_halves[i+1]-stim_halves[i]) + ["NON-STIM"]*(nonstim_halves[i+1]-nonstim_halves[i])
+        random.shuffle(half_stims)
+        phases += half_stims
+    for (i,phase) in enumerate(phases):
+        pool.loc[pool.listno==i+1,"type"] = phase
+    return pool
+    
+    
+
+
 def generate_rec1_blocks(pool, lures):
     """Generate REC1 word blocks.
 
