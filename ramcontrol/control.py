@@ -64,7 +64,7 @@ class RAMControl(object):
     MAX_QUEUE_SIZE = 32
     _instance = None
 
-    def __init__(self, address="tcp://*:8889", voiceserver=False,
+    def __init__(self, address="tcp://192.168.137.200:8889", voiceserver=False,
                  connection_timeout=10, log_level=logging.INFO):
         if self._instance is not None:
             raise Exception("Multiple RAM instances requested!")
