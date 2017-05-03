@@ -1,0 +1,285 @@
+#delay;msgtype;kwargs
+0;CONNECTED;
+0.010000;EXPNAME;{"experiment":"PS4_PAL5"}
+0.010000;SUBJECTID;{"subject":"R1293P"}
+0.010000;SESSION;{"session": 2, "version": "5.0.0", "name": "PS4_PAL5", "subject": "R1293P"}
+3.008878;STATE;{"name": "MIC TEST", "value": true}
+5.766000;STATE;{"name": "MIC TEST", "value": false}
+0.010000;STATE;{"phase_type": "PRACTICE", "listno": 0, "name": "TRIAL", "value": true}
+0.010000;TRIAL;{"trial": 0}
+0.010000;STATE;{"name": "WAITING", "value": true}
+0.407000;STATE;{"name": "WAITING", "value": false}
+0.010000;STATE;{"phase_type": "PRACTICE", "name": "ENCODING", "value": true}
+0.001000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": true}
+1.198000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": false}
+0.610000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word2", "value": true, "serialpos": 0, "word1": "BEAM", "word2": "TONGUE", "phase_type": "PRACTICE"}
+4.040000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word2", "value": false, "serialpos": 0, "word1": "BEAM", "word2": "TONGUE", "phase_type": "PRACTICE"}
+0.002000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": true}
+1.080000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": false}
+0.671000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word1", "value": true, "serialpos": 1, "word1": "WAGON", "word2": "CAMEL", "phase_type": "PRACTICE"}
+4.031000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word1", "value": false, "serialpos": 1, "word1": "WAGON", "word2": "CAMEL", "phase_type": "PRACTICE"}
+0.010000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": true}
+1.184000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": false}
+0.724000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word2", "value": true, "serialpos": 2, "word1": "IRON", "word2": "CHEST", "phase_type": "PRACTICE"}
+4.027000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word2", "value": false, "serialpos": 2, "word1": "IRON", "word2": "CHEST", "phase_type": "PRACTICE"}
+0.001000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": true}
+1.132000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": false}
+0.751000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word2", "value": true, "serialpos": 3, "word1": "WATCH", "word2": "ATTIC", "phase_type": "PRACTICE"}
+4.034000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word2", "value": false, "serialpos": 3, "word1": "WATCH", "word2": "ATTIC", "phase_type": "PRACTICE"}
+0.001000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": true}
+1.148000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": false}
+0.557000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word1", "value": true, "serialpos": 4, "word1": "RING", "word2": "COTTON", "phase_type": "PRACTICE"}
+4.027000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word1", "value": false, "serialpos": 4, "word1": "RING", "word2": "COTTON", "phase_type": "PRACTICE"}
+0.001000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": true}
+1.066000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": false}
+0.524000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word1", "value": true, "serialpos": 5, "word1": "RHINO", "word2": "FLOOD", "phase_type": "PRACTICE"}
+4.027000;STATE;{"name": "STUDY_PAIR", "listno": 0, "cue_pos": "word1", "value": false, "serialpos": 5, "word1": "RHINO", "word2": "FLOOD", "phase_type": "PRACTICE"}
+0.010000;STATE;{"phase_type": "PRACTICE", "name": "ENCODING", "value": false}
+0.010000;STATE;{"phase_type": "PRACTICE", "name": "DISTRACT", "value": true}
+20.086000;STATE;{"phase_type": "PRACTICE", "name": "DISTRACT", "value": false}
+0.669000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": true}
+1.248000;STATE;{"phase_type": "PRACTICE", "name": "ORIENT", "value": false}
+0.001000;STATE;{"phase_type": "PRACTICE", "name": "RETRIEVAL", "value": true}
+0.590000;STATE;{"direction": 1, "name": "REC", "probe": "CHEST", "value": true, "serialpos": 2, "expecting": "IRON"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "CHEST", "value": true, "serialpos": 2, "expecting": "IRON"}
+4.026000;STATE;{"direction": 1, "name": "PROBE", "probe": "CHEST", "value": false, "serialpos": 2, "expecting": "IRON"}
+1.000000;STATE;{"direction": 1, "name": "REC", "probe": "CHEST", "value": false, "serialpos": 2, "expecting": "IRON"}
+0.628000;STATE;{"direction": 0, "name": "REC", "probe": "RHINO", "value": true, "serialpos": 5, "expecting": "FLOOD"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "RHINO", "value": true, "serialpos": 5, "expecting": "FLOOD"}
+4.038000;STATE;{"direction": 0, "name": "PROBE", "probe": "RHINO", "value": false, "serialpos": 5, "expecting": "FLOOD"}
+1.000000;STATE;{"direction": 0, "name": "REC", "probe": "RHINO", "value": false, "serialpos": 5, "expecting": "FLOOD"}
+0.550000;STATE;{"direction": 0, "name": "REC", "probe": "RING", "value": true, "serialpos": 4, "expecting": "COTTON"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "RING", "value": true, "serialpos": 4, "expecting": "COTTON"}
+4.034000;STATE;{"direction": 0, "name": "PROBE", "probe": "RING", "value": false, "serialpos": 4, "expecting": "COTTON"}
+1.000000;STATE;{"direction": 0, "name": "REC", "probe": "RING", "value": false, "serialpos": 4, "expecting": "COTTON"}
+0.729000;STATE;{"direction": 1, "name": "REC", "probe": "ATTIC", "value": true, "serialpos": 3, "expecting": "WATCH"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "ATTIC", "value": true, "serialpos": 3, "expecting": "WATCH"}
+4.038000;STATE;{"direction": 1, "name": "PROBE", "probe": "ATTIC", "value": false, "serialpos": 3, "expecting": "WATCH"}
+1.000000;STATE;{"direction": 1, "name": "REC", "probe": "ATTIC", "value": false, "serialpos": 3, "expecting": "WATCH"}
+0.555000;STATE;{"direction": 1, "name": "REC", "probe": "TONGUE", "value": true, "serialpos": 0, "expecting": "BEAM"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "TONGUE", "value": true, "serialpos": 0, "expecting": "BEAM"}
+4.029000;STATE;{"direction": 1, "name": "PROBE", "probe": "TONGUE", "value": false, "serialpos": 0, "expecting": "BEAM"}
+1.000000;STATE;{"direction": 1, "name": "REC", "probe": "TONGUE", "value": false, "serialpos": 0, "expecting": "BEAM"}
+0.717000;STATE;{"direction": 0, "name": "REC", "probe": "WAGON", "value": true, "serialpos": 1, "expecting": "CAMEL"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "WAGON", "value": true, "serialpos": 1, "expecting": "CAMEL"}
+4.035000;STATE;{"direction": 0, "name": "PROBE", "probe": "WAGON", "value": false, "serialpos": 1, "expecting": "CAMEL"}
+1.001000;STATE;{"direction": 0, "name": "REC", "probe": "WAGON", "value": false, "serialpos": 1, "expecting": "CAMEL"}
+0.010000;STATE;{"phase_type": "PRACTICE", "name": "RETRIEVAL", "value": false}
+0.010000;STATE;{"name": "PRACTICE_POST_INSTRUCT", "value": true}
+0.665000;STATE;{"name": "PRACTICE_POST_INSTRUCT", "value": false}
+0.010000;STATE;{"phase_type": "PRACTICE", "listno": 0, "name": "TRIAL", "value": false}
+0.020000;STATE;{"phase_type": "BASELINE", "listno": 1, "name": "TRIAL", "value": true}
+0.010000;TRIAL;{"trial": 1}
+0.010000;STATE;{"name": "WAITING", "value": true}
+0.679000;STATE;{"name": "WAITING", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ENCODING", "value": true}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.149000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.727000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word2", "value": true, "serialpos": 0, "word1": "STONE", "word2": "PLANE", "phase_type": "BASELINE"}
+4.041000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word2", "value": false, "serialpos": 0, "word1": "STONE", "word2": "PLANE", "phase_type": "BASELINE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.249000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.744000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word1", "value": true, "serialpos": 1, "word1": "ROOT", "word2": "CHIEF", "phase_type": "BASELINE"}
+4.039000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word1", "value": false, "serialpos": 1, "word1": "ROOT", "word2": "CHIEF", "phase_type": "BASELINE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.184000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.599000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word1", "value": true, "serialpos": 2, "word1": "PEN", "word2": "FENCE", "phase_type": "BASELINE"}
+4.035000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word1", "value": false, "serialpos": 2, "word1": "PEN", "word2": "FENCE", "phase_type": "BASELINE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.282000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.529000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word2", "value": true, "serialpos": 3, "word1": "SAIL", "word2": "SHEET", "phase_type": "BASELINE"}
+4.039000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word2", "value": false, "serialpos": 3, "word1": "SAIL", "word2": "SHEET", "phase_type": "BASELINE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.249000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.656000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word2", "value": true, "serialpos": 4, "word1": "BOAT", "word2": "BENCH", "phase_type": "BASELINE"}
+4.029000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word2", "value": false, "serialpos": 4, "word1": "BOAT", "word2": "BENCH", "phase_type": "BASELINE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.032000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.699000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word1", "value": true, "serialpos": 5, "word1": "SHIRT", "word2": "WOLF", "phase_type": "BASELINE"}
+4.035000;STATE;{"name": "STUDY_PAIR", "listno": 1, "cue_pos": "word1", "value": false, "serialpos": 5, "word1": "SHIRT", "word2": "WOLF", "phase_type": "BASELINE"}
+0.001000;STATE;{"phase_type": "BASELINE", "name": "ENCODING", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "DISTRACT", "value": true}
+20.368000;STATE;{"phase_type": "BASELINE", "name": "DISTRACT", "value": false}
+0.554000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.129000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.001000;STATE;{"phase_type": "BASELINE", "name": "RETRIEVAL", "value": true}
+0.713000;STATE;{"direction": 1, "name": "REC", "probe": "PLANE", "value": true, "serialpos": 0, "expecting": "STONE"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "PLANE", "value": true, "serialpos": 0, "expecting": "STONE"}
+4.038000;STATE;{"direction": 1, "name": "PROBE", "probe": "PLANE", "value": false, "serialpos": 0, "expecting": "STONE"}
+1.000000;STATE;{"direction": 1, "name": "REC", "probe": "PLANE", "value": false, "serialpos": 0, "expecting": "STONE"}
+0.674000;STATE;{"direction": 0, "name": "REC", "probe": "ROOT", "value": true, "serialpos": 1, "expecting": "CHIEF"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "ROOT", "value": true, "serialpos": 1, "expecting": "CHIEF"}
+4.025000;STATE;{"direction": 0, "name": "PROBE", "probe": "ROOT", "value": false, "serialpos": 1, "expecting": "CHIEF"}
+1.000000;STATE;{"direction": 0, "name": "REC", "probe": "ROOT", "value": false, "serialpos": 1, "expecting": "CHIEF"}
+0.586000;STATE;{"direction": 0, "name": "REC", "probe": "PEN", "value": true, "serialpos": 2, "expecting": "FENCE"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "PEN", "value": true, "serialpos": 2, "expecting": "FENCE"}
+4.030000;STATE;{"direction": 0, "name": "PROBE", "probe": "PEN", "value": false, "serialpos": 2, "expecting": "FENCE"}
+1.000000;STATE;{"direction": 0, "name": "REC", "probe": "PEN", "value": false, "serialpos": 2, "expecting": "FENCE"}
+0.628000;STATE;{"direction": 0, "name": "REC", "probe": "SHIRT", "value": true, "serialpos": 5, "expecting": "WOLF"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "SHIRT", "value": true, "serialpos": 5, "expecting": "WOLF"}
+4.040000;STATE;{"direction": 0, "name": "PROBE", "probe": "SHIRT", "value": false, "serialpos": 5, "expecting": "WOLF"}
+1.000000;STATE;{"direction": 0, "name": "REC", "probe": "SHIRT", "value": false, "serialpos": 5, "expecting": "WOLF"}
+0.682000;STATE;{"direction": 1, "name": "REC", "probe": "BENCH", "value": true, "serialpos": 4, "expecting": "BOAT"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "BENCH", "value": true, "serialpos": 4, "expecting": "BOAT"}
+4.035000;STATE;{"direction": 1, "name": "PROBE", "probe": "BENCH", "value": false, "serialpos": 4, "expecting": "BOAT"}
+0.999000;STATE;{"direction": 1, "name": "REC", "probe": "BENCH", "value": false, "serialpos": 4, "expecting": "BOAT"}
+0.738000;STATE;{"direction": 1, "name": "REC", "probe": "SHEET", "value": true, "serialpos": 3, "expecting": "SAIL"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "SHEET", "value": true, "serialpos": 3, "expecting": "SAIL"}
+4.031000;STATE;{"direction": 1, "name": "PROBE", "probe": "SHEET", "value": false, "serialpos": 3, "expecting": "SAIL"}
+0.999000;STATE;{"direction": 1, "name": "REC", "probe": "SHEET", "value": false, "serialpos": 3, "expecting": "SAIL"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "RETRIEVAL", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "listno": 1, "name": "TRIAL", "value": false}
+0.020000;STATE;{"phase_type": "BASELINE", "listno": 2, "name": "TRIAL", "value": true}
+0.010000;TRIAL;{"trial": 2}
+0.001089;STATE;{"name": "WAITING", "value": true}
+0.645000;STATE;{"name": "WAITING", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ENCODING", "value": true}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.182000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.537000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word1", "value": true, "serialpos": 0, "word1": "ARM", "word2": "DUCK", "phase_type": "BASELINE"}
+4.030000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word1", "value": false, "serialpos": 0, "word1": "ARM", "word2": "DUCK", "phase_type": "BASELINE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.216000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.587000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word2", "value": true, "serialpos": 1, "word1": "EEL", "word2": "DESK", "phase_type": "BASELINE"}
+4.031000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word2", "value": false, "serialpos": 1, "word1": "EEL", "word2": "DESK", "phase_type": "BASELINE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.166000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.707000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word2", "value": true, "serialpos": 2, "word1": "GRASS", "word2": "SNAKE", "phase_type": "BASELINE"}
+4.027000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word2", "value": false, "serialpos": 2, "word1": "GRASS", "word2": "SNAKE", "phase_type": "BASELINE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.248000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.658000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word1", "value": true, "serialpos": 3, "word1": "STRAW", "word2": "CAVE", "phase_type": "BASELINE"}
+4.026000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word1", "value": false, "serialpos": 3, "word1": "STRAW", "word2": "CAVE", "phase_type": "BASELINE"}
+0.001000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.067000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.618000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word2", "value": true, "serialpos": 4, "word1": "FOG", "word2": "LAKE", "phase_type": "BASELINE"}
+4.032000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word2", "value": false, "serialpos": 4, "word1": "FOG", "word2": "LAKE", "phase_type": "BASELINE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.133000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.710000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word1", "value": true, "serialpos": 5, "word1": "CHAIR", "word2": "STOOL", "phase_type": "BASELINE"}
+4.024000;STATE;{"name": "STUDY_PAIR", "listno": 2, "cue_pos": "word1", "value": false, "serialpos": 5, "word1": "CHAIR", "word2": "STOOL", "phase_type": "BASELINE"}
+0.001000;STATE;{"phase_type": "BASELINE", "name": "ENCODING", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "DISTRACT", "value": true}
+21.286000;STATE;{"phase_type": "BASELINE", "name": "DISTRACT", "value": false}
+0.569000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.115000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "RETRIEVAL", "value": true}
+0.739000;STATE;{"direction": 0, "name": "REC", "probe": "ARM", "value": true, "serialpos": 0, "expecting": "DUCK"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "ARM", "value": true, "serialpos": 0, "expecting": "DUCK"}
+4.026000;STATE;{"direction": 0, "name": "PROBE", "probe": "ARM", "value": false, "serialpos": 0, "expecting": "DUCK"}
+1.001000;STATE;{"direction": 0, "name": "REC", "probe": "ARM", "value": false, "serialpos": 0, "expecting": "DUCK"}
+0.569000;STATE;{"direction": 1, "name": "REC", "probe": "DESK", "value": true, "serialpos": 1, "expecting": "EEL"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "DESK", "value": true, "serialpos": 1, "expecting": "EEL"}
+4.031000;STATE;{"direction": 1, "name": "PROBE", "probe": "DESK", "value": false, "serialpos": 1, "expecting": "EEL"}
+1.000000;STATE;{"direction": 1, "name": "REC", "probe": "DESK", "value": false, "serialpos": 1, "expecting": "EEL"}
+0.702000;STATE;{"direction": 1, "name": "REC", "probe": "LAKE", "value": true, "serialpos": 4, "expecting": "FOG"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "LAKE", "value": true, "serialpos": 4, "expecting": "FOG"}
+4.033000;STATE;{"direction": 1, "name": "PROBE", "probe": "LAKE", "value": false, "serialpos": 4, "expecting": "FOG"}
+1.000000;STATE;{"direction": 1, "name": "REC", "probe": "LAKE", "value": false, "serialpos": 4, "expecting": "FOG"}
+0.593000;STATE;{"direction": 0, "name": "REC", "probe": "CHAIR", "value": true, "serialpos": 5, "expecting": "STOOL"}
+0.001000;STATE;{"direction": 0, "name": "PROBE", "probe": "CHAIR", "value": true, "serialpos": 5, "expecting": "STOOL"}
+4.038000;STATE;{"direction": 0, "name": "PROBE", "probe": "CHAIR", "value": false, "serialpos": 5, "expecting": "STOOL"}
+1.001000;STATE;{"direction": 0, "name": "REC", "probe": "CHAIR", "value": false, "serialpos": 5, "expecting": "STOOL"}
+0.565000;STATE;{"direction": 1, "name": "REC", "probe": "SNAKE", "value": true, "serialpos": 2, "expecting": "GRASS"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "SNAKE", "value": true, "serialpos": 2, "expecting": "GRASS"}
+4.037000;STATE;{"direction": 1, "name": "PROBE", "probe": "SNAKE", "value": false, "serialpos": 2, "expecting": "GRASS"}
+1.000000;STATE;{"direction": 1, "name": "REC", "probe": "SNAKE", "value": false, "serialpos": 2, "expecting": "GRASS"}
+0.565000;STATE;{"direction": 0, "name": "REC", "probe": "STRAW", "value": true, "serialpos": 3, "expecting": "CAVE"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "STRAW", "value": true, "serialpos": 3, "expecting": "CAVE"}
+4.035000;STATE;{"direction": 0, "name": "PROBE", "probe": "STRAW", "value": false, "serialpos": 3, "expecting": "CAVE"}
+1.001000;STATE;{"direction": 0, "name": "REC", "probe": "STRAW", "value": false, "serialpos": 3, "expecting": "CAVE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "RETRIEVAL", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "listno": 2, "name": "TRIAL", "value": false}
+0.019000;STATE;{"phase_type": "BASELINE", "listno": 3, "name": "TRIAL", "value": true}
+0.010000;TRIAL;{"trial": 3}
+0.001084;STATE;{"name": "WAITING", "value": true}
+0.245000;STATE;{"name": "WAITING", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ENCODING", "value": true}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.082000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.644000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word2", "value": true, "serialpos": 0, "word1": "BANK", "word2": "CAKE", "phase_type": "BASELINE"}
+4.041000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word2", "value": false, "serialpos": 0, "word1": "BANK", "word2": "CAKE", "phase_type": "BASELINE"}
+0.001000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.199000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.662000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word2", "value": true, "serialpos": 1, "word1": "TEETH", "word2": "FACE", "phase_type": "BASELINE"}
+4.039000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word2", "value": false, "serialpos": 1, "word1": "TEETH", "word2": "FACE", "phase_type": "BASELINE"}
+0.002000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.048000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.656000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word2", "value": true, "serialpos": 2, "word1": "CLOUD", "word2": "FOAM", "phase_type": "BASELINE"}
+4.028000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word2", "value": false, "serialpos": 2, "word1": "CLOUD", "word2": "FOAM", "phase_type": "BASELINE"}
+0.002000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.215000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.730000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word1", "value": true, "serialpos": 3, "word1": "TENT", "word2": "HOOK", "phase_type": "BASELINE"}
+4.037000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word1", "value": false, "serialpos": 3, "word1": "TENT", "word2": "HOOK", "phase_type": "BASELINE"}
+0.002000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.265000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.746000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word1", "value": true, "serialpos": 4, "word1": "SLEEVE", "word2": "ROPE", "phase_type": "BASELINE"}
+4.039000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word1", "value": false, "serialpos": 4, "word1": "SLEEVE", "word2": "ROPE", "phase_type": "BASELINE"}
+0.001000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.048000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.580000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word1", "value": true, "serialpos": 5, "word1": "NAIL", "word2": "PLANT", "phase_type": "BASELINE"}
+4.039000;STATE;{"name": "STUDY_PAIR", "listno": 3, "cue_pos": "word1", "value": false, "serialpos": 5, "word1": "NAIL", "word2": "PLANT", "phase_type": "BASELINE"}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "ENCODING", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "DISTRACT", "value": true}
+22.019000;STATE;{"phase_type": "BASELINE", "name": "DISTRACT", "value": false}
+0.557000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": true}
+1.177000;STATE;{"phase_type": "BASELINE", "name": "ORIENT", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "name": "RETRIEVAL", "value": true}
+0.625000;STATE;{"direction": 0, "name": "REC", "probe": "SLEEVE", "value": true, "serialpos": 4, "expecting": "ROPE"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "SLEEVE", "value": true, "serialpos": 4, "expecting": "ROPE"}
+4.040000;STATE;{"direction": 0, "name": "PROBE", "probe": "SLEEVE", "value": false, "serialpos": 4, "expecting": "ROPE"}
+0.999000;STATE;{"direction": 0, "name": "REC", "probe": "SLEEVE", "value": false, "serialpos": 4, "expecting": "ROPE"}
+0.528000;STATE;{"direction": 0, "name": "REC", "probe": "NAIL", "value": true, "serialpos": 5, "expecting": "PLANT"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "NAIL", "value": true, "serialpos": 5, "expecting": "PLANT"}
+4.041000;STATE;{"direction": 0, "name": "PROBE", "probe": "NAIL", "value": false, "serialpos": 5, "expecting": "PLANT"}
+1.000000;STATE;{"direction": 0, "name": "REC", "probe": "NAIL", "value": false, "serialpos": 5, "expecting": "PLANT"}
+0.729000;STATE;{"direction": 1, "name": "REC", "probe": "FOAM", "value": true, "serialpos": 2, "expecting": "CLOUD"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "FOAM", "value": true, "serialpos": 2, "expecting": "CLOUD"}
+4.039000;STATE;{"direction": 1, "name": "PROBE", "probe": "FOAM", "value": false, "serialpos": 2, "expecting": "CLOUD"}
+1.000000;STATE;{"direction": 1, "name": "REC", "probe": "FOAM", "value": false, "serialpos": 2, "expecting": "CLOUD"}
+0.577000;STATE;{"direction": 0, "name": "REC", "probe": "TENT", "value": true, "serialpos": 3, "expecting": "HOOK"}
+0.010000;STATE;{"direction": 0, "name": "PROBE", "probe": "TENT", "value": true, "serialpos": 3, "expecting": "HOOK"}
+4.040000;STATE;{"direction": 0, "name": "PROBE", "probe": "TENT", "value": false, "serialpos": 3, "expecting": "HOOK"}
+0.999000;STATE;{"direction": 0, "name": "REC", "probe": "TENT", "value": false, "serialpos": 3, "expecting": "HOOK"}
+0.710000;STATE;{"direction": 1, "name": "REC", "probe": "CAKE", "value": true, "serialpos": 0, "expecting": "BANK"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "CAKE", "value": true, "serialpos": 0, "expecting": "BANK"}
+4.025000;STATE;{"direction": 1, "name": "PROBE", "probe": "CAKE", "value": false, "serialpos": 0, "expecting": "BANK"}
+1.000000;STATE;{"direction": 1, "name": "REC", "probe": "CAKE", "value": false, "serialpos": 0, "expecting": "BANK"}
+0.594000;STATE;{"direction": 1, "name": "REC", "probe": "FACE", "value": true, "serialpos": 1, "expecting": "TEETH"}
+0.010000;STATE;{"direction": 1, "name": "PROBE", "probe": "FACE", "value": true, "serialpos": 1, "expecting": "TEETH"}
+4.040000;STATE;{"direction": 1, "name": "PROBE", "probe": "FACE", "value": false, "serialpos": 1, "expecting": "TEETH"}
+1.000000;STATE;{"direction": 1, "name": "REC", "probe": "FACE", "value": false, "serialpos": 1, "expecting": "TEETH"}
+0.001000;STATE;{"phase_type": "BASELINE", "name": "RETRIEVAL", "value": false}
+0.010000;STATE;{"phase_type": "BASELINE", "listno": 3, "name": "TRIAL", "value": false}
+0.021000;STATE;{"phase_type": "PS", "listno": 4, "name": "TRIAL", "value": true}
+0.010000;TRIAL;{"trial": 4}
+0.010000;STATE;{"name": "WAITING", "value": true}
+0.362000;STATE;{"name": "WAITING", "value": false}
+0.010000;STATE;{"phase_type": "PS", "name": "ENCODING", "value": true}
+0.001000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": true}
+1.048000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": false}
+0.623000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word1", "value": true, "serialpos": 0, "word1": "CALF", "word2": "SHARK", "phase_type": "PS"}
+4.028000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word1", "value": false, "serialpos": 0, "word1": "CALF", "word2": "SHARK", "phase_type": "PS"}
+0.002000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": true}
+1.199000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": false}
+0.699000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word2", "value": true, "serialpos": 1, "word1": "THUMB", "word2": "ROCK", "phase_type": "PS"}
+4.035000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word2", "value": false, "serialpos": 1, "word1": "THUMB", "word2": "ROCK", "phase_type": "PS"}
+0.001000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": true}
+1.116000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": false}
+0.662000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word1", "value": true, "serialpos": 2, "word1": "WAND", "word2": "WAVE", "phase_type": "PS"}
+4.038000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word1", "value": false, "serialpos": 2, "word1": "WAND", "word2": "WAVE", "phase_type": "PS"}
+0.010000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": true}
+1.032000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": false}
+0.630000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word2", "value": true, "serialpos": 3, "word1": "TRAIN", "word2": "MOUSE", "phase_type": "PS"}
+4.038000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word2", "value": false, "serialpos": 3, "word1": "TRAIN", "word2": "MOUSE", "phase_type": "PS"}
+0.002000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": true}
+1.248000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": false}
+0.579000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word2", "value": true, "serialpos": 4, "word1": "DIME", "word2": "LEAF", "phase_type": "PS"}
+4.039000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word2", "value": false, "serialpos": 4, "word1": "DIME", "word2": "LEAF", "phase_type": "PS"}
+0.010000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": true}
+1.149000;STATE;{"phase_type": "PS", "name": "ORIENT", "value": false}
+0.600000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word1", "value": true, "serialpos": 5, "word1": "LAWN", "word2": "SPEAR", "phase_type": "PS"}
+4.035000;STATE;{"name": "STUDY_PAIR", "listno": 4, "cue_pos": "word1", "value": false, "serialpos": 5, "word1": "LAWN", "word2": "SPEAR", "phase_type": "PS"}
+0.010000;STATE;{"phase_type": "PS", "name": "ENCODING", "value": false}
+0.001000;STATE;{"phase_type": "PS", "name": "DISTRACT", "value": true}
+20.519000;STATE;{"phase_type": "PS", "name": "DISTRACT", "value": false}
