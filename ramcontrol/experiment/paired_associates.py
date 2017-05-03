@@ -67,7 +67,8 @@ class PALExperiment(WordTask):
                 self.display_word(row, n)
 
     def display_word(self, word_info, serialpos, wait=False, keys=["SPACE"]):
-        text = Text('{}\n\n{}'.format(word_info.word1, word_info.word2))
+        text = Text('{}\n\n{}'.format(word_info.word1, word_info.word2),
+                    size=self.config.wordHeight)
 
         kwargs = {
             'word1': word_info.word1,
