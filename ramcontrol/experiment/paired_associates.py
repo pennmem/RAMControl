@@ -26,12 +26,13 @@ class PALExperiment(WordTask):
 
     def run_cued_retrieval(self, words, phase_type):
         order = self.make_test_order()
-        with self.state_context("RETRIEVAL", phase_type=phase_type):
-            for row_ind in order:
-                row = words.iloc[row_ind]
-                self.clock.delay(self.config.pre_cue, self.config.pre_cue_jitter)
-                self.clock.wait()
-                self.display_cue(row,row_ind)
+        with self.controller.voice_detector():  # this does nothing if VAD is disabled
+            with self.state_context("RETRIEVAL", phase_type=phase_type):
+                for row_ind in order:
+                    row = words.iloc[row_ind]
+                    self.clock.delay(self.config.pre_cue, self.config.pre_cue_jitter)
+                    self.clock.wait()
+                    self.display_cue(row,row_ind)
 
     def display_cue(self, word_info,serialpos):
         direction = (word_info['cue_pos'] == 'word2')
