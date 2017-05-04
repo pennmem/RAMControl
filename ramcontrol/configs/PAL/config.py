@@ -59,7 +59,8 @@ stopBeepRiseFall = 100
 
 # Orienting Stimulus text
 orientText = '+'
-recallStartText = '*******'
+encodingStartText = '*******'
+recallStartText =   '*******'
 
 # Videos
 countdownMovie = "countdown.mpg"
