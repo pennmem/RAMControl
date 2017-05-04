@@ -90,7 +90,7 @@ def main():
         "experiment": args.experiment,
         "experiment_family": config.get(args.experiment, "family"),
 
-        "voiceserver": config[args.experiment].get("voiceserver", False),
+        "voiceserver": config[args.experiment].getboolean("voiceserver", fallback=False),
 
         "video_path": os.path.abspath(os.path.expanduser(config["videos"]["path"])),
         "data_path": absjoin("./data"),
