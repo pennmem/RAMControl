@@ -129,10 +129,6 @@ class PALExperiment(WordTask):
 
             all_lists.append(assigned)
 
-        # listgen.pal.make_unique(all_lists)
-        #
-        # for session,assigned in enumerate(all_lists):
-
             # Create session directory if it doesn't yet exist
             session_dir = osp.join(self.data_root, self.subject,
                                    "session_{:d}".format(session))

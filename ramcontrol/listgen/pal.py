@@ -1,6 +1,7 @@
 import pandas as pd
 import wordpool
-from numpy.random import shuffle,randint
+from numpy.random import shuffle,randint,choice
+from random import choice
 import numpy as np
 from collections import deque
 from itertools import chain
@@ -14,27 +15,23 @@ PRACTICE_LIST_SP = wordpool.load("practice_sp.txt")
 
 
 
-def generate_n_session_pairs(n_sessions,n_lists=25, language='EN'):
+def generate_n_session_pairs(n_sessions,n_lists=25, n_pairs=6, language='EN'):
+
     words = wordpools[language].values
     n_words = len(words)
-    vec=deque([1 for _ in range(n_sessions)] + [0 for _ in range(n_words-n_sessions)])
-    vec.rotate(-1*n_sessions/2)
-    circulant = np.diag([-1 for _ in words])
-    for i in range(len(words)):
-        avail = circulant[i]!=-1
-        circulant[i,avail] = list(vec)
-        vec.rotate(1)
-    circulant[circulant==-1]=0
+    assert n_lists*n_pairs*2==n_words
     shuffle(words)
-    all_pairs = list(chain(*[[(w,w0) for w0 in words[c]] for (w,c) in zip(words,circulant)]))
-    sess_pools = [pd.DataFrame(columns=['word1','word2']) for _ in range(n_sessions)]
-    for pair in all_pairs:
-        for sess_pool in sess_pools:
-            if not (where_(pair[0],sess_pool).any() or where_(pair[1],sess_pool).any()):
-                sess_pool.append({'word1':pair[0],'word2':pair[1],},ignore_index=True)
-    for i in range(n_sessions):
-        sess_pools[i]=add_fields(sess_pools[i],n_lists)
-
+    words = deque([w[0] for w in words])
+    sess_pools = []
+    indices = np.random.choice(np.arange(n_words),size=n_sessions,replace=False)
+    for i in indices:
+        words.rotate(i)
+        word1 = list(words)[:n_words/2]
+        word2 = list(words)[n_words/2:]
+        word2.reverse()
+        new_session = pd.DataFrame(np.array([word1,word2]).T,columns=['word1','word2'])
+        sess_pools.append(add_fields(new_session))
+        words.rotate(-1*i)
     return sess_pools
 
 def add_fields(word_lists=None,pairs_per_list = 6, num_lists=25,language='EN'):
@@ -85,6 +82,8 @@ def equal_pairs(a, b):
     return backward | forward
 
 def where_(word,wordpool):
+    if wordpool.empty:
+        return np.array([])
     return (wordpool.word1==word) | (wordpool.word2==word)
 
 def make_unique(wordpools):
@@ -104,6 +103,13 @@ def fix_common_pairs(overlap,current_pool,old_pools):
 
 
 
+if __name__=='__main__':
+    wordpools = generate_n_session_pairs(10)
+    for i in range(10):
+        for j in range(i):
+            pool1 = wordpools[i]
+            pool2 = wordpools[j]
+            mask = equal_pairs(pool1.loc[pool1.type != 'PRACTICE'],pool2.loc[pool2.type != 'PRACTICE'])
 
 
 
