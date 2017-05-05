@@ -64,7 +64,7 @@ recallStartText =   '*******'
 
 # Videos
 countdownMovie = "countdown.mpg"
-introMovie = "FR_instructions_{language:s}.mpg"
+introMovie = "PAL_instructions_{language:s}.mpg"
 
 # Math distractor options
 MATH_numVars = 3

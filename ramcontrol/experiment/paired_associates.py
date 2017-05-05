@@ -4,18 +4,16 @@ import codecs
 
 from .. import listgen
 from ..messages import TrialMessage
-from ..exc import ExperimentError
 from ..util import get_instructions
 from .wordtask import WordTask
 from .experiment import skippable
 from random import shuffle
 
 from pyepl.display import Text
-from pyepl.convenience import waitForAnyKey
+
 
 class PALExperiment(WordTask):
-
-
+    """Paired associates learning tasks."""
     def make_test_order(self):
         evens = range(0,self.config.n_pairs,2)
         odds = range(1,self.config.n_pairs,2)
@@ -26,15 +24,15 @@ class PALExperiment(WordTask):
             order.append(odds.pop() if i%2 else evens.pop())
         return order
 
-
     def run_cued_retrieval(self, words, phase_type):
         order = self.make_test_order()
-        with self.state_context("RETRIEVAL", phase_type=phase_type):
-            for row_ind in order:
-                row = words.iloc[row_ind]
-                self.clock.delay(self.config.pre_cue, self.config.pre_cue_jitter)
-                self.clock.wait()
-                self.display_cue(row,row_ind)
+        with self.controller.voice_detector():  # this does nothing if VAD is disabled
+            with self.state_context("RETRIEVAL", phase_type=phase_type):
+                for row_ind in order:
+                    row = words.iloc[row_ind]
+                    self.clock.delay(self.config.pre_cue, self.config.pre_cue_jitter)
+                    self.clock.wait()
+                    self.display_cue(row,row_ind)
 
     def display_cue(self, word_info,serialpos):
         direction = (word_info['cue_pos'] == 'word2')
@@ -70,7 +68,8 @@ class PALExperiment(WordTask):
                 self.display_word(row, n)
 
     def display_word(self, word_info, serialpos, wait=False, keys=["SPACE"]):
-        text = Text('{}\n\n{}'.format(word_info.word1, word_info.word2))
+        text = Text('{}\n\n{}'.format(word_info.word1, word_info.word2),
+                    size=self.config.wordHeight)
 
         kwargs = {
             'word1': word_info.word1,
@@ -119,10 +118,11 @@ class PALExperiment(WordTask):
                 print(pool)
 
             if self.config.experiment=="PAL3":
-                assigned = listgen.assign_balanced_list_types(pool,n_baseline,n_nonstim,n_stim,n_ps,num_groups=2)
+                assigned = listgen.assign_balanced_list_types(
+                    pool, n_baseline, n_nonstim, n_stim, n_ps, num_groups=2)
             else:
-                assigned = listgen.assign_list_types(pool, n_baseline, n_nonstim,
-                                                 n_stim, n_ps)
+                assigned = listgen.assign_list_types(
+                    pool, n_baseline, n_nonstim, n_stim, n_ps)
 
             if self.debug:
                 print(assigned)
@@ -257,9 +257,3 @@ class PALExperiment(WordTask):
             session_number=self.session + 1,
             session_started=False
         )
-
-
-
-
-
-

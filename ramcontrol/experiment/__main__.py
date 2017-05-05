@@ -51,6 +51,7 @@ sconfig_file = absjoin(here, "configs", config_dir, experiment + "_config.py")
 
 # This is only here because PyEPL screws up the voice server if we don't
 # instantiate this *before* the PyEPL experiment.
+print('VOICE SERVER: ', config['voiceserver'])
 RAMControl.instance(voiceserver=config["voiceserver"])
 
 pid = os.getpid()
