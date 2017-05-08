@@ -220,6 +220,17 @@ class TestCatFR:
 
 
 class TestPAL:
+
+    @staticmethod
+    def equal_pairs(a, b):
+        backward = np.array(
+            [(b.loc[b.word2 == a.loc[i].word1].word1 == a.loc[i].word2).any()
+             for i in a.index]).astype(np.bool)
+        forward = np.array(
+            [(b.loc[b.word1 == a.loc[i].word1].word2 == a.loc[i].word2).any()
+             for i in a.index]).astype(np.bool)
+        return backward | forward
+
     def test_generate_session_pool(self):
         with pytest.raises(AssertionError):
             listgen.pal.generate_session_pool(8)
@@ -272,6 +283,39 @@ class TestPAL:
         assert (stim_period.listno.values>3).all()
         assert abs((first_half.type=="STIM").sum()-(first_half.type=="NON-STIM").sum())<2*6
         assert abs((second_half.type=="STIM").sum() == (second_half.type=="NON-STIM").sum())<2*6
+
+    def test_make_unique_1(self):
+
+
+        pool1 = pd.DataFrame(data=[['HELLO','WORLD'],['PY','CHARM'],['GREEN','DAY'],['FINAL','FANTASY']],columns=['word1','word2'])
+        pool2 = pd.DataFrame(data=[['HELLO','CHARM'],['FANTASY','PY'],['WORLD','FINAL'],['DAY','GREEN']],columns=['word1','word2'])
+        pool3 = pd.DataFrame(data=[['DAY','GREEN'],['WORLD','PY'],['HELLO','FANTASY'],['CHARM','FINAL']],columns=['word1','word2'])
+
+        assert self.equal_pairs(pool1,pool2).any()
+        assert self.equal_pairs(pool1,pool3).any()
+        assert self.equal_pairs(pool2,pool3).any()
+
+        wordpools = [pool1,pool2,pool3]
+
+        listgen.pal.make_unique(wordpools)
+
+        assert not self.equal_pairs(pool1,pool2).any()
+        assert not self.equal_pairs(pool1,pool3).any()
+        assert not self.equal_pairs(pool2,pool3).any()
+
+
+    def test_make_unique_2(self):
+        wordpools = [listgen.pal.generate_session_pool() for i in range(10)]
+        listgen.pal.make_unique(wordpools)
+
+        for i in range(10):
+            for j in range(i):
+                assert not self.equal_pairs(wordpools[i],wordpools[j])
+
+
+
+
+
 
 
 

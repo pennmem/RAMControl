@@ -62,7 +62,7 @@ class PALExperiment(WordTask):
         """
         with self.state_context("ENCODING", phase_type=phase_type):
             for n, (_, row) in enumerate(words.iterrows()):
-                self.run_orient(phase_type, self.config.orientText, beep=True)
+                self.run_orient(phase_type, self.config.orientText)
                 self.clock.delay(self.timings.isi, self.timings.jitter)
                 self.clock.wait()
                 self.display_word(row, n)
@@ -106,10 +106,10 @@ class PALExperiment(WordTask):
                          self.config.numSessions)
         all_lists = []
         all_rec_blocks = []
-        for session in range(self.config.numSessions):
-            self.logger.info("Pre-generating word lists for session %d",
-                             session)
-            pool = listgen.pal.generate_session_pool(language=self.config.LANGUAGE)
+        all_sessions = listgen.pal.generate_n_session_pairs(self.config.numSessions)
+        for session,pool in enumerate(all_sessions):
+            # self.logger.info("Pre-generating word lists for session %d",
+            #                  session)
             n_baseline = self.config.n_baseline
             n_nonstim = self.config.n_nonstim
             n_stim = self.config.n_stim
@@ -126,6 +126,8 @@ class PALExperiment(WordTask):
 
             if self.debug:
                 print(assigned)
+
+            all_lists.append(assigned)
 
             # Create session directory if it doesn't yet exist
             session_dir = osp.join(self.data_root, self.subject,
@@ -146,7 +148,6 @@ class PALExperiment(WordTask):
                 with codecs.open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
                     f.writelines(row.word1 + "\t" +row.word2 + "\n" for _, row in entries.iterrows())
 
-            all_lists.append(assigned)
 
             # Generate recognition phase lists if this experiment supports it
             # and save to session folder
@@ -222,6 +223,7 @@ class PALExperiment(WordTask):
                 self.run_countdown()
 
                 # Encoding
+                self.run_orient(phase_type,self.config.encodingStartText,beep=True)
                 self.run_encoding(words, phase_type)
 
                 # Distract
