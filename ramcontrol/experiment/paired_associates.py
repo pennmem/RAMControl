@@ -30,9 +30,9 @@ class PALExperiment(WordTask):
         with self.controller.voice_detector():  # this does nothing if VAD is disabled
             with self.state_context("RETRIEVAL", phase_type=phase_type):
 
-                # Record responses
-                label = str(self.list_index)
-                self.audio.record(self.timings.recall_duration, label, t=self.clock)
+                # Start recording responses (because PyEPL)
+                audio_filename = str(self.list_index)
+                self.audio.startRecording(audio_filename, self.clock)
 
                 # Display cues
                 for row_ind in order:
@@ -40,6 +40,9 @@ class PALExperiment(WordTask):
                     self.clock.delay(self.config.pre_cue, self.config.pre_cue_jitter)
                     self.clock.wait()
                     self.display_cue(row, row_ind)
+
+                # Stop recording responses (because PyEPL)
+                self.audio.stopRecording(self.clock)
 
     def display_cue(self, word_info, serialpos):
         """Helper function to display cue words during retrieval."""
