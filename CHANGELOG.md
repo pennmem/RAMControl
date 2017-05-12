@@ -1,5 +1,20 @@
 # Changes
 
+## Version 3.1.8
+
+**2017-mm-dd**
+
+Major additions:
+
+* Added support for PAL1, PAL5, and PS4_PAL5.
+
+Other changes:
+
+* Updated practice lists in FR/catFR experiments to be presented in random order
+  (consistent with the tasks prior to System 3).
+* Updated the `run_experiment` bash script to keep the terminal window open
+  until enter is pressed.
+
 ## Version 3.1.7
 
 **2017-04-28**
