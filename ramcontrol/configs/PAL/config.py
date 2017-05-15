@@ -62,6 +62,8 @@ orientText = '+'
 encodingStartText = '*******'
 recallStartText =   '*******'
 
+# Orienting Stimulus
+
 # Videos
 countdownMovie = "countdown.mpg"
 introMovie = "PAL_instructions_{language:s}.mpg"

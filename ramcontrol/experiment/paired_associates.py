@@ -30,6 +30,7 @@ class PALExperiment(WordTask):
             with self.state_context("RETRIEVAL", phase_type=phase_type):
                 for row_ind in order:
                     row = words.iloc[row_ind]
+                    self.run_orient(row.phase,self.config.orient_text)
                     self.clock.delay(self.config.pre_cue, self.config.pre_cue_jitter)
                     self.clock.wait()
                     self.display_cue(row,row_ind)
@@ -146,7 +147,7 @@ class PALExperiment(WordTask):
                 name = "{:d}.lst".format(listno)
                 entries = assigned[assigned.listno == listno]
                 with codecs.open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
-                    f.writelines(row.word1 + "\t" +row.word2 + "\n" for _, row in entries.iterrows())
+                    f.writelines(row.word1 + "\n" +row.word2 + "\n" for _, row in entries.iterrows())
 
 
             # Generate recognition phase lists if this experiment supports it
@@ -235,7 +236,7 @@ class PALExperiment(WordTask):
                 self.clock.wait()
 
                 # Retrieval
-                self.run_orient(phase_type,self.config.recallStartText,beep=True)
+                # self.run_orient(phase_type,self.config.recallStartText,beep=True)
                 self.run_cued_retrieval(words,phase_type)
 
                 if phase_type == "PRACTICE":

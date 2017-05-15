@@ -191,11 +191,11 @@ class WordTask(Experiment):
         with self.state_context("ORIENT", phase_type=phase_type):
             text = Text(orient_text)
 
-            if self.kwargs.get("play_beeps", True) and beep:
-                self.epl_helpers.play_start_beep()
-
             text.present(self.clock, self.timings.encoding_delay,
                          jitter=self.timings.encoding_jitter)
+
+            if self.kwargs.get("play_beeps", True) and beep:
+                self.epl_helpers.play_start_beep()
 
             self.video.unshow(text)
 
