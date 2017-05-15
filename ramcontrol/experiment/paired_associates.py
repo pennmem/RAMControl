@@ -25,23 +25,34 @@ class PALExperiment(WordTask):
         return order
 
     def run_cued_retrieval(self, words, phase_type):
+        """PAL version of retrieval."""
         order = self.make_test_order()
         with self.controller.voice_detector():  # this does nothing if VAD is disabled
             with self.state_context("RETRIEVAL", phase_type=phase_type):
+
+                # Start recording responses (because PyEPL)
+                audio_filename = str(self.list_index)
+                self.audio.startRecording(audio_filename, self.clock)
+
+                # Display cues
                 for row_ind in order:
                     row = words.iloc[row_ind]
                     self.run_orient(row.phase,self.config.orient_text)
                     self.clock.delay(self.config.pre_cue, self.config.pre_cue_jitter)
                     self.clock.wait()
-                    self.display_cue(row,row_ind)
+                    self.display_cue(row, row_ind)
 
-    def display_cue(self, word_info,serialpos):
+                # Stop recording responses (because PyEPL)
+                self.audio.stopRecording(self.clock)
+
+    def display_cue(self, word_info, serialpos):
+        """Helper function to display cue words during retrieval."""
         direction = (word_info['cue_pos'] == 'word2')
         kwargs = {
             'probe': word_info[word_info['cue_pos']],
             'expecting': word_info['word1' if direction else 'word2'],
             'direction': int(direction),
-            'serialpos':serialpos
+            'serialpos': serialpos
         }
 
         text = Text(word_info[word_info.cue_pos], size=self.config.wordHeight)
