@@ -6,7 +6,7 @@
 
 Major additions:
 
-* Added support for PAL1, PAL5, and PS4_PAL5.
+* Added support for PAL1 and PAL5
 
 Other changes:
 
@@ -14,6 +14,7 @@ Other changes:
   (consistent with the tasks prior to System 3).
 * Updated the `run_experiment` bash script to keep the terminal window open
   until enter is pressed.
+* PS4 sessions are now limited to PS4_FR5 and stop after 10 lists (on the host).
 
 ## Version 3.1.7
 
