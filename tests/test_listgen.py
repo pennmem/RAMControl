@@ -233,11 +233,12 @@ class TestPAL:
 
     def test_generate_session_pool(self):
         with pytest.raises(AssertionError):
-            listgen.pal.generate_session_pool(8)
-            listgen.pal.generate_session_pool(num_lists=20)
-            listgen.pal.generate_session_pool(language='HE')
+            listgen.pal.generate_n_session_pairs(1,n_pairs=8)
+            listgen.pal.generate_n_session_pairs(1,n_lists=20)
+        with pytest.raises(KeyError):
+            listgen.pal.generate_n_session_pairs(1,language='HE')
 
-        pool = listgen.pal.generate_session_pool()
+        pool = listgen.pal.generate_n_session_pairs(1)[0]
 
         for field in ['word1','word2','listno','type']:
             assert field in pool.columns
@@ -250,32 +251,22 @@ class TestPAL:
         for _,list_pairs in pool.groupby('listno'):
             assert len(list_pairs)==6
 
-    # def test_session_pool_uniqueness(self):
-    #     """
-    #     Check if some large number of pools can generate the same pair of words
-    #     """
-    #     pools = [listgen.pal.generate_session_pool().sort_values(by='word1') for _ in range(5)]
-    #     for pool1 in pools:
-    #         for pool2 in pools:
-    #             if pool2 is not pool1:
-    #                 assert not ((pool1['word2'].values==pool2['word2'].values).any())
-
     def test_assign_cue_position(self):
-        pool = listgen.pal.generate_session_pool()
+        pool = listgen.pal.generate_n_session_pairs(1)[0]
         cue_positions_by_list = [listgen.pal.assign_cues(words) for _,words in pool.groupby('listno')]
         for list_cue_positions in cue_positions_by_list:
             assert sum([x=='word1' for x in list_cue_positions])==len(list_cue_positions)/2
             assert sum([x=='word2' for x in list_cue_positions])==len(list_cue_positions)/2
 
     def test_assigned_cue_positions(self):
-        pool=listgen.pal.generate_session_pool()
+        pool=listgen.pal.generate_n_session_pairs(1)[0]
 
         for _,words_by_list in pool.groupby('listno'):
             assert (words_by_list['cue_pos']=='word1').sum()==len(words_by_list)/2
             assert (words_by_list['cue_pos']=='word2').sum()==len(words_by_list)/2
 
     def test_assign_balanced_list_types(self):
-        pool = listgen.pal.generate_session_pool()
+        pool = listgen.pal.generate_n_session_pairs(1)[0]
         pool = listgen.assign_balanced_list_types(pool,3,11,11,0,2)
         stim_period = pool.loc[(pool.type=="STIM") | (pool.type=="NON-STIM")]
         first_half = stim_period.iloc[:len(stim_period)/2]
@@ -284,39 +275,39 @@ class TestPAL:
         assert abs((first_half.type=="STIM").sum()-(first_half.type=="NON-STIM").sum())<2*6
         assert abs((second_half.type=="STIM").sum() == (second_half.type=="NON-STIM").sum())<2*6
 
-    def test_make_unique_1(self):
-
-
-        pool1 = pd.DataFrame(data=[['HELLO','WORLD'],['PY','CHARM'],['GREEN','DAY'],['FINAL','FANTASY']],columns=['word1','word2'])
-        pool2 = pd.DataFrame(data=[['HELLO','CHARM'],['FANTASY','PY'],['WORLD','FINAL'],['DAY','GREEN']],columns=['word1','word2'])
-        pool3 = pd.DataFrame(data=[['DAY','GREEN'],['WORLD','PY'],['HELLO','FANTASY'],['CHARM','FINAL']],columns=['word1','word2'])
-
-        assert self.equal_pairs(pool1,pool2).any()
-        assert self.equal_pairs(pool1,pool3).any()
-        assert self.equal_pairs(pool2,pool3).any()
-
-        wordpools = [pool1,pool2,pool3]
-
-        listgen.pal.make_unique(wordpools)
-
-        assert not self.equal_pairs(pool1,pool2).any()
-        assert not self.equal_pairs(pool1,pool3).any()
-        assert not self.equal_pairs(pool2,pool3).any()
-
-
-    def test_make_unique_2(self):
-        wordpools = [listgen.pal.generate_session_pool() for i in range(10)]
-        listgen.pal.make_unique(wordpools)
-
+    # def test_make_unique_1(self):
+    #
+    #
+    #     pool1 = pd.DataFrame(data=[['HELLO','WORLD'],['PY','CHARM'],['GREEN','DAY'],['FINAL','FANTASY']],columns=['word1','word2'])
+    #     pool2 = pd.DataFrame(data=[['HELLO','CHARM'],['FANTASY','PY'],['WORLD','FINAL'],['DAY','GREEN']],columns=['word1','word2'])
+    #     pool3 = pd.DataFrame(data=[['DAY','GREEN'],['WORLD','PY'],['HELLO','FANTASY'],['CHARM','FINAL']],columns=['word1','word2'])
+    #
+    #     assert self.equal_pairs(pool1,pool2).any()
+    #     assert self.equal_pairs(pool1,pool3).any()
+    #     assert self.equal_pairs(pool2,pool3).any()
+    #
+    #     wordpools = [pool1,pool2,pool3]
+    #
+    #     listgen.pal.make_unique(wordpools)
+    #
+    #     assert not self.equal_pairs(pool1,pool2).any()
+    #     assert not self.equal_pairs(pool1,pool3).any()
+    #     assert not self.equal_pairs(pool2,pool3).any()
+    #
+    #
+    def test_uniqueness(self):
+        wordpools = listgen.pal.generate_n_session_pairs(10)
         for i in range(10):
             for j in range(i):
-                assert not self.equal_pairs(wordpools[i],wordpools[j])
-
-
-
-
-
-
+                pool1 = wordpools[i]
+                pool2 = wordpools[j]
+                assert not self.equal_pairs(pool1.loc[pool1.type != 'PRACTICE'],pool2.loc[pool2.type != 'PRACTICE']).any()
+    #
+    #
+    #
+    #
+    #
+    #
 
 
 

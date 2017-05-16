@@ -1,10 +1,9 @@
 import pandas as pd
 import wordpool
 from numpy.random import shuffle,randint,choice
-from random import choice
 import numpy as np
 from collections import deque
-from itertools import chain
+
 
 wordpools ={
     'EN':wordpool.load("ram_wordpool_en.txt"),
