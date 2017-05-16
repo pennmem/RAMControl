@@ -9,11 +9,9 @@ As of 2017-05-12, the following experiments are supported:
 * FR3
 * catFR3
 * PS4/FR5
-* PS4/catFR5
 * FR5/REC1
 * catFR5/REC1
 * PAL1
-* PS4/PAL5
 * PAL5
 
 ## Upgrading from version 3.0

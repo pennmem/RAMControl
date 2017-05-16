@@ -2,7 +2,7 @@
 
 ## Version 3.1.8
 
-**2017-mm-dd**
+**2017-05-16**
 
 Major additions:
 
@@ -17,6 +17,14 @@ Other changes:
 * PS4 sessions are now limited to PS4_FR5 and stop after 10 lists (on the host).
 * The `getvideos.sh` script now uses rsync to only download what is missing or
   updated.
+  
+To upgrade:
+
+```
+git checkout v3.1
+git pull
+./getvideos.sh
+```
 
 ## Version 3.1.7
 
