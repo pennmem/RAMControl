@@ -15,6 +15,8 @@ Other changes:
 * Updated the `run_experiment` bash script to keep the terminal window open
   until enter is pressed.
 * PS4 sessions are now limited to PS4_FR5 and stop after 10 lists (on the host).
+* The `getvideos.sh` script now uses rsync to only download what is missing or
+  updated.
 
 ## Version 3.1.7
 

@@ -1,3 +1,4 @@
 #!/usr/bin/env bash
+mkdir -p ./videos
 read -p "rhino username: " username
-scp -Cr $username@rhino2.psych.upenn.edu:/data/RAM_videos ./videos
+rsync -rzP $username@rhino2.psych.upenn.edu:/data/RAM_videos/* ./videos
