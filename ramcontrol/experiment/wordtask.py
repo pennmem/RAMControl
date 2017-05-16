@@ -180,19 +180,28 @@ class WordTask(Experiment):
                 self.display_word(row, n)
 
     @skippable
-    def run_orient(self, phase_type, orient_text, beep=False):
-        """Run an orient phase.
+    def run_orient(self, phase_type, orient_text,delay=None,jitter=None, beep=False):
+        """Run an orient phase.display_word
 
         :param str phase_type:
         :param str orient_text: The text to display.
+        :param float delay: The length of time to display the text. Defaults to self.timings.encoding_delay
+        :param float jitter: The amount of time by which to jitter the length of the orientation cue.
+            Defaults to self.timings.encoding_jitter
         :param bool beep: Whether or not to play a beep.
+        
 
         """
+
+        if delay is None:
+            delay = self.timings.encoding_delay
+        if jitter is None:
+            jitter = self.timings.encoding_jitter
         with self.state_context("ORIENT", phase_type=phase_type):
             text = Text(orient_text)
 
-            text.present(self.clock, self.timings.encoding_delay,
-                         jitter=self.timings.encoding_jitter)
+            text.present(self.clock, delay,
+                         jitter=jitter)
 
             if self.kwargs.get("play_beeps", True) and beep:
                 self.epl_helpers.play_start_beep()

@@ -31,19 +31,24 @@ class PALExperiment(WordTask):
             with self.state_context("RETRIEVAL", phase_type=phase_type):
 
                 # Start recording responses (because PyEPL)
-                audio_filename = str(self.list_index)
-                self.audio.startRecording(audio_filename, self.clock)
+                # audio_filename = str(self.list_index)
+                # self.audio.startRecording(audio_filename, self.clock)
 
                 # Display cues
-                for row_ind in order:
+                for probepos,row_ind in enumerate(order):
                     row = words.iloc[row_ind]
-                    self.run_orient(row.phase,self.config.orient_text)
-                    self.clock.delay(self.config.pre_cue, self.config.pre_cue_jitter)
+                    # self.clock.delay(self.config.pre_cue, self.config.pre_cue_jitter)
+                    # self.clock.wait()
+                    self.audio.startRecording("%s_%s" % (row.listno, probepos))
+                    self.run_orient(row.type,self.config.orientText,delay=self.config.cue_orientation,
+                                    jitter=0.0)
+                    self.clock.delay(self.config.pre_cue,jitter=self.config.pre_cue_jitter)
                     self.clock.wait()
                     self.display_cue(row, row_ind)
+                    self.audio.stopRecording()
 
-                # Stop recording responses (because PyEPL)
-                self.audio.stopRecording(self.clock)
+                # # Stop recording responses (because PyEPL)
+                # self.audio.stopRecording(self.clock)
 
     def display_cue(self, word_info, serialpos):
         """Helper function to display cue words during retrieval."""
@@ -74,7 +79,6 @@ class PALExperiment(WordTask):
         """
         with self.state_context("ENCODING", phase_type=phase_type):
             for n, (_, row) in enumerate(words.iterrows()):
-                self.run_orient(phase_type, self.config.orientText)
                 self.clock.delay(self.timings.isi, self.timings.jitter)
                 self.clock.wait()
                 self.display_word(row, n)
@@ -155,10 +159,11 @@ class PALExperiment(WordTask):
             # Write .lst files to session folders (used in TotalRecall
             # during annotation).
             for listno in sorted(assigned.listno.unique()):
-                name = "{:d}.lst".format(listno)
-                entries = assigned[assigned.listno == listno]
-                with codecs.open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
-                    f.writelines(row.word1 + "\n" +row.word2 + "\n" for _, row in entries.iterrows())
+                for i in range(self.config.n_pairs):
+                    name = "{:d}_{:d}.lst".format(listno,i)
+                    entries = assigned[assigned.listno == listno]
+                    with codecs.open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
+                        f.writelines(row.word1 + "\n" +row.word2 + "\n" for _, row in entries.iterrows())
 
 
             # Generate recognition phase lists if this experiment supports it
@@ -235,7 +240,8 @@ class PALExperiment(WordTask):
                 self.run_countdown()
 
                 # Encoding
-                self.run_orient(phase_type,self.config.encodingStartText,beep=True)
+                self.run_orient(phase_type,self.config.encodingStartText,
+                                delay=self.timings.encoding_delay,jitter=self.timings.encoding_jitter,beep=True)
                 self.run_encoding(words, phase_type)
 
                 # Distract

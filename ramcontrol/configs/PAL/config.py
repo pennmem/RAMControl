@@ -31,8 +31,7 @@ wordHeight = .1
 wordDuration = 4000
 post_encoding = 1000
 
-# TODO: make this unnecessary
-recallDuration = -999
+
 
 # ISI+Jitter after word pair is cleared from the screen
 ISI = 500
@@ -44,6 +43,7 @@ pre_cue = 500
 pre_cue_jitter = 250
 cue_duration = 4000
 post_cue = 1000
+recallDuration = cue_duration + post_cue
 
 # "yes" and "no" keys for recognition
 recognition_yes_key = "J"
