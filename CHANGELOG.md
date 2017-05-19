@@ -5,10 +5,13 @@
 * `use_eeg` for PyEPL is now set to `True`. This is for the benefit of some
   sites and has no effect for others.
 * New practice lists are available for FR and catFR experiments.
+* List generation has been moved into the separate [wordpool][] package.
 
-To obtain the new practice lists:
+To obtain the new practice lists and update `wordpool`:
 
 `pip install -U -r requirements.txt`
+
+[wordpool]: https://github.com/pennmem/wordpool
 
 ## Version 3.1.8
 
