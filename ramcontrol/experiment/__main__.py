@@ -59,7 +59,7 @@ proc = psutil.Process(pid)
 
 epl_exp = exputils.Experiment(subject=subject,
                               fullscreen=fullscreen, resolution="1440x900",
-                              use_eeg=False,
+                              use_eeg=True,
                               archive=archive_dir,
                               config=config_file,
                               sconfig=sconfig_file)
