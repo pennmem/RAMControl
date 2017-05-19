@@ -13,12 +13,12 @@ import six
 
 from logserver import create_logger
 
-from ramcontrol import listgen, __version__
-from ramcontrol.control import RAMControl
-from ramcontrol.exc import LanguageError, RAMException
-from ramcontrol.messages import StateMessage, ExitMessage
-from ramcontrol.extendedPyepl import CustomAudioTrack
-from ramcontrol.epl import PyEPLHelpers
+from .. import listgen, __version__
+from ..control import RAMControl
+from ..exc import LanguageError, RAMException
+from ..messages import StateMessage, ExitMessage
+from ..extendedPyepl import CustomAudioTrack
+from ..epl import PyEPLHelpers
 
 from pyepl import exputils, timing
 from pyepl.display import VideoTrack, Text
