@@ -1,13 +1,13 @@
 import os
 import os.path as osp
 import codecs
+from random import shuffle
 
-from .. import listgen
+from wordpool import listgen
 from ..messages import TrialMessage
 from ..util import get_instructions
 from .wordtask import WordTask
 from .experiment import skippable
-from random import shuffle
 
 from pyepl.display import Text
 

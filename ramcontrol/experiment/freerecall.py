@@ -2,7 +2,7 @@ import os
 import os.path as osp
 import codecs
 
-from .. import listgen
+from wordpool import listgen
 from ..messages import TrialMessage
 from ..exc import ExperimentError
 from ..util import get_instructions

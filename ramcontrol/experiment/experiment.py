@@ -12,8 +12,9 @@ import logging
 import six
 
 from logserver import create_logger
+from wordpool import listgen
 
-from .. import listgen, __version__
+from .. import __version__
 from ..control import RAMControl
 from ..exc import LanguageError, RAMException
 from ..messages import StateMessage, ExitMessage
