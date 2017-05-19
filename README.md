@@ -2,13 +2,13 @@
 
 ## Supported experiments
 
-As of 2017-05-12, the following experiments are supported:
+As of 2017-05-19, the following experiments are supported:
 
 * FR1
 * catFR1
 * FR3
 * catFR3
-* PS4/FR5
+* PS4/catFR5
 * FR5/REC1
 * catFR5/REC1
 * PAL1
@@ -84,6 +84,15 @@ the host PC, or both.
 2. Unplug and replug the cables and try again.
 3. See if a zombie process is hogging the TCP port and kill by PID if so:
    `lsof -i tcp:8889`
+   
+### Errors installing PyAudio
+
+For some reason when installing portaudio with brew, environment variables are
+necessary to compile PyAudio:
+
+```
+CPATH=/usr/local/include LIBRARY_PATH=/usr/local/lib pip install pyaudio
+```
 
 ## Notes for developers
 

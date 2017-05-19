@@ -120,7 +120,6 @@ class PyEPLHelpers(object):
         """
         bc = ButtonChooser(Key('Y'), Key('N'))
         _, button, _ = Text(text).present(bc=bc)
-        print("PYEPL SUCKS")
         return button == Key('Y')
 
     def show_text_and_wait_for_keyboard_input(self, text, font_height,
