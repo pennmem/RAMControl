@@ -8,6 +8,7 @@ As of 2017-05-19, the following experiments are supported:
 * catFR1
 * FR3
 * catFR3
+* PS4/FR5
 * PS4/catFR5
 * FR5/REC1
 * catFR5/REC1

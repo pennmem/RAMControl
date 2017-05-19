@@ -5,13 +5,13 @@ version = "5.0.0"
 n_baseline = 3
 
 # Number of stim lists
-n_stim = 16
+n_stim = 0
 
 # Number of non-stim lists
 n_nonstim = 0
 
 # Number of PS lists
-n_ps = 6
+n_ps = 22
 
 # Enable VAD
 vad_during_retrieval = True
