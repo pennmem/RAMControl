@@ -1,5 +1,15 @@
 # Changes
 
+## Unreleased
+
+* `use_eeg` for PyEPL is now set to `True`. This is for the benefit of some
+  sites and has no effect for others.
+* New practice lists are available for FR and catFR experiments.
+
+To obtain the new practice lists:
+
+`pip install -U -r requirements.txt`
+
 ## Version 3.1.8
 
 **2017-05-16**
