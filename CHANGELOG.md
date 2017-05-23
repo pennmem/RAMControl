@@ -1,15 +1,21 @@
 # Changes
 
-## Unreleased
+## Version 3.1.9
 
-* `use_eeg` for PyEPL is now set to `True`. This is for the benefit of some
-  sites and has no effect for others.
+**2017-05-23**
+
 * New practice lists are available for FR and catFR experiments.
 * List generation has been moved into the separate [wordpool][] package.
+* `use_eeg` for PyEPL is now set to `True`. This is for the benefit of some
+  sites and has no effect for others.
 
-To obtain the new practice lists and update `wordpool`:
+To upgrade from version 3.1.8:
 
-`pip install -U -r requirements.txt`
+```
+git checkout v3.1
+git pull
+pip install -U -r requirements.txt
+```
 
 [wordpool]: https://github.com/pennmem/wordpool
 
@@ -30,7 +36,7 @@ Other changes:
 * PS4 sessions are now limited to PS4_FR5 and stop after 10 lists (on the host).
 * The `getvideos.sh` script now uses rsync to only download what is missing or
   updated.
-  
+
 To upgrade:
 
 ```
@@ -62,7 +68,7 @@ git checkout v3.1 && git pull
 * Fixed issue where `*.lst` files didn't always contain the correct words.
 * Word pools written to session folders are in a more human-friendly format (a
   tab-separated table instead of JSON).
-  
+
 To upgrade:
 
 ```
@@ -75,7 +81,7 @@ git checkout v3.1 && git pull
 
 * We don't need to use a dumb naming convention for `*.lst` files after all.
   They are now named `0.lst`, `1.lst`, etc.
-   
+
 To upgrade:
 
 ```
@@ -91,7 +97,7 @@ git checkout v3.1 && git pull
   incorrectly thought that they were not used in post-processing, but in reality
   they are used during annotation.
 * System version numbers are now explicitly logged in the SQLite session log.
-  
+
 To upgrade from previous 3.1.x versions:
 
 ```
@@ -104,7 +110,7 @@ git checkout v3.1 && git pull
 
 * Fixed bug preventing the session number from automatically incrementing upon
   session completion.
-  
+
 To upgrade from previous 3.1.x versions:
 
 ```
