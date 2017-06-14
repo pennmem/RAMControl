@@ -78,12 +78,9 @@ class SocketServer(object):
         """
         out = msg.jsonize()
         try:
-            self.logger.debug("Sending message: %s", out)
-            try:
-                self.sock.send(out, zmq.NOBLOCK)
-            except:
-                pass
-        except Exception:
+            self.log_message(msg, incoming=False)
+            self.sock.send(out, zmq.NOBLOCK)
+        except:
             self.logger.error("Sending failed!", exc_info=True)
 
     def send_heartbeat(self):
@@ -123,7 +120,6 @@ class SocketServer(object):
                 msg = self._out_queue.get_nowait()
                 self.send(msg)
                 self._out_queue.task_done()  # so we can join the queue elsewhere
-                self.log_message(msg, incoming=False)
         except:
             self.logger.error("Error in outgoing message processing",
                               exc_info=True)
