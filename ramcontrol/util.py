@@ -1,10 +1,13 @@
 """Common utilities."""
 
+import sys
 import os.path as osp
 import subprocess
 import unicodedata
 import random
 from string import ascii_uppercase
+from datetime import datetime
+from contextlib import contextmanager
 
 
 def git_root():
@@ -59,3 +62,34 @@ def make_env(no_host=False, voiceserver=False, ps4=False):
 
     """
     return locals()
+
+
+@contextmanager
+def tee(filename):
+    """Tee stdout and stderr to a file.
+
+    Usage:
+
+        with tee("/path/to/file"):
+            print("stuff")
+
+    :param str filename: File to log to.
+
+    """
+    stdout = sys.stdout
+    stderr = sys.stderr
+
+    try:
+        with open(filename, 'a+') as logfile:
+            class Tee(object):
+                def write(self, what):
+                    logfile.write('\n' + datetime.now().isoformat() + '\n' + what)
+                    stdout.write(what)
+
+            logger = Tee()
+            sys.stdout = logger
+            sys.stderr = logger
+            yield
+    finally:
+        sys.stdout = stdout
+        sys.stderr = stderr

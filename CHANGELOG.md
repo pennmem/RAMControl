@@ -1,5 +1,11 @@
 # Changes
 
+## Version 3.1.10
+
+**Unreleased**
+
+* Improved logging
+
 ## Version 3.1.9
 
 **2017-05-23**

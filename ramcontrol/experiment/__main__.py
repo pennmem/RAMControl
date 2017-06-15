@@ -12,12 +12,13 @@ import atexit
 import psutil
 from multiprocessing import Process
 import sqlite3
+from datetime import datetime
 
 import logserver
 from logserver.handlers import SQLiteHandler
 
 from ..control import RAMControl
-from ..util import absjoin
+from ..util import absjoin, tee
 from .freerecall import FRExperiment
 from .paired_associates import PALExperiment
 
@@ -51,7 +52,7 @@ sconfig_file = absjoin(here, "configs", config_dir, experiment + "_config.py")
 
 # This is only here because PyEPL screws up the voice server if we don't
 # instantiate this *before* the PyEPL experiment.
-print('VOICE SERVER: ', config['voiceserver'])
+# print('VOICE SERVER: ', config['voiceserver'])
 RAMControl.instance(voiceserver=config["voiceserver"])
 
 pid = os.getpid()
@@ -72,10 +73,6 @@ if debug:
 
 # epl_exp.setup()
 epl_exp.setBreak()  # quit with Esc-F1
-
-if debug:
-    print(json.dumps(epl_exp.getConfig().config1.config, indent=2, sort_keys=True))
-    print(json.dumps(epl_exp.getConfig().config2.config, indent=2, sort_keys=True))
 
 ExperimentClass = class_map[family]
 exp = ExperimentClass(epl_exp, family=family, debug=debug, **kwargs)
@@ -107,4 +104,12 @@ def cleanup():
         p.kill()
 
 log_process.start()
-exp.start()
+
+# Tee stdout/stderr so we can diagnose strange problems that don't show up in
+# the normal logging. This doesn't work for normal logs (since that's done in
+# another process), but hopefully it will catch unhandled exceptions.
+logfile = datetime.now().isoformat().split('T')[0].replace('-', '') + ".log"
+with tee(absjoin(here, "..", "logs", logfile)):
+    print(json.dumps(epl_exp.getConfig().config1.config, indent=2, sort_keys=True))
+    print(json.dumps(epl_exp.getConfig().config2.config, indent=2, sort_keys=True))
+    exp.start()
