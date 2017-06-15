@@ -4,7 +4,7 @@
 # python -m ramcontrol.debugger run -f pal3_script.csv
 #
 0;CONNECTED;
-0.1;EXPNAME;{"experiment":"PAL"}
+0.1;EXPNAME;{"experiment":"PAL3"}
 0.1;SUBJECTID;{"subject":"R1111M"}
 0.1;SESSION;{"session":1,"subject":"R1111M","name":"PAL3", "version":"3.1.0"}
 0.010000;STATE;{"name": "INSTRUCT", "value": true}
