@@ -14,6 +14,7 @@ from collections import namedtuple
 from contextlib import contextmanager
 from threading import Event
 import logging
+import sqlite3
 
 import pandas as pd
 
@@ -104,15 +105,13 @@ def generate_scripted_session(logfile, expname, subject, session_num,
 
     """
     ignore = ["HEARTBEAT", "SYNC", "MATH", "WORD", "ALIGNCLOCK"]
-    messages = []
 
-    print("Parsing " + logfile + "...")
-    with open(logfile) as f:
-        for line in f.readlines():
-            entry = line.split("Incoming message: ")
-            if len(entry) is not 2:
-                continue
-            messages.append(json.loads(entry[-1]))
+    with sqlite3.connect(logfile) as conn:
+        logs = pd.read_sql_query('SELECT * FROM logs WHERE name = "rampy.zmqsocket"', conn)
+
+    # Parse messages
+    messages = [json.loads(msg.split("Incoming message: ")[1])
+                for msg in logs[logs.msg.str.startswith('Incoming message:')].msg]
 
     # Remove ignored message types
     df = pd.DataFrame(messages)
