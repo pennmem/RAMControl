@@ -115,7 +115,7 @@ class PALExperiment(WordTask):
         # TODO: only copy lures for tasks using REC1
         self.logger.info("Copying word pool(s) to data directory")
         self.copy_word_pool(osp.join(self.data_root, self.subject),
-                            self.config.LANGUAGE, True)
+                            self.language[2:], True)
 
         # Generate all session lists and REC blocks
         self.logger.info("Pre-generating all word lists for %d sessions",
@@ -216,7 +216,7 @@ class PALExperiment(WordTask):
         if not self.run_confirm(
             "Running {:s} in session {:d} of {:s}\n({:s}).\n".format(
                 self.subject, self.session, self.name,
-                self.config.LANGUAGE) + "Press Y to continue, N to quit"):
+                self.language) + "Press Y to continue, N to quit"):
             self.logger.info("Quitting due to negative confirmation.")
             return
 
@@ -259,7 +259,7 @@ class PALExperiment(WordTask):
                 if phase_type == "PRACTICE":
                     with self.state_context("PRACTICE_POST_INSTRUCT"):
                         text = get_instructions("fr_post_practice_{:s}.txt".format(
-                            self.config.LANGUAGE.lower()))
+                            self.language.lower()))
                         self.epl_helpers.show_text_and_wait(text, 0.05)
 
             # Update list index stored in state

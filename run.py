@@ -59,6 +59,18 @@ def get_experiment(available, experiment=""):
             print("Invalid experiment")
 
 
+def get_language(languages):
+    """Prompt for the language to use in the experiment."""
+    completer = WordCompleter(languages)
+    while True:
+        response = prompt(u"Language (press tab to see available: ",
+                          completer=completer, complete_while_typing=True)
+        if response in languages:
+            return response.encode()
+        else:
+            print("Unavailable language")
+
+
 def main():
     config = ConfigParser()
     config.read("ramcontrol.ini")
@@ -66,6 +78,9 @@ def main():
     parser = ArgumentParser()
     parser.add_argument("-s", "--subject", help="Subject ID", default=None)
     parser.add_argument("-x", "--experiment", default=None, help="Experiment to run")
+    parser.add_argument("-l", "--language",
+                        choices=["english", "spanish"],
+                        help="Language to use in experiment")
     parser.add_argument("-d", "--debug", action="store_true", default=False,
                         help="Enable debug mode")
     parser.add_argument("--no-fs", action="store_true", default=False,
@@ -84,11 +99,14 @@ def main():
         args.subject = get_subject()
     if args.experiment is None:
         args.experiment = get_experiment(experiments)
+    if args.language is None:
+        args.language = get_language(config["general"]["languages"].split())
 
     env = {
         "subject": args.subject,
         "experiment": args.experiment,
         "experiment_family": config.get(args.experiment, "family"),
+        "language": args.language,
 
         "voiceserver": config[args.experiment].getboolean("voiceserver", fallback=False),
 

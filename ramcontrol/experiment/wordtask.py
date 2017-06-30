@@ -108,7 +108,7 @@ class WordTask(Experiment):
         """
         with self.state_context("INSTRUCT"):
             filename = absjoin(osp.expanduser(self.kwargs["video_path"]),
-                               self.config.introMovie.format(language=self.config.LANGUAGE))
+                               self.config.introMovie.format(language=self.language[2:].upper()))
             self.epl_helpers.play_intro_movie(filename, allow_skip=allow_skip)
 
     @skippable
