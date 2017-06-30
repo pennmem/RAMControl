@@ -114,8 +114,7 @@ class PALExperiment(WordTask):
         # Copy word pool to the data directory
         # TODO: only copy lures for tasks using REC1
         self.logger.info("Copying word pool(s) to data directory")
-        self.copy_word_pool(osp.join(self.data_root, self.subject),
-                            self.language[2:], True)
+        self.copy_word_pool(osp.join(self.data_root, self.subject), True)
 
         # Generate all session lists and REC blocks
         self.logger.info("Pre-generating all word lists for %d sessions",
