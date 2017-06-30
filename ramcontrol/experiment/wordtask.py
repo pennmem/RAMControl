@@ -76,7 +76,7 @@ class WordTask(Experiment):
             timestamp.
 
         """
-        text = Text(word_info.word, size=self.config.wordHeight)
+        text = Text(word_info.word.decode('utf8'), size=self.config.wordHeight)
 
         kwargs = {
             "word": word_info.word,
@@ -96,8 +96,6 @@ class WordTask(Experiment):
                 key, timestamp = self.epl_helpers.show_text_and_wait_for_keyboard_input(
                     word_info.word, self.config.wordHeight, keys)
                 return key, timestamp
-
-
 
     @skippable
     def run_instructions(self, allow_skip):
