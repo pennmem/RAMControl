@@ -1,5 +1,11 @@
 # Changes
 
+## Version 3.1.10
+
+**2017-07-12**
+
+* Updated default number of stim lists in PAL5.
+
 ## Version 3.1.9
 
 **2017-05-23**
