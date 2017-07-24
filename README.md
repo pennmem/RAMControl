@@ -24,6 +24,7 @@ As of 2017-05-19, the following experiments are supported:
   the App Store.
 * If [homebrew](https://brew.sh/) is not installed, install it
 * Install portaudio: `brew install portaudio`
+* Install zeromq for THR: `brew install zeromq`
 * Install pocketsphinx for THR: `brew tap watsonbox/cmu-sphinx && brew install --HEAD watsonbox/cmu-sphinx/cmu-sphinxbase && brew install --HEAD watsonbox/cmu-sphinx/cmu-pocketsphinx`
 
 ### As the `exp` user
