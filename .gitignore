@@ -10,6 +10,7 @@ logs/*.log
 vocalization.csv
 *.sqlite
 videos/
+upload.log
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

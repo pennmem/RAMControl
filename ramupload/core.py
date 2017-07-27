@@ -21,7 +21,7 @@ def _get_data_path(path=None):
     return found_path
 
 
-def _get_session_path(subject, experiment, session, path):
+def get_session_path(subject, experiment, session, path):
     return osp.join(path, experiment, subject, "session_{:d}".format(session))
 
 
@@ -58,7 +58,7 @@ def get_sessions(subject, experiment, exclude_uploaded=True, path=None):
     path = _get_data_path(path)
     sessions = []
     for session in range(20):
-        subdir = _get_session_path(subject, experiment, session, path)
+        subdir = get_session_path(subject, experiment, session, path)
         pattern = osp.join(subdir, "*.*log")
         if len(glob(pattern)):
             sessions.append(session)
