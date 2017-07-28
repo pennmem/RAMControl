@@ -6,8 +6,10 @@ import os.path as osp
 from argparse import ArgumentParser
 from configparser import ConfigParser
 from collections import OrderedDict
+from functools import partial
 
-from prompt_toolkit import prompt
+from prompt_toolkit import prompt as ptkprompt
+from prompt_toolkit.token import Token
 from prompt_toolkit.contrib.completers import WordCompleter
 
 from .core import crawl_data_dir, get_sessions
@@ -25,6 +27,12 @@ def make_parser():
     parser.add_argument('subcommand', type=str, choices=SUBCOMMANDS, nargs='?',
                         help="Action to run")
     return parser
+
+
+def toolbar(cli):
+    return [(Token.Toolbar, 'Press tab to see options')]
+
+prompt = partial(ptkprompt, get_bottom_toolbar_tokens=toolbar)
 
 
 def prompt_subcommand():
