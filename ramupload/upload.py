@@ -50,10 +50,12 @@ class Uploader(object):
     """Class responsible for handling the uploading of data.
 
     :param str subject: Subject ID
+    :param dict host_pc: Host PC configuration settings
+    :param dict transferred: Settings for keeping track of uploaded files.
     :param str dataroot: Path to root data directory.
 
     """
-    def __init__(self, subject, dataroot=None):
+    def __init__(self, subject, host_pc, transferred, dataroot=None):
         self.subject = subject
 
         if dataroot is None:
@@ -61,14 +63,8 @@ class Uploader(object):
         else:
             self.dataroot = dataroot
 
-        parser = ConfigParser()
-        parser.read(osp.join(osp.dirname(__file__), 'config.ini'))
-
-        # Host PC settings
-        self.host_pc = dict(parser['host_pc'])
-
-        # Uploaded data settings
-        self.transferred = dict(parser['transferred'])
+        self.host_pc = host_pc
+        self.transferred = transferred
 
         # Get the host PC password. This should only need to be done once unless
         # the password is changed.
@@ -165,13 +161,19 @@ class Uploader(object):
         :param int session:
 
         """
+        task_dir = self.get_session_dir(experiment, session)
+        task_transfer_dir = osp.join(task_dir, 'host_pc')
+        if osp.exists(task_transfer_dir):
+            print(task_transfer_dir, "already exists; not attempting to transfer data from the host PC")
+            print("If you want to re-transfer, please manually delete the host_pc directory")
+            return True
+
         with tempdir() as mount_point:
             with self._mount_host_pc(mount_point):
                 # Note that host and task computers differ in session numbering.
                 host_dir = osp.join(mount_point, self.subject, experiment,
                                     'session_{:d}'.format(session + 1))
-                task_dir = self.get_session_dir(experiment, session)
-                shutil.copy(host_dir, task_dir)
+                shutil.copy(host_dir, task_transfer_dir)
 
         return True
 
