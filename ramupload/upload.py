@@ -63,7 +63,12 @@ class Uploader(object):
 
         parser = ConfigParser()
         parser.read(osp.join(osp.dirname(__file__), 'config.ini'))
+
+        # Host PC settings
         self.host_pc = dict(parser['host_pc'])
+
+        # Uploaded data settings
+        self.transferred = dict(parser['transferred'])
 
         # Get the host PC password. This should only need to be done once unless
         # the password is changed.
@@ -149,6 +154,7 @@ class Uploader(object):
         print("Mounting host PC. This may take several seconds...")
         check_call(["mount_smbfs", addr_string, mount_point])
         yield
+        print("Unmounting host PC...")
         check_call(["umount", mount_point])
 
     @log
@@ -170,6 +176,24 @@ class Uploader(object):
         return True
 
     @log
+    def move_eeg_to_transferred(self, experiment, session):
+        """Moves EEG data to the transferred directory to be deleted when it's
+        old enough.
+
+        :param str experiment:
+        :param int session:
+
+        """
+        trans_dir = osp.expanduser(self.transferred['dir'])
+        if not osp.exists(trans_dir):
+            os.makedirs(trans_dir)
+
+        src = self.get_session_dir(experiment, session)
+        dest = osp.join(trans_dir, self.subject, experiment,
+                        'session_{:d}'.format(session))
+        shutil.move(osp.join(src, 'host_pc'), dest)
+
+    @log
     def upload_experiment_data(self, experiment, session, dest):
         """Upload all data from an experiment.
 
@@ -183,4 +207,8 @@ class Uploader(object):
 
         """
         self.transfer_host_data(experiment, session)
-        return self.rsync(self.get_session_dir(experiment, session), dest)
+        if self.rsync(self.get_session_dir(experiment, session), dest):
+            self.move_eeg_to_transferred(experiment, session)
+            return True
+        else:
+            return False

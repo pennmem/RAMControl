@@ -1,10 +1,14 @@
 import os
 import os.path as osp
+import shutil
 from glob import glob
 import logging
 from collections import defaultdict
 import subprocess
 import shlex
+from datetime import datetime
+
+from . import upload_log
 
 logger = logging.getLogger(__name__)
 
@@ -63,3 +67,19 @@ def get_sessions(subject, experiment, exclude_uploaded=True, path=None):
         if len(glob(pattern)):
             sessions.append(session)
     return sessions
+
+
+def remove_transferred_eeg_data(path, lifetime):
+    """Removes transferred EEG data that is older than the lifetime limit.
+
+    :param str path: Path where transferred EEG data was moved to.
+    :param int lifetime: Threshold number of days for determining if data can be
+        expunged.
+
+    """
+    for path_ in os.listdir(path):
+        age = osp.getmtime()
+        dt = datetime.now() - datetime.fromtimestamp(age)
+        if dt.days > lifetime:
+            upload_log.info("Removing %s since it is %d days old", path_, dt.days)
+            shutil.rmtree(path_)
