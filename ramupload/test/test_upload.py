@@ -41,3 +41,8 @@ def test_rsync(uploader, img_path, dest_path):
 
     with open(osp.join(dest_path, 'image.bmp'), 'rb') as ifile:
         assert ifile.read() == orig_data
+
+
+def test_upload_clinical_eeg(uploader, img_path, dest_path):
+    with pytest.raises(OSError):
+        uploader.upload_clinical_eeg('nonexistantpath', dest_path)
