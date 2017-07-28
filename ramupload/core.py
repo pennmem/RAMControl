@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 def _get_data_path(path=None):
     if path is None:
-        output = subprocess.check_output(shlex.split('git worktree list'))
+        output = subprocess.check_output(shlex.split('git worktree list')).decode()
         root = output.split()[0]
         found_path = osp.join(root, 'data')
     else:
