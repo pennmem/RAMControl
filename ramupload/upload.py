@@ -17,6 +17,7 @@ def log(func):
                 upload_log.error("%s failed!", func.__name__)
         except Exception:
             upload_log.error("Uncaught exception from %s", func.__name__)
+            raise
         return successful
     return wrapper
 
