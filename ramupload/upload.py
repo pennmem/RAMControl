@@ -39,6 +39,11 @@ class Uploader(object):
 
         """
         assert osp.exists(src)
+
+        # Add a trailing slash if necessary
+        if not src.endswith(osp.sep):
+            src += osp.sep
+
         command = [
             'rsync',
             '-z',  # compress
