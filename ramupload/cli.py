@@ -53,12 +53,16 @@ def prompt_subcommand():
     return cmd
 
 
-def prompt_subject(subjects):
+def prompt_subject(subjects, allow_any=False):
     """Prompt for the subject to upload data for."""
     completer = WordCompleter(subjects)
     subject = ''
     while subject not in subjects:
         subject = prompt("Subject: ", completer=completer)
+        if allow_any:
+            # For uploading arbitrary stuff for testing, we don't really care if
+            # the subject isn't real.
+            break
     return subject
 
 
@@ -71,7 +75,7 @@ def prompt_experiment(experiments):
     return exp
 
 
-def prompt_session(sessions):
+def prompt_session(sessions, allow_any=False):
     """Prompt for the session number to upload."""
     completer = WordCompleter(['{}'.format(session) for session in sessions])
     session = -1
@@ -80,6 +84,9 @@ def prompt_session(sessions):
             session = int(prompt("Session: ", completer=completer))
         except TypeError:
             continue
+        else:
+            if allow_any:
+                break
     return session
 
 
@@ -96,28 +103,39 @@ def main():
 
     available = crawl_data_dir(path=args.dataroot)
     subcommand = args.subcommand or prompt_subcommand()
-    subject = args.subject or prompt_subject(list(available.keys()))
+    allow_any_subject = subcommand != 'experiment'
+    subject = args.subject or prompt_subject(list(available.keys()),
+                                             allow_any=allow_any_subject)
     uploader = Uploader(subject, host_pc, transferred, dataroot=args.dataroot)
 
     if subcommand in ['host', 'experiment']:
+        # Allow transferring data for AmplitudeDetermination experiments
+        if subcommand == 'host':
+            available[subject].append('AmplitudeDetermination')
+            allow_any_session = True
+        else:
+            allow_any_session = False
         experiment = args.experiment or prompt_experiment(available[subject])
-        session = args.session or prompt_session(get_sessions(subject, experiment, path=args.dataroot))
+        session = args.session or prompt_session(get_sessions(subject, experiment, path=args.dataroot),
+                                                 allow_any=allow_any_session)
 
         dest = None  # FIXME
 
-        if args.subcommand == 'upload':
+        if subcommand == 'experiment':
+            print("Beginning experiment data upload...")
             uploader.upload_experiment_data(experiment, session, dest)
-        elif args.subcommand == 'host':
+        elif subcommand == 'host':
             # This shouldn't need to be called separately since the upload task
             # calls it automatically, but it may be useful to do this ahead of
             # time.
+            print("Beginning host data transfer...")
             uploader.transfer_host_data(experiment, session)
     else:
-        if args.subcommand == 'imaging':
+        if subcommand == 'imaging':
             src = None  # FIXME
             dest = None  # FIXME
             uploader.upload_imaging(src, dest)
-        elif args.subcommand == 'clinical':
+        elif subcommand == 'clinical':
             src = None  # FIXME
             dest = None  # FIXME
             uploader.upload_clinical_eeg(src, dest)
