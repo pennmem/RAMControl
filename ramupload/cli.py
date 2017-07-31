@@ -6,7 +6,7 @@ import os.path as osp
 from argparse import ArgumentParser
 from configparser import ConfigParser
 from collections import OrderedDict
-from functools import partial
+from getpass import getuser
 
 from prompt_toolkit import prompt as ptkprompt
 from prompt_toolkit.token import Token
@@ -30,7 +30,10 @@ def make_parser():
     parser = ArgumentParser(description="Upload RAM data", prog="ramup")
     parser.add_argument('--experiment', '-x', type=str, help="Experiment type")
     parser.add_argument('--session', '-n', type=int, help="Session number")
-    parser.add_argument('--dataroot', type=str, help="Root data directory")
+    parser.add_argument('--dataroot', '-r', type=str, help="Root data directory")
+    # FIXME
+    # parser.add_argument('--local-upload', '-l', type=bool, action='store_true', default=False,
+    #                     help='"Upload" files locally (for testing)')
     parser.add_argument('subcommand', type=str, choices=SUBCOMMANDS, nargs='?',
                         help="Action to run")
     return parser
@@ -129,7 +132,7 @@ def main():
 
     # Remote server URL
     url = '{user:s}@{hostname:s}:{remote_dir:s}'
-    remote = {'user': 'FIXME'}
+    remote = {'user': getuser()}
     remote.update(dict(config['ramtransfer']))
 
     if subcommand in ['host', 'experiment']:

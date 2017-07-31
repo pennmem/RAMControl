@@ -5,6 +5,7 @@ import os.path as osp
 import shutil
 from functools import wraps
 from subprocess import check_call, CalledProcessError
+import shlex
 from configparser import ConfigParser, NoSectionError, NoOptionError
 import logging
 from contextlib import contextmanager
@@ -52,10 +53,11 @@ class Uploader(object):
     :param str subject: Subject ID
     :param dict host_pc: Host PC configuration settings
     :param dict transferred: Settings for keeping track of uploaded files.
+    :param remote: Remote location settings.
     :param str dataroot: Path to root data directory.
 
     """
-    def __init__(self, subject, host_pc, transferred, dataroot=None):
+    def __init__(self, subject, host_pc, transferred, remote, dataroot=None):
         self.subject = subject
 
         if dataroot is None:
@@ -65,6 +67,7 @@ class Uploader(object):
 
         self.host_pc = host_pc
         self.transferred = transferred
+        self.remote = remote
 
         # Get the host PC password. This should only need to be done once unless
         # the password is changed.
@@ -108,14 +111,8 @@ class Uploader(object):
         if not src.endswith(osp.sep):
             src += osp.sep
 
-        command = [
-            'rsync',
-            '-z',  # compress
-            '--archive',
-            '-P',  # --partial and --progress
-            '--human-readable',
-            src, dest
-        ]
+        command = shlex.split(self.remote['rsync_cmd'].format(**self.remote))
+        print(command)
         return check_call(command)
 
     # FIXME: add default to dest
