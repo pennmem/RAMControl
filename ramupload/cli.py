@@ -127,6 +127,11 @@ def main():
                                              allow_any=allow_any_subject)
     uploader = Uploader(subject, host_pc, transferred, dataroot=args.dataroot)
 
+    # Remote server URL
+    url = '{user:s}@{hostname:s}:{remote_dir:s}'
+    remote = {'user': 'FIXME'}
+    remote.update(dict(config['ramtransfer']))
+
     if subcommand in ['host', 'experiment']:
         # Allow transferring data for AmplitudeDetermination experiments
         if subcommand == 'host':
@@ -155,11 +160,11 @@ def main():
             print("Beginning host data transfer...")
             uploader.transfer_host_data(experiment, session)
     else:
+        remote['remote_dir'] = config.get(subcommand, 'remote_dir')
+        dest = url.format(**remote)
         if subcommand == 'imaging':
             src = None  # FIXME
-            dest = None  # FIXME
             uploader.upload_imaging(src, dest)
         elif subcommand == 'clinical':
             src = None  # FIXME
-            dest = None  # FIXME
             uploader.upload_clinical_eeg(src, dest)
