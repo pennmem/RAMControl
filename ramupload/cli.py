@@ -130,13 +130,18 @@ def main():
     if subcommand in ['host', 'experiment']:
         # Allow transferring data for AmplitudeDetermination experiments
         if subcommand == 'host':
-            available[subject].append('AmplitudeDetermination')
+            if 'AmplitudeDetermination' not in available[subject]:
+                available[subject].append('AmplitudeDetermination')
             allow_any_session = True
         else:
             allow_any_session = False
         experiment = args.experiment or prompt_experiment(available[subject])
-        session = args.session or prompt_session(get_sessions(subject, experiment, path=args.dataroot),
-                                                 allow_any=allow_any_session)
+
+        if args.session is None:
+            session = prompt_session(get_sessions(subject, experiment, path=args.dataroot),
+                                     allow_any=allow_any_session)
+        else:
+            session = args.session
 
         dest = None  # FIXME
 
