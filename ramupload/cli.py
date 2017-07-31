@@ -15,7 +15,7 @@ from prompt_toolkit.contrib.completers import WordCompleter
 from .core import crawl_data_dir, get_sessions
 from .upload import Uploader
 
-SUBCOMMANDS = ("host", "imaging", "clinical", "upload")
+SUBCOMMANDS = ("host", "imaging", "clinical", "experiment")
 
 
 def make_parser():
@@ -99,7 +99,7 @@ def main():
     subject = args.subject or prompt_subject(list(available.keys()))
     uploader = Uploader(subject, host_pc, transferred, dataroot=args.dataroot)
 
-    if subcommand in ['host', 'upload']:
+    if subcommand in ['host', 'experiment']:
         experiment = args.experiment or prompt_experiment(available[subject])
         session = args.session or prompt_session(get_sessions(subject, experiment, path=args.dataroot))
 
