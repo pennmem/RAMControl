@@ -162,6 +162,14 @@ class Uploader(object):
 
         """
         task_dir = self.get_session_dir(experiment, session)
+
+        # Make directory if it doesn't exist
+        if experiment == 'AmplitudeDetermination':
+            try:
+                os.makedirs(task_dir)
+            except:
+                pass
+
         task_transfer_dir = osp.join(task_dir, 'host_pc')
         if osp.exists(task_transfer_dir):
             print(task_transfer_dir, "already exists; not attempting to transfer data from the host PC")
@@ -173,7 +181,7 @@ class Uploader(object):
                 # Note that host and task computers differ in session numbering.
                 host_dir = osp.join(mount_point, self.subject, experiment,
                                     'session_{:d}'.format(session + 1))
-                shutil.copy(host_dir, task_transfer_dir)
+                shutil.copytree(host_dir, task_transfer_dir)
 
         return True
 
