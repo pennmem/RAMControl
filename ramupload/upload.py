@@ -4,7 +4,7 @@ import os
 import os.path as osp
 import shutil
 from functools import wraps
-from subprocess import check_call
+from subprocess import check_call, CalledProcessError
 from configparser import ConfigParser, NoSectionError, NoOptionError
 import logging
 from contextlib import contextmanager
@@ -147,11 +147,19 @@ class Uploader(object):
     def _mount_host_pc(self, mount_point):
         """Mount the host PC for transferring data."""
         addr_string = "//{user:s}:{password:s}@{addr:s}/{datadir:s}".format(**self.host_pc)
-        print("Mounting host PC. This may take several seconds...")
-        check_call(["mount_smbfs", addr_string, mount_point])
-        yield
-        print("Unmounting host PC...")
-        check_call(["umount", mount_point])
+        try:
+            print("Mounting host PC. This may take several seconds...")
+            check_call(["mount_smbfs", addr_string, mount_point])
+            yield
+        except CalledProcessError:
+            print("Error mounting host PC!")
+            raise
+        else:
+            print("Unmounting host PC...")
+            try:
+                check_call(["umount", mount_point])
+            except CalledProcessError:
+                print("Error unmounting")
 
     @log
     def transfer_host_data(self, experiment, session):
