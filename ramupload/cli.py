@@ -17,6 +17,13 @@ from .upload import Uploader
 
 SUBCOMMANDS = ("host", "imaging", "clinical", "experiment")
 
+_toolbar_texts = {
+    'default': 'Press tab to see options',
+    'subject': 'Invalid subject',
+    'experiment': 'Invalid experiment',
+    'session': 'Invalid session'
+}
+
 
 def make_parser():
     """Define command-line arguments."""
@@ -29,10 +36,15 @@ def make_parser():
     return parser
 
 
-def toolbar(cli):
-    return [(Token.Toolbar, 'Press tab to see options')]
+def make_toolbar(text):
+    def toolbar(cli):
+        return [(Token.Toolbar, text)]
+    return toolbar
 
-prompt = partial(ptkprompt, get_bottom_toolbar_tokens=toolbar)
+
+def prompt(msg, toolbar_msg_key='default', **kwargs):
+    toolbar = make_toolbar(_toolbar_texts[toolbar_msg_key])
+    return ptkprompt(msg, get_bottom_toolbar_tokens=toolbar, **kwargs)
 
 
 def prompt_subcommand():
@@ -57,12 +69,14 @@ def prompt_subject(subjects, allow_any=False):
     """Prompt for the subject to upload data for."""
     completer = WordCompleter(subjects)
     subject = ''
+    key = 'default'
     while subject not in subjects:
-        subject = prompt("Subject: ", completer=completer)
+        subject = prompt("Subject: ", toolbar_msg_key=key, completer=completer)
         if allow_any:
             # For uploading arbitrary stuff for testing, we don't really care if
             # the subject isn't real.
             break
+        key = 'subject'
     return subject
 
 
@@ -70,8 +84,10 @@ def prompt_experiment(experiments):
     """Prompt for the experiment type to upload."""
     completer = WordCompleter(experiments)
     exp = ''
+    key = 'default'
     while exp not in experiments:
-        exp = prompt("Experiment: ", completer=completer)
+        exp = prompt("Experiment: ", toolbar_msg_key=key, completer=completer)
+        key = 'experiment'
     return exp
 
 
@@ -79,14 +95,17 @@ def prompt_session(sessions, allow_any=False):
     """Prompt for the session number to upload."""
     completer = WordCompleter(['{}'.format(session) for session in sessions])
     session = -1
+    key = 'session'
     while session not in sessions:
         try:
-            session = int(prompt("Session: ", completer=completer))
+            session = int(prompt("Session: ", toolbar_msg_key=key,
+                                 completer=completer))
         except TypeError:
             continue
         else:
             if allow_any:
                 break
+            key = 'session'
     return session
 
 
