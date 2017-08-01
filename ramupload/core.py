@@ -10,6 +10,9 @@ import subprocess
 import shlex
 from datetime import datetime
 
+from six.moves.urllib.request import urlopen
+from six.moves.urllib.error import URLError
+
 from . import upload_log
 
 logger = logging.getLogger(__name__)
@@ -98,3 +101,18 @@ def copytree(src, dest):
         return []
 
     shutil.copytree(src, dest, ignore=callback)
+
+
+def check_internet_connection(timeout=5):
+    """Verifies connection to the Internet.
+
+    :param timeout: Timeout in seconds.
+
+    """
+    print("Checking for Internet connectivity... ", end='')
+    try:
+        urlopen('https://httpbin.org/get', timeout=timeout).read()
+        print("Success!")
+    except URLError:
+        print("FAIL")
+        raise RuntimeError("No Internet access!")

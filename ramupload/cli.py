@@ -13,7 +13,7 @@ from prompt_toolkit import prompt as ptkprompt
 from prompt_toolkit.token import Token
 from prompt_toolkit.contrib.completers import WordCompleter
 
-from .core import crawl_data_dir, get_sessions
+from .core import crawl_data_dir, get_sessions, check_internet_connection
 from .upload import Uploader
 
 SUBCOMMANDS = ("host", "imaging", "clinical", "experiment")
@@ -148,6 +148,9 @@ def main():
     args = parser.parse_args()
 
     available = crawl_data_dir(path=args.dataroot)
+
+    # Fail if there is no Internet connection.
+    check_internet_connection()
 
     try:
         # Remote server URL

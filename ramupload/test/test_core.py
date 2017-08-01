@@ -46,3 +46,9 @@ def test_get_sessions(datapath):
     sessions = core.get_sessions(subject, experiment, path=datapath)
     assert len(sessions) == 1
     assert sessions[0] == session
+
+
+def test_check_internet_connection():
+    core.check_internet_connection()
+    with pytest.raises(RuntimeError):
+        core.check_internet_connection(0.00001)
