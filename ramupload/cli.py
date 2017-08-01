@@ -131,6 +131,8 @@ def prompt_directory(initialdir=os.getcwd()):
     root.withdraw()
     path = askdirectory(initialdir=initialdir, title="Select directory")
     del root
+    if not len(path):
+        raise RuntimeError("Cancelled!")
     return path
 
 
@@ -156,8 +158,8 @@ def main():
 
         # Get common options
         subcommand = args.subcommand or prompt_subcommand()
-        allow_any_subject = subcommand != 'experiment'
-        subject = args.subject or prompt_subject(list(available.keys()),
+        allow_any_subject = True  # subcommand != 'experiment'
+        subject = args.subject or prompt_subject(sorted(list(available.keys())),
                                                  allow_any=allow_any_subject)
 
         # Create uploader
@@ -167,24 +169,24 @@ def main():
         # Perform primary actions
         if subcommand in ['host', 'experiment']:
             # Allow transferring data for AmplitudeDetermination experiments
-            if subcommand == 'host':
-                if 'AmplitudeDetermination' not in available[subject]:
-                    available[subject].append('AmplitudeDetermination')
-                allow_any_session = True
-            else:
-                allow_any_session = False
+            if 'AmplitudeDetermination' not in available[subject]:
+                available[subject].append('AmplitudeDetermination')
             experiment = args.experiment or prompt_experiment(available[subject])
 
             if args.session is None:
+                allow_any_session = experiment == 'AmplitudeDetermination'
                 session = prompt_session(get_sessions(subject, experiment, path=args.dataroot),
                                          allow_any=allow_any_session)
             else:
                 session = args.session
 
-            dest = None  # FIXME
-
             if subcommand == 'experiment':
                 print("Beginning experiment data upload...")
+                if args.local_upload:
+                    print("Select destination directory")
+                    dest = prompt_directory(osp.expanduser("~"))
+                else:
+                    dest = None  # FIXME
                 uploader.upload_experiment_data(experiment, session, dest)
             elif subcommand == 'host':
                 # This shouldn't need to be called separately since the upload task
@@ -194,12 +196,22 @@ def main():
                 uploader.transfer_host_data(experiment, session)
         else:
             remote['remote_dir'] = config.get(subcommand, 'remote_dir')
-            dest = url.format(**remote)
+
+            def _dest_dir():
+                if args.local_upload:
+                    print("Select destination directory")
+                    dest = prompt_directory(osp.expanduser("~"))
+                else:
+                    dest = url.format(**remote)
+                return dest
+
             if subcommand == 'imaging':
+                print("Select imaging directory to upload")
                 src = prompt_directory()
-                uploader.upload_imaging(src, dest)
+                uploader.upload_imaging(src, _dest_dir())
             elif subcommand == 'clinical':
+                print("Select clinical EEG data directory to upload")
                 src = prompt_directory()
-                uploader.upload_clinical_eeg(src, dest)
+                uploader.upload_clinical_eeg(src, _dest_dir())
     except KeyboardInterrupt:
         print("Aborting!")

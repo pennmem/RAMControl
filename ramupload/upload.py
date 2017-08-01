@@ -112,10 +112,15 @@ class Uploader(object):
             src += osp.sep
 
         kwargs = self.remote.copy()
+        kwargs['src'] = src
 
-        command = shlex.split(self.remote['rsync_cmd'].format(**kwargs))
+        if osp.exists(dest):  # local "upload"
+            kwargs['local_dir'] = dest
+            command = self.remote['rsync_local'].format(**kwargs)
+        else:  # Upload to ramtransfer
+            command = self.remote['rsync_remote'].format(**kwargs)
         print(command)
-        return check_call(command)
+        return check_call(shlex.split(command))
 
     # FIXME: add default to dest
     @log

@@ -44,6 +44,8 @@ def crawl_data_dir(path=None):
         if exp.startswith('.'):
             continue
         for sdir in os.listdir(osp.join(path, exp)):
+            if sdir.startswith('.'):
+                continue
             subjects[sdir].append(exp)
             logger.info("Found experiment %s for subject %s", sdir, exp)
     return subjects
