@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals, print_function
 
+import os
 import os.path as osp
 from argparse import ArgumentParser
 from configparser import ConfigParser
@@ -31,9 +32,10 @@ def make_parser():
     parser.add_argument('--experiment', '-x', type=str, help="Experiment type")
     parser.add_argument('--session', '-n', type=int, help="Session number")
     parser.add_argument('--dataroot', '-r', type=str, help="Root data directory")
-    # FIXME
-    # parser.add_argument('--local-upload', '-l', type=bool, action='store_true', default=False,
-    #                     help='"Upload" files locally (for testing)')
+    parser.add_argument('--local-upload', '-l', action='store_true', default=False,
+                        help='"Upload" files locally (for testing)')
+    parser.add_argument('--ssh-key', '-k', type=str,
+                        help="SSH keys to use when uploading")
     parser.add_argument('subcommand', type=str, choices=SUBCOMMANDS, nargs='?',
                         help="Action to run")
     return parser
@@ -112,6 +114,26 @@ def prompt_session(sessions, allow_any=False):
     return session
 
 
+def prompt_directory(initialdir=os.getcwd()):
+    """Open a file dialog to select a directory.
+
+    :param str initialdir: Directory to start looking in.
+    :returns: Selected path.
+
+    """
+    try:
+        from tkinter import Tk
+        from tkinter.filedialog import askdirectory
+    except ImportError:
+        from Tkinter import Tk
+        from tkFileDialog import askdirectory
+    root = Tk()
+    root.withdraw()
+    path = askdirectory(initialdir=initialdir, title="Select directory")
+    del root
+    return path
+
+
 def main():
     # Read config file for default settings
     config = ConfigParser()
@@ -126,18 +148,23 @@ def main():
     available = crawl_data_dir(path=args.dataroot)
 
     try:
-        subcommand = args.subcommand or prompt_subcommand()
-        allow_any_subject = subcommand != 'experiment'
-        subject = args.subject or prompt_subject(list(available.keys()),
-                                                 allow_any=allow_any_subject)
-        uploader = Uploader(subject, host_pc, transferred, dataroot=args.dataroot)
-
         # Remote server URL
         url = '{user:s}@{hostname:s}:{remote_dir:s}'
         remote = {'user': getuser()}
         remote.update(dict(config['ramtransfer']))
-        remote['key'] = remote['key'].format(remote['user'])
+        remote['key'] = remote['key'].format(user=remote['user'])
 
+        # Get common options
+        subcommand = args.subcommand or prompt_subcommand()
+        allow_any_subject = subcommand != 'experiment'
+        subject = args.subject or prompt_subject(list(available.keys()),
+                                                 allow_any=allow_any_subject)
+
+        # Create uploader
+        uploader = Uploader(subject, host_pc, transferred, remote,
+                            dataroot=args.dataroot)
+
+        # Perform primary actions
         if subcommand in ['host', 'experiment']:
             # Allow transferring data for AmplitudeDetermination experiments
             if subcommand == 'host':
@@ -169,10 +196,10 @@ def main():
             remote['remote_dir'] = config.get(subcommand, 'remote_dir')
             dest = url.format(**remote)
             if subcommand == 'imaging':
-                src = None  # FIXME
+                src = prompt_directory()
                 uploader.upload_imaging(src, dest)
             elif subcommand == 'clinical':
-                src = None  # FIXME
+                src = prompt_directory()
                 uploader.upload_clinical_eeg(src, dest)
     except KeyboardInterrupt:
         print("Aborting!")
