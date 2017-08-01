@@ -124,50 +124,54 @@ def main():
     args = parser.parse_args()
 
     available = crawl_data_dir(path=args.dataroot)
-    subcommand = args.subcommand or prompt_subcommand()
-    allow_any_subject = subcommand != 'experiment'
-    subject = args.subject or prompt_subject(list(available.keys()),
-                                             allow_any=allow_any_subject)
-    uploader = Uploader(subject, host_pc, transferred, dataroot=args.dataroot)
 
-    # Remote server URL
-    url = '{user:s}@{hostname:s}:{remote_dir:s}'
-    remote = {'user': getuser()}
-    remote.update(dict(config['ramtransfer']))
+    try:
+        subcommand = args.subcommand or prompt_subcommand()
+        allow_any_subject = subcommand != 'experiment'
+        subject = args.subject or prompt_subject(list(available.keys()),
+                                                 allow_any=allow_any_subject)
+        uploader = Uploader(subject, host_pc, transferred, dataroot=args.dataroot)
 
-    if subcommand in ['host', 'experiment']:
-        # Allow transferring data for AmplitudeDetermination experiments
-        if subcommand == 'host':
-            if 'AmplitudeDetermination' not in available[subject]:
-                available[subject].append('AmplitudeDetermination')
-            allow_any_session = True
+        # Remote server URL
+        url = '{user:s}@{hostname:s}:{remote_dir:s}'
+        remote = {'user': getuser()}
+        remote.update(dict(config['ramtransfer']))
+
+        if subcommand in ['host', 'experiment']:
+            # Allow transferring data for AmplitudeDetermination experiments
+            if subcommand == 'host':
+                if 'AmplitudeDetermination' not in available[subject]:
+                    available[subject].append('AmplitudeDetermination')
+                allow_any_session = True
+            else:
+                allow_any_session = False
+            experiment = args.experiment or prompt_experiment(available[subject])
+
+            if args.session is None:
+                session = prompt_session(get_sessions(subject, experiment, path=args.dataroot),
+                                         allow_any=allow_any_session)
+            else:
+                session = args.session
+
+            dest = None  # FIXME
+
+            if subcommand == 'experiment':
+                print("Beginning experiment data upload...")
+                uploader.upload_experiment_data(experiment, session, dest)
+            elif subcommand == 'host':
+                # This shouldn't need to be called separately since the upload task
+                # calls it automatically, but it may be useful to do this ahead of
+                # time.
+                print("Beginning host data transfer...")
+                uploader.transfer_host_data(experiment, session)
         else:
-            allow_any_session = False
-        experiment = args.experiment or prompt_experiment(available[subject])
-
-        if args.session is None:
-            session = prompt_session(get_sessions(subject, experiment, path=args.dataroot),
-                                     allow_any=allow_any_session)
-        else:
-            session = args.session
-
-        dest = None  # FIXME
-
-        if subcommand == 'experiment':
-            print("Beginning experiment data upload...")
-            uploader.upload_experiment_data(experiment, session, dest)
-        elif subcommand == 'host':
-            # This shouldn't need to be called separately since the upload task
-            # calls it automatically, but it may be useful to do this ahead of
-            # time.
-            print("Beginning host data transfer...")
-            uploader.transfer_host_data(experiment, session)
-    else:
-        remote['remote_dir'] = config.get(subcommand, 'remote_dir')
-        dest = url.format(**remote)
-        if subcommand == 'imaging':
-            src = None  # FIXME
-            uploader.upload_imaging(src, dest)
-        elif subcommand == 'clinical':
-            src = None  # FIXME
-            uploader.upload_clinical_eeg(src, dest)
+            remote['remote_dir'] = config.get(subcommand, 'remote_dir')
+            dest = url.format(**remote)
+            if subcommand == 'imaging':
+                src = None  # FIXME
+                uploader.upload_imaging(src, dest)
+            elif subcommand == 'clinical':
+                src = None  # FIXME
+                uploader.upload_clinical_eeg(src, dest)
+    except KeyboardInterrupt:
+        print("Aborting!")
