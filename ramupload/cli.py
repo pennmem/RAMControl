@@ -136,6 +136,7 @@ def main():
         url = '{user:s}@{hostname:s}:{remote_dir:s}'
         remote = {'user': getuser()}
         remote.update(dict(config['ramtransfer']))
+        remote['key'] = remote['key'].format(remote['user'])
 
         if subcommand in ['host', 'experiment']:
             # Allow transferring data for AmplitudeDetermination experiments

@@ -111,7 +111,9 @@ class Uploader(object):
         if not src.endswith(osp.sep):
             src += osp.sep
 
-        command = shlex.split(self.remote['rsync_cmd'].format(**self.remote))
+        kwargs = self.remote.copy()
+
+        command = shlex.split(self.remote['rsync_cmd'].format(**kwargs))
         print(command)
         return check_call(command)
 
