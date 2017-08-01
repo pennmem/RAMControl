@@ -3,13 +3,24 @@ import os.path as osp
 import shutil
 from tempfile import mkdtemp
 import random
+from configparser import ConfigParser
+
 import pytest
+
 from ramupload.upload import Uploader
 
 
 @pytest.fixture
 def uploader():
-    instance = Uploader("R0000X")
+    config = ConfigParser()
+    config.read(osp.join(osp.dirname(__file__), "config.ini"))
+
+    host_pc = dict(config['host_pc'])
+    transferred = dict(config['transferred'])
+    remote = dict(config['ramtransfer'])
+
+    instance = Uploader("R0000X", host_pc, transferred, remote)
+
     yield instance
 
 

@@ -54,7 +54,7 @@ class Uploader(object):
     :param str subject: Subject ID
     :param dict host_pc: Host PC configuration settings
     :param dict transferred: Settings for keeping track of uploaded files.
-    :param remote: Remote location settings.
+    :param dict remote: Remote location settings.
     :param str dataroot: Path to root data directory.
 
     """
@@ -69,24 +69,6 @@ class Uploader(object):
         self.host_pc = host_pc
         self.transferred = transferred
         self.remote = remote
-
-        # Get the host PC password. This should only need to be done once unless
-        # the password is changed.
-        user_file = osp.expanduser('~/.ramupload.ini')
-        user_parser = ConfigParser()
-        user_parser.read(user_file)
-        try:
-            self.host_pc['password'] = user_parser.get('host_pc', 'password')
-        except (NoSectionError, NoOptionError):
-            password = prompt('Host PC password: ', is_password=True)
-            try:
-                user_parser.add_section('host_pc')
-            except:  # already exists
-                pass
-            user_parser.set('host_pc', 'password', password)
-            with open(user_file, 'w') as f:
-                user_parser.write(f)
-            self.host_pc['password'] = password
 
     def get_session_dir(self, experiment, session):
         """Return the path to a given session's data.
@@ -173,6 +155,24 @@ class Uploader(object):
         :param int session:
 
         """
+        # Get the host PC password. This should only need to be done once unless
+        # the password is changed.
+        user_file = osp.expanduser('~/.ramupload.ini')
+        user_parser = ConfigParser()
+        user_parser.read(user_file)
+        try:
+            self.host_pc['password'] = user_parser.get('host_pc', 'password')
+        except (NoSectionError, NoOptionError):
+            password = prompt('Host PC password: ', is_password=True)
+            try:
+                user_parser.add_section('host_pc')
+            except:  # already exists
+                pass
+            user_parser.set('host_pc', 'password', password)
+            with open(user_file, 'w') as f:
+                user_parser.write(f)
+            self.host_pc['password'] = password
+
         task_dir = self.get_session_dir(experiment, session)
 
         # Make directory if it doesn't exist
