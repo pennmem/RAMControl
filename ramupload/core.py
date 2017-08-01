@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import os
 import os.path as osp
 import shutil
@@ -85,3 +87,14 @@ def remove_transferred_eeg_data(path, lifetime):
         if dt.days > lifetime:
             upload_log.info("Removing %s since it is %d days old", path_, dt.days)
             shutil.rmtree(path_)
+
+
+def copytree(src, dest):
+    """Same as shutil.copytree, but with progress updates."""
+    def callback(path, contents):
+        for file in contents:
+            now = datetime.isoformat(datetime.now()).replace('T', ' ')
+            print("[{}]".format(now), "Copying", osp.join(path, file))
+        return []
+
+    shutil.copytree(src, dest, ignore=callback)

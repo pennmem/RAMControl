@@ -14,6 +14,7 @@ from tempfile import mkdtemp
 from prompt_toolkit import prompt
 
 from . import upload_log
+from .core import copytree
 
 logger = logging.getLogger(__name__)
 
@@ -158,12 +159,11 @@ class Uploader(object):
         except CalledProcessError:
             print("Error mounting host PC!")
             raise
-        else:
-            print("Unmounting host PC...")
-            try:
-                check_call(["umount", mount_point])
-            except CalledProcessError:
-                print("Error unmounting")
+        print("Unmounting host PC...")
+        try:
+            check_call(["umount", mount_point])
+        except CalledProcessError:
+            print("Error unmounting")
 
     @log
     def transfer_host_data(self, experiment, session):
@@ -193,7 +193,7 @@ class Uploader(object):
                 # Note that host and task computers differ in session numbering.
                 host_dir = osp.join(mount_point, self.subject, experiment,
                                     'session_{:d}'.format(session + 1))
-                shutil.copytree(host_dir, task_transfer_dir)
+                copytree(host_dir, task_transfer_dir)
 
         return True
 
