@@ -2,7 +2,7 @@
 
 ## Version 3.1.10
 
-**Unreleased**
+**2017-07-12**
 
 * Improved logging
 
