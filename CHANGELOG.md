@@ -1,5 +1,9 @@
 # Changes
 
+## Upcoming
+
+* Disabled REC1 in catFR5/FR5 by default. 
+
 ## Version 3.1.10
 
 **2017-07-12**

@@ -14,4 +14,4 @@ n_nonstim = 6
 vad_during_retrieval = True
 
 # Use REC1
-recognition_enabled = True
+# recognition_enabled = True
