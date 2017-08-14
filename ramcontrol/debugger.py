@@ -84,8 +84,7 @@ def parse_csv_file(filename):
     return messages
 
 
-def generate_scripted_session(logfile, expname, subject, session_num,
-                              outfile=None):
+def generate_scripted_session(logfile, outfile=None):
     """Generate a CSV-scripted session from a Ramulator output log.
 
     Currently, the following message types are ignored:
@@ -97,21 +96,28 @@ def generate_scripted_session(logfile, expname, subject, session_num,
     * ``WORD``
 
     :param str logfile: Log file to read.
-    :param str expname: Experiment name to send.
-    :param str subject: Subject ID.
-    :param int session_num:
     :param str outfile: Output CSV file or None.
     :rtype:
 
     """
-    ignore = ["HEARTBEAT", "SYNC", "MATH", "WORD", "ALIGNCLOCK"]
+    ignore = ["HEARTBEAT", "SYNC", "MATH", "WORD", "ALIGNCLOCK", "EXPNAME",
+              "VERSION", "SUBJECTID", "SESSION"]
 
-    with sqlite3.connect(logfile) as conn:
-        logs = pd.read_sql_query('SELECT * FROM logs WHERE name = "rampy.zmqsocket"', conn)
+    if logfile.endswith('sqlite'):
+        with sqlite3.connect(logfile) as conn:
+            logs = pd.read_sql_query('SELECT * FROM logs WHERE name = "rampy.zmqsocket"', conn)
 
-    # Parse messages
-    messages = [json.loads(msg.split("Incoming message: ")[1])
-                for msg in logs[logs.msg.str.startswith('Incoming message:')].msg]
+        # Parse messages
+        messages = [json.loads(msg.split("Incoming message: ")[1])
+                    for msg in logs[logs.msg.str.startswith('Incoming message:')].msg]
+    else:
+        messages = []
+        with open(logfile) as f:
+            for line in f.readlines():
+                entry = line.split("Incoming message: ")
+                if len(entry) is not 2:
+                    continue
+                messages.append(json.loads(entry[-1]))
 
     # Remove ignored message types
     df = pd.DataFrame(messages)
@@ -136,12 +142,7 @@ def generate_scripted_session(logfile, expname, subject, session_num,
     })
 
     lines = ["#delay;msgtype;kwargs",
-             "0;CONNECTED;",
-             '0.1;EXPNAME;{{"experiment":"{:s}"}}'.format(expname),
-             '0.1;SUBJECTID;{{"subject":"{:s}"}}'.format(subject),
-             '0.1;SESSION;{{"session":{:d},"session_type":"{:s}"}}'.format(
-                 session_num, "STIM")
-    ]
+             "0;CONNECTED;"]
     lines += [
         "{:f};{:s};{:s}".format(row.delay, row.msgtype, row.kwargs)
         for _, row in csv.iterrows()
@@ -249,12 +250,6 @@ if __name__ == "__main__":
 
     generate = subparsers.add_parser(
         "generate", help="Generate a CSV file from host PC output logs")
-    generate.add_argument("-x", "--experiment", type=str, required=True,
-                          help="Experiment type")
-    generate.add_argument("-s", "--subject", type=str, required=True,
-                          help="Subject name")
-    generate.add_argument("-n", "--session-number", type=int, default=0,
-                          help="Session number")
     generate.add_argument("-o", "--outfile", type=str, default="",
                           help="Output file")
     generate.add_argument("-f", "--filename", type=str, required=True,
@@ -274,8 +269,7 @@ if __name__ == "__main__":
     enable_pretty_logging()
 
     if args.command == "generate":
-        funcargs = [args.filename, args.experiment, args.subject,
-                    args.session_number]
+        funcargs = [args.filename]
         write_to_stdout = len(args.outfile) == 0
         if not write_to_stdout:
             funcargs.append(args.outfile)
