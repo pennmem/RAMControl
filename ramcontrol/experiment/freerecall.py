@@ -1,6 +1,9 @@
+from __future__ import print_function
+
 import os
 import os.path as osp
 import codecs
+import pandas as pd
 
 from wordpool import listgen
 from ..messages import TrialMessage
@@ -16,10 +19,9 @@ class FRExperiment(WordTask):
 
         """
         # Copy word pool to the data directory
-        # TODO: only copy lures for tasks using REC1
+        include_rec = self.config.recognition_enabled
         self.logger.info("Copying word pool(s) to data directory")
-        self.copy_word_pool(osp.join(self.data_root, self.subject),
-                            self.config.LANGUAGE, True)
+        self.copy_word_pool(osp.join(self.data_root, self.subject), include_rec)
 
         # Generate all session lists and REC blocks
         self.logger.info("Pre-generating all word lists for %d sessions",
@@ -37,7 +39,7 @@ class FRExperiment(WordTask):
                 raise ExperimentError(
                     "Unexpected experiment family encountered: " + self.name)
 
-            pool = gen_pool(language=self.config.LANGUAGE)
+            pool = gen_pool(language=self.language[:2].upper())
             n_baseline = self.config.n_baseline
             n_nonstim = self.config.n_nonstim
             n_stim = self.config.n_stim
@@ -64,8 +66,7 @@ class FRExperiment(WordTask):
             for listno in sorted(assigned.listno.unique()):
                 name = "{:d}.lst".format(listno)
                 entries = assigned[assigned.listno == listno]
-                with codecs.open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
-                    f.writelines(row.word + "\n" for _, row in entries.iterrows())
+                entries.word.to_csv(osp.join(session_dir, name), index=False, header=False)
 
             all_lists.append(assigned)
 
@@ -119,7 +120,7 @@ class FRExperiment(WordTask):
         if not self.run_confirm(
             "Running {:s} in session {:d} of {:s}\n({:s}).\n".format(
                 self.subject, self.session, self.name,
-                self.config.LANGUAGE) + "Press Y to continue, N to quit"):
+                self.language) + "Press Y to continue, N to quit"):
             self.logger.info("Quitting due to negative confirmation.")
             return
 
@@ -161,7 +162,7 @@ class FRExperiment(WordTask):
                 if phase_type == "PRACTICE":
                     with self.state_context("PRACTICE_POST_INSTRUCT"):
                         text = get_instructions("fr_post_practice_{:s}.txt".format(
-                            self.config.LANGUAGE.lower()))
+                            self.language[:2].lower()))
                         self.epl_helpers.show_text_and_wait(text, 0.05)
 
             # Update list index stored in state

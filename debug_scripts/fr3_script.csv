@@ -5,8 +5,8 @@
 #
 0;CONNECTED;
 0.1;EXPNAME;{"experiment":"FR3"}
-0.1;SUBJECTID;{"subject":"R1111M"}
-0.1;SESSION;{"session":1,"subject":"R1111M","name":"FR3", "version":"3.1.0"}
+0.1;SUBJECTID;{"subject":"R1293P"}
+0.1;SESSION;{"session":1,"subject":"R1293P","name":"FR3", "version":"3.1.0"}
 0.010000;STATE;{"name": "INSTRUCT", "value": true}
 1.333000;STATE;{"name": "INSTRUCT", "value": false}
 1.819000;TRIAL;{"trial": -1}

@@ -81,7 +81,7 @@ class SocketServer(object):
             self.log_message(msg, incoming=False)
             self.sock.send(out, zmq.NOBLOCK)
         except:
-            self.logger.error("Sending failed!", exc_info=True)
+            self.logger.error("Sending failed!")
 
     def send_heartbeat(self):
         """Convenience method to send a heartbeat message to the host PC."""

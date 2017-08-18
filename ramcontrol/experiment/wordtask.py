@@ -76,7 +76,7 @@ class WordTask(Experiment):
             timestamp.
 
         """
-        text = Text(word_info.word, size=self.config.wordHeight)
+        text = Text(word_info.word.decode('utf8'), size=self.config.wordHeight)
 
         kwargs = {
             "word": word_info.word,
@@ -97,8 +97,6 @@ class WordTask(Experiment):
                     word_info.word, self.config.wordHeight, keys)
                 return key, timestamp
 
-
-
     @skippable
     def run_instructions(self, allow_skip):
         """Instruction period to explain the task to the subject.
@@ -108,7 +106,7 @@ class WordTask(Experiment):
         """
         with self.state_context("INSTRUCT"):
             filename = absjoin(osp.expanduser(self.kwargs["video_path"]),
-                               self.config.introMovie.format(language=self.config.LANGUAGE))
+                               self.config.introMovie.format(language=self.language[:2].upper()))
             self.epl_helpers.play_intro_movie(filename, allow_skip=allow_skip)
 
     @skippable

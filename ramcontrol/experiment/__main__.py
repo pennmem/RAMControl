@@ -36,6 +36,7 @@ config = pickle.loads(os.environ["RAM_CONFIG"])
 subject = config["subject"]
 experiment = config["experiment"]
 family = config["experiment_family"]
+language = config["language"]
 debug = config["debug"]
 fullscreen = config["fullscreen"]
 
@@ -75,7 +76,7 @@ if debug:
 epl_exp.setBreak()  # quit with Esc-F1
 
 ExperimentClass = class_map[family]
-exp = ExperimentClass(epl_exp, family=family, debug=debug, **kwargs)
+exp = ExperimentClass(epl_exp, family=family, language=language, debug=debug, **kwargs)
 
 # Path to SQLite session log
 log_path = osp.join(exp.session_data_dir, "session.sqlite")

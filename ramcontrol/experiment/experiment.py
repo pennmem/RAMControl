@@ -118,13 +118,15 @@ class Experiment(object):
 
     :param exputils.Experiment epl_exp: PyEPL experiment instance.
     :param str family: Experiment family (e.g., FR, catFR, ...)
+    :param str language: Language to use.
     :param bool debug: Enables debug mode.
     :param dict kwargs: Additional keyword arguments used primarily for debug
          settings.
 
     """
-    def __init__(self, epl_exp, family, debug=False, **kwargs):
+    def __init__(self, epl_exp, family, language, debug=False, **kwargs):
         self.family = family
+        self.language = language
         self.debug = debug
         self.kwargs = kwargs
 
@@ -338,7 +340,7 @@ class Experiment(object):
                                           **kwargs))
         self.log_event(state + "_END", **kwargs)
 
-    def copy_word_pool(self, data_root, language="en", include_lures=False):
+    def copy_word_pool(self, data_root, include_lures=False):
         """Copy word pools to the subject's data root directory. This method
         only needs to be called the first time an experiment is run with a
         given subject.
@@ -346,7 +348,6 @@ class Experiment(object):
         FIXME: this should probably be a member of WordTask
 
         :param str data_root: Path to data root directory.
-        :param str language: Language to use for the pools (English or Spanish).
         :param bool include_lures: Include lure word pool.
         :raises LanguageError: when a passed language is unavailable
 
@@ -355,7 +356,7 @@ class Experiment(object):
         logger.info("Copying word pool(s)...")
 
         # Validate language selection
-        lang = language[:2].lower()
+        lang = self.language[:2].lower()
         if lang not in ["en", "sp"]:
             raise LanguageError("Invalid language: " + lang)
         if include_lures:
@@ -368,7 +369,8 @@ class Experiment(object):
             cat = True
         else:
             raise RAMException("Invalid family: ", self.family)
-        listgen.write_wordpool_txt(data_root, include_lure_words=include_lures,
+        listgen.write_wordpool_txt(data_root, lang.upper(),
+                                   include_lure_words=include_lures,
                                    categorized=cat)
 
     def connect_to_control_pc(self):
