@@ -28,7 +28,7 @@ def get_instructions(filename):
 
     """
     with open(osp.join(git_root(), "ramcontrol", "instructions", filename)) as f:
-        return f.read()
+        return f.read().decode('utf-8')
 
 
 def absjoin(*paths):

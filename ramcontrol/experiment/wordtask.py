@@ -105,8 +105,11 @@ class WordTask(Experiment):
 
         """
         with self.state_context("INSTRUCT"):
+            # FIXME: update when there are non-English videos
+            # language = self.language[:2].upper()
+            language = "EN"
             filename = absjoin(osp.expanduser(self.kwargs["video_path"]),
-                               self.config.introMovie.format(language=self.language[:2].upper()))
+                               self.config.introMovie.format(language=language))
             self.epl_helpers.play_intro_movie(filename, allow_skip=allow_skip)
 
     @skippable
