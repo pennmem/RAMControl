@@ -8,5 +8,5 @@ six
 tornado
 webrtcvad
 psutil
--e git+https://github.com/pennmem/wordpool.git@v0.3#egg=wordpool
+-e git+https://github.com/pennmem/wordpool.git@v0.4#egg=wordpool
 -e git+https://github.com/mivade/logserver.git#egg=logserver
