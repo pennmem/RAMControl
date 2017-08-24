@@ -12,6 +12,9 @@ vad_during_retrieval = False
 # Include recognition subtask REC1
 recognition_enabled = False
 
+# Include list learning subtask
+learning_subtask = False
+
 # Pause+Jitter after orienting stim before first word
 PauseBeforeWords = 1000
 JitterBeforeWords = 400

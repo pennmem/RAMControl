@@ -15,3 +15,6 @@ n_nonstim = 6
 
 # Enable VAD
 vad_during_retrieval = True
+
+# Enable learning subtask
+learning_subtask = True
