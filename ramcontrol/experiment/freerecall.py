@@ -2,8 +2,6 @@ from __future__ import print_function
 
 import os
 import os.path as osp
-import codecs
-import pandas as pd
 
 from wordpool import listgen
 from ..messages import TrialMessage
