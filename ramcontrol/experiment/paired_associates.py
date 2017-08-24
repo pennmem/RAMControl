@@ -161,7 +161,7 @@ class PALExperiment(WordTask):
                 for i in range(self.config.n_pairs):
                     name = "{:d}_{:d}.lst".format(listno,i)
                     entries = assigned[assigned.listno == listno]
-                    with codecs.open(osp.join(session_dir, name), 'w', encoding="utf8") as f:
+                    with codecs.open(osp.join(session_dir, name), 'w', encoding="latin1") as f:
                         f.writelines(row.word1 + "\n" +row.word2 + "\n" for _, row in entries.iterrows())
 
 

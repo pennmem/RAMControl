@@ -77,7 +77,8 @@ class FRExperiment(WordTask):
             for listno in sorted(assigned.listno.unique()):
                 name = "{:d}.lst".format(listno)
                 entries = assigned[assigned.listno == listno]
-                entries.word.to_csv(osp.join(session_dir, name), index=False, header=False)
+                entries.word.to_csv(osp.join(session_dir, name), index=False,
+                                    header=False, encoding='latin1')
 
             all_lists.append(assigned)
 
