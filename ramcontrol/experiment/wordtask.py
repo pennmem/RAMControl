@@ -265,3 +265,7 @@ class WordTask(Experiment):
 
                 if self.debug and n > self.kwargs.get("rec_limit", len(rec_list) - 1):
                     return
+
+    @skippable
+    def run_learning(self):
+        """Run a repeated list learning phase."""

@@ -28,6 +28,8 @@ class FRExperiment(WordTask):
                          self.config.numSessions)
         all_lists = []
         all_rec_blocks = []
+        all_learning_blocks = []
+
         for session in range(self.config.numSessions):
             self.logger.info("Pre-generating word lists for session %d",
                              session)
@@ -46,6 +48,15 @@ class FRExperiment(WordTask):
             n_ps = self.config.n_ps
             assigned = listgen.assign_list_types(pool, n_baseline, n_nonstim,
                                                  n_stim, n_ps)
+
+            # Reassign stim lists for multistim
+            if self.config.experiment in ['FR6', 'catFR6']:
+                stimspec = {
+                    'A': self.config.n_stim_A,
+                    'B': self.config.n_stim_B,
+                    'AB': self.config.n_stim_AB
+                }
+                assigned = listgen.assign_multistim(assigned, stimspec)
 
             if self.debug:
                 print(assigned)
@@ -87,9 +98,17 @@ class FRExperiment(WordTask):
 
                 all_rec_blocks.append(rec_blocks)
 
-        # Store lists and REC blocks in the state
+            # Generate repeated list learning (LEARN1) blocks if this
+            # experiment needs it
+            if self.config.learning_subtask:
+                self.logger.info("Pre-generating LEARN1 blocks for session %d",
+                                 session)
+                # TODO
+
+        # Store lists in the state
         self.all_lists = all_lists
         self.all_rec_blocks = all_rec_blocks
+        self.all_learning_blocks = all_learning_blocks
 
     def prepare_session(self):
         # Nothing to do here, but this is an abstract method so must be
@@ -170,6 +189,9 @@ class FRExperiment(WordTask):
 
         if self.config.recognition_enabled:
             self.run_recognition()
+
+        if self.config.learning_subtask:
+            self.run_learning()
 
         self.run_wait_for_keypress("Thank you!\nYou have completed the session.")
 
