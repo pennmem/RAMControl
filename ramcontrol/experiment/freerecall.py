@@ -103,7 +103,13 @@ class FRExperiment(WordTask):
             if self.config.learning_subtask:
                 self.logger.info("Pre-generating LEARN1 blocks for session %d",
                                  session)
-                # TODO
+                block = listgen.generate_learn1_blocks(assigned, 2, 2, 'STIM_AB')
+
+                # save to session folder
+                block.to_csv(osp.join(session_dir, 'learn1_blocks.csv'))
+
+                all_learning_blocks.append(block)
+
 
         # Store lists in the state
         self.all_lists = all_lists
