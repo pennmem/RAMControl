@@ -60,6 +60,15 @@ class WordTask(Experiment):
         assert isinstance(new_blocks, list)
         self.update_state(all_rec_blocks=new_blocks)
 
+    @property
+    def all_learning_blocks(self):
+        return self.state.all_learning_blocks
+
+    @all_learning_blocks.setter
+    def all_learning_blocks(self, new_blocks):
+        assert isinstance(new_blocks, list)
+        self.update_state(all_learning_blocks=new_blocks)
+
     def reset_state(self):
         self.list_index = 0
 
@@ -267,5 +276,20 @@ class WordTask(Experiment):
                     return
 
     @skippable
-    def run_learning(self):
-        """Run a repeated list learning phase."""
+    def run_learning(self, blocks):
+        """Run a repeated list learning phase (LEARN1)."""
+        with self.state_context("LEARNING"):
+            for blockno in range(4):
+                with self.state_context("LEARNING_BLOCK_" + str(blockno)):
+                    block = blocks[blocks.blockno == blockno]
+                    for listno in block.listno.unique():
+                        with self.state_context("LEARNING_LIST_" + str(listno)):
+                            words = block[block.listno == listno]
+                            phase_type = words.type.iloc[0]
+
+                            self.run_encoding(words, phase_type)
+                            self.run_distraction(phase_type)
+                            self.clock.delay(self.timings.recall_delay,
+                                             jitter=self.timings.recall_jitter)
+                            self.clock.wait()
+                            self.run_retrieval(phase_type)

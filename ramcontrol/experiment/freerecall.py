@@ -56,6 +56,8 @@ class FRExperiment(WordTask):
                     'B': self.config.n_stim_B,
                     'AB': self.config.n_stim_AB
                 }
+                assert sum(stimspec.values()) == n_stim, \
+                    "Total number of stim lists doesn't match multistim specs"
                 assigned = listgen.assign_multistim(assigned, stimspec)
 
             if self.debug:
@@ -109,7 +111,6 @@ class FRExperiment(WordTask):
                 block.to_csv(osp.join(session_dir, 'learn1_blocks.csv'))
 
                 all_learning_blocks.append(block)
-
 
         # Store lists in the state
         self.all_lists = all_lists
@@ -197,7 +198,7 @@ class FRExperiment(WordTask):
             self.run_recognition()
 
         if self.config.learning_subtask:
-            self.run_learning()
+            self.run_learning(self.all_learning_blocks[self.session])
 
         self.run_wait_for_keypress("Thank you!\nYou have completed the session.")
 
