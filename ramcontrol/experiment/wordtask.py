@@ -157,15 +157,20 @@ class WordTask(Experiment):
                 raise MicTestAbort
 
     @skippable
-    def run_distraction(self, phase_type):
-        """Distraction phase."""
+    def run_distraction(self, phase_type, stim_channels=None):
+        """Distraction phase.
+
+        :param str phase_type: Experimental phase type.
+        :param tuple stim_channels: Stim channels (for appropriate phase types).
+
+        """
         if self.debug:
             min_duration = self.kwargs.get("min_distraction_duration", self.config.MATH_minDuration)
         else:
             min_duration = self.config.MATH_minDuration
 
         num_problems = 1 if self.debug and self.kwargs.get("one_math_problem", False) else self.config.MATH_maxProbs
-        with self.state_context("DISTRACT", phase_type=phase_type):
+        with self.state_context("DISTRACT", phase_type=phase_type, stim_channels=stim_channels):
             customMathDistract(clk=self.clock,
                                mathlog=self.mathlog,
                                numVars=self.config.MATH_numVars,
@@ -176,25 +181,28 @@ class WordTask(Experiment):
                                callback=self.controller.send_math_message)
 
     @skippable
-    def run_encoding(self, words, phase_type):
+    def run_encoding(self, words, phase_type, stim_channels=None):
         """Run an encoding phase.
 
         :param pd.DataFrame words:
         :param str phase_type: Phase type (BASELINE, ...)
+        :param tuple stim_channels: Stim channels (for appropriate phase types).
 
         """
-        with self.state_context("ENCODING", phase_type=phase_type):
+        with self.state_context("ENCODING", phase_type=phase_type, stim_channels=stim_channels):
             for n, (_, row) in enumerate(words.iterrows()):
                 self.clock.delay(self.timings.isi, self.timings.jitter)
                 self.clock.wait()
                 self.display_word(row, n)
 
     @skippable
-    def run_orient(self, phase_type, orient_text,delay=None,jitter=None, beep=False):
+    def run_orient(self, phase_type, orient_text, stim_channels=None, delay=None,
+                   jitter=None, beep=False):
         """Run an orient phase.display_word
 
         :param str phase_type:
         :param str orient_text: The text to display.
+        :param tuple stim_channels: Stim channels (for appropriate phase types).
         :param float delay: The length of time to display the text. Defaults to self.timings.encoding_delay
         :param float jitter: The amount of time by which to jitter the length of the orientation cue.
             Defaults to self.timings.encoding_jitter
@@ -207,7 +215,7 @@ class WordTask(Experiment):
             delay = self.timings.encoding_delay
         if jitter is None:
             jitter = self.timings.encoding_jitter
-        with self.state_context("ORIENT", phase_type=phase_type):
+        with self.state_context("ORIENT", phase_type=phase_type, stim_channels=stim_channels):
             text = Text(orient_text)
 
             text.present(self.clock, delay,
@@ -219,8 +227,13 @@ class WordTask(Experiment):
             self.video.unshow(text)
 
     @skippable
-    def run_retrieval(self, phase_type):
-        """Run a retrieval (a.k.a. recall) phase."""
+    def run_retrieval(self, phase_type, stim_channels=None):
+        """Run a retrieval (a.k.a. recall) phase.
+
+        :param str phase_type: Experimental phase.
+        :param tuple stim_channels: Stim channels (for appropriate phase types).
+
+        """
         self.clock.delay(self.config.PauseBeforeRecall, jitter=self.config.JitterBeforeRecall)
 
         if not (self.debug and self.kwargs.get("skip_orient", False)):
@@ -236,7 +249,7 @@ class WordTask(Experiment):
                 self.video.updateScreen(self.clock)
 
         with self.controller.voice_detector():  # this should do nothing if VAD is disabled
-            with self.state_context("RETRIEVAL", phase_type=phase_type):
+            with self.state_context("RETRIEVAL", phase_type=phase_type, stim_channels=stim_channels):
                 label = str(self.list_index)
 
                 # Record responses

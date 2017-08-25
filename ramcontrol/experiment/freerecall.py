@@ -154,9 +154,11 @@ class FRExperiment(WordTask):
         for listno in range(self.list_index, len(wordlist.listno.unique())):
             words = wordlist[wordlist.listno == listno]
 
-            # check that phase type assignments are correct
             phase_type = words.type.iloc[0]
-            assert all(words.type == phase_type)
+            assert all(words.type == phase_type)  # check that phase type assignments are correct
+
+            # TODO: make this more flexible: allow varying stim-allowed sites per list
+            stim_channels = words.stim_channels.iloc[0]
 
             with self.state_context("TRIAL", listno=listno, phase_type=phase_type):
                 self.log_event("TRIAL", listno=listno, phase_type=phase_type)  # FIXME: host should get this with state message
@@ -170,10 +172,10 @@ class FRExperiment(WordTask):
                 self.run_orient(phase_type, self.config.orientText)
 
                 # Encoding
-                self.run_encoding(words, phase_type)
+                self.run_encoding(words, phase_type, stim_channels=stim_channels)
 
                 # Distract
-                self.run_distraction(phase_type)
+                self.run_distraction(phase_type, stim_channels=stim_channels)
 
                 # Delay before retrieval
                 self.clock.delay(self.timings.recall_delay,
@@ -182,7 +184,7 @@ class FRExperiment(WordTask):
 
                 # Retrieval
                 # self.run_orient(phase_type, self.config.recallStartText, beep=True)
-                self.run_retrieval(phase_type)
+                self.run_retrieval(phase_type, stim_channels=stim_channels)
 
                 if phase_type == "PRACTICE":
                     with self.state_context("PRACTICE_POST_INSTRUCT"):
