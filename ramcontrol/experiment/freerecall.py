@@ -50,9 +50,9 @@ class FRExperiment(WordTask):
             # Reassign stim lists for multistim
             if self.config.experiment in ['FR6', 'catFR6']:
                 stimspec = {
-                    'A': self.config.n_stim_A,
-                    'B': self.config.n_stim_B,
-                    'AB': self.config.n_stim_AB
+                    (0,): self.config.n_stim_A,
+                    (1,): self.config.n_stim_B,
+                    (0, 1): self.config.n_stim_AB
                 }
                 assert sum(stimspec.values()) == n_stim, \
                     "Total number of stim lists doesn't match multistim specs"
@@ -104,7 +104,7 @@ class FRExperiment(WordTask):
             if self.config.learning_subtask:
                 self.logger.info("Pre-generating LEARN1 blocks for session %d",
                                  session)
-                block = listgen.generate_learn1_blocks(assigned, 2, 2, 'STIM_AB')
+                block = listgen.generate_learn1_blocks(assigned, 2, 2)
 
                 # save to session folder
                 block.to_csv(osp.join(session_dir, 'learn1_blocks.csv'))
