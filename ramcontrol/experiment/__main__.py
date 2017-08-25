@@ -81,8 +81,7 @@ exp = ExperimentClass(epl_exp, family=family, language=language, debug=debug, **
 # Path to SQLite session log
 log_path = osp.join(exp.session_data_dir, "session.sqlite")
 
-# FIXME Create some helpful views for querying the logs
-if False:
+try:
     with sqlite3.connect(log_path) as conn:
         views = {
             "events": 'SELECT msg FROM logs WHERE name = "events"',
@@ -90,6 +89,9 @@ if False:
         }
         for view in views:
             conn.execute('CREATE VIEW IF NOT EXISTS {:s} AS {:s}'.format(view, views[view]))
+except Exception as e:
+    print("Failed creating views")
+    print(e)
 
 # Start log server process
 log_args = ([SQLiteHandler(log_path)],)

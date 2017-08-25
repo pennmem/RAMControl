@@ -102,13 +102,19 @@ def main():
     if args.language is None:
         args.language = get_language(config["general"]["languages"].split())
 
+    # Enable voiceserver if an experiment requires it, or optionally globally
+    # override in debug mode.
+    use_voiceserver = config[args.experiment].getboolean("voiceserver", fallback=False)
+    if config['debug'].getboolean('no_voiceserver', fallback=False):
+        use_voiceserver = False
+
     env = {
         "subject": args.subject,
         "experiment": args.experiment,
         "experiment_family": config.get(args.experiment, "family"),
         "language": args.language,
 
-        "voiceserver": config[args.experiment].getboolean("voiceserver", fallback=False),
+        "voiceserver": use_voiceserver,
 
         "video_path": os.path.abspath(os.path.expanduser(config["videos"]["path"])),
         "data_path": absjoin("./data"),
