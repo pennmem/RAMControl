@@ -106,6 +106,9 @@ class FRExperiment(WordTask):
                                  session)
                 block = listgen.generate_learn1_blocks(assigned, 2, 2)
 
+                if self.debug:
+                    print(block)
+
                 # save to session folder
                 block.to_csv(osp.join(session_dir, 'learn1_blocks.csv'))
 
