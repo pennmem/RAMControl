@@ -104,15 +104,22 @@ class FRExperiment(WordTask):
             if self.config.learning_subtask:
                 self.logger.info("Pre-generating LEARN1 blocks for session %d",
                                  session)
-                block = listgen.generate_learn1_blocks(assigned, 2, 2)
+                blocks = listgen.generate_learn1_blocks(assigned, 2, 2, stim_channels=(0, 1))
 
                 if self.debug:
-                    print(block)
+                    print(blocks)
+
+                # Write .lst files to session folders for use in TotalRecall
+                for listno in blocks.listno.unique():
+                    name = "learn_{:d}.lst".format(listno)
+                    entries = blocks[blocks.block_listno == listno]
+                    entries.word.to_csv(osp.join(session_dir, name), index=False,
+                                        header=False, encoding='latin1')
 
                 # save to session folder
-                block.to_csv(osp.join(session_dir, 'learn1_blocks.csv'))
+                blocks.to_csv(osp.join(session_dir, 'learn1_blocks.csv'))
 
-                all_learning_blocks.append(block)
+                all_learning_blocks.append(blocks)
 
         # Store lists in the state
         self.all_lists = all_lists
