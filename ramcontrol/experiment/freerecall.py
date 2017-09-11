@@ -110,7 +110,7 @@ class FRExperiment(WordTask):
                     print(blocks)
 
                 # Write .lst files to session folders for use in TotalRecall
-                for listno in blocks.listno.unique():
+                for listno in blocks.block_listno.unique():
                     name = "learn_{:d}.lst".format(listno)
                     entries = blocks[blocks.block_listno == listno]
                     entries.word.to_csv(osp.join(session_dir, name), index=False,
