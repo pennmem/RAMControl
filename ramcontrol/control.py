@@ -345,11 +345,6 @@ class RAMControl(object):
         self._last_heartbeat_received = time.time()
 
         # Send experiment info to host
-        self.send(ExperimentNameMessage(self.experiment))
-        self.send(VersionMessage(self.version))
-        self.send(SessionMessage(self.experiment, self.version, self.subject,
-                                 self.session_num))
-        self.send(SubjectIdMessage(self.subject))
         self.start_heartbeat()
 
         self.logger.info("Connection succeeded.")
