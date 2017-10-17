@@ -419,8 +419,7 @@ class RAMControl(object):
     def connected_handler(self, msg):
         """Indicate that we've made a connection."""
         self._connected = True
-        # Host PC has never actually used this...
-        # self.socket.enqueue_message(ConnectedMessage())
+        self.socket.enqueue_message(ConnectedMessage())
 
     def heartbeat_handler(self, msg):
         """Received echoed heartbeat message from host."""
