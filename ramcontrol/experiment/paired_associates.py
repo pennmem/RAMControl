@@ -208,7 +208,7 @@ class PALExperiment(WordTask):
 
         if self.list_index > len(self.all_lists):  # reset required
             self.list_index = 0
-        wordlist = self.all_lists[self.list_index]
+        wordlist = self.all_lists[self.session]
 
         self.run_instructions(allow_skip=(self.session > 0))
 
