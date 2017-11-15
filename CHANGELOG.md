@@ -1,5 +1,11 @@
 # Changes
 
+## Version 3.1.12
+
+**2017-11-15**
+
+* Critical fix for PAL experiments to select the correct word lists for display.
+
 ## Version 3.1.11
 
 **2017-08-11**
