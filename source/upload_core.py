@@ -428,7 +428,7 @@ def uploadFiles_option(showProgress = True):
         line('*')
         print('ERROR UPLOADING!!!')
         print('Check internet connection, then contact:')
-        print('iped@sas.upenn.edu AND drizzuto@psych.upenn.edu')
+        print('kahana-clinical@sas.upenn.edu')
         line('*')
     print('Hit any key to continue...')
     getCh()
@@ -871,7 +871,7 @@ def uploadSubjectFile(typeOfUpload, isFile, transferredLbl, tempDestination, rem
     if not rtnCode == 0:
         line("*")
         print('RSYNC FAILED. ERROR CODE: %d'%rtnCode)
-        print('CONTACT iped@sas.upenn.edu FOR ASSISTANCE')
+        print('CONTACT kahana-clinical@sas.upenn.edu FOR ASSISTANCE')
         line('*')
         getCh()
         return True
